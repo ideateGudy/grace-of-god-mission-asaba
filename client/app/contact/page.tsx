@@ -8,41 +8,55 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { TextField, TextAreaField } from "@/components/shared/FormFields";
-import { SiteHeader } from "@/components/layout/SiteHeader";
-import { SiteFooter } from "@/components/layout/SiteFooter";
-import { MobileNav } from "@/components/layout/MobileNav";
-import { Section, SectionHeading } from "@/components/shared/Section";
+import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { MapPin, Phone, Mail } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, MessageSquare, CheckCircle2 } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa6";
 import { siteConfig } from "@/config/site";
 
-const contactSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
-  phone: z.string().optional(),
-  message: z.string().min(10, "Message is too short").max(2000),
-  _honeypot: z.string().max(0), // must be empty
-  consent: z.boolean().refine((value) => value, "Please agree to the privacy notice before submitting.")
-}).refine(data => data.email || data.phone, {
-  message: "Either email or phone must be provided",
-  path: ["email"]
-});
+const contactSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Invalid email").optional().or(z.literal("")),
+    phone: z.string().optional(),
+    message: z.string().min(10, "Message is too short").max(2000),
+    _honeypot: z.string().max(0),
+    consent: z
+      .boolean()
+      .refine((value) => value, "Please agree to the privacy notice before submitting."),
+  })
+  .refine((data) => data.email || data.phone, {
+    message: "Either email or phone must be provided",
+    path: ["email"],
+  });
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const phoneAvailable = !siteConfig.phone.startsWith("[") && Boolean(siteConfig.phone);
+  const whatsappAvailable =
+    !siteConfig.whatsapp.startsWith("[") && Boolean(siteConfig.whatsapp);
+  const emailAvailable = !siteConfig.email.startsWith("[") && Boolean(siteConfig.email);
+
   const form = useForm<z.infer<typeof contactSchema>>({
     resolver: zodResolver(contactSchema),
-    defaultValues: { name: "", email: "", phone: "", message: "", _honeypot: "", consent: false }
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      message: "",
+      _honeypot: "",
+      consent: false,
+    },
   });
   const consent = useWatch({ control: form.control, name: "consent" });
 
   const onSubmit = async (data: z.infer<typeof contactSchema>) => {
-    if (data._honeypot) return; // bot
+    if (data._honeypot) return;
     setLoading(true);
     try {
       const res = await fetch("/api/v1/contact", {
@@ -54,18 +68,18 @@ export default function ContactPage() {
           phone: data.phone || undefined,
           message: data.message,
           consent: data.consent,
-          honeypot: data._honeypot
-        })
+          honeypot: data._honeypot,
+        }),
       });
-      
+
       if (res.status === 429) {
         toast.error("You are sending messages too quickly. Please wait a bit.");
         setLoading(false);
         return;
       }
-      
+
       if (!res.ok) throw new Error("Failed to send message");
-      
+
       setSuccess(true);
       form.reset();
     } catch {
@@ -76,81 +90,206 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <SiteHeader />
-      <MobileNav />
-      <main className="flex-1 pt-24 pb-16" id="main-content">
-        <Section>
-          <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+    <PublicPageLayout
+      title="Contact the Church Office"
+      description="Have questions about service times, membership, or pastoral guidance? Our team in Asaba is here to assist you."
+      eyebrow="Connect With Us · Support & Inquiries"
+    >
+      <div className="grid gap-10 lg:grid-cols-12 max-w-5xl mx-auto">
+        {/* Left Column: Direct Info */}
+        <div className="lg:col-span-5 space-y-6">
+          <GlassCard surface="strong" padding="lg" className="border border-border shadow-lg space-y-6">
             <div>
-              <SectionHeading>Contact Us</SectionHeading>
-              <p className="text-lg text-muted-foreground mb-8">
-                We&apos;d love to hear from you. Whether you have a question about our services, need prayer, or just want to connect, our team is here for you.
+              <h2 className="font-display text-2xl font-bold text-foreground">
+                We're Here for You
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                Reach out to us directly through any of our official channels or visit our sanctuary
+                in person.
               </p>
-              
-              <div className="space-y-6">
-                <div className="flex gap-4">
-                  <MapPin className="w-6 h-6 text-primary shrink-0" />
-                  <div>
-                    <h3 className="font-medium text-foreground">Address</h3>
-                    <p className="text-muted-foreground mt-1">{siteConfig.churchAddress}</p>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <Phone className="w-6 h-6 text-primary shrink-0" />
-                  <div>
-                    <h3 className="font-medium text-foreground">Phone</h3>
-                    <p className="text-muted-foreground mt-1">{siteConfig.phone}</p>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <Mail className="w-6 h-6 text-primary shrink-0" />
-                  <div>
-                    <h3 className="font-medium text-foreground">Email</h3>
-                    <p className="text-muted-foreground mt-1">{siteConfig.email}</p>
-                  </div>
+            </div>
+
+            <div className="space-y-4 text-sm">
+              <div className="flex items-start gap-3.5">
+                <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-foreground">Sanctuary Address</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                    {siteConfig.churchAddress.startsWith("[")
+                      ? "Grace of God Mission, Asaba, Delta State, Nigeria"
+                      : siteConfig.churchAddress}
+                  </p>
                 </div>
               </div>
-            </div>
-            
-            <GlassCard surface="strong" padding="lg">
-              {success ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-success/20 text-success rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+
+              {phoneAvailable && (
+                <div className="flex items-start gap-3.5">
+                  <Phone className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-foreground">Telephone</h3>
+                    <a
+                      href={`tel:${siteConfig.phone}`}
+                      className="text-xs text-primary font-medium hover:underline mt-0.5 block"
+                    >
+                      {siteConfig.phone}
+                    </a>
                   </div>
-                  <h3 className="text-2xl font-display font-medium text-foreground mb-2">Message Sent!</h3>
-                  <p className="text-muted-foreground mb-6">Thank you for reaching out. We will get back to you shortly.</p>
-                  <Button onClick={() => setSuccess(false)} variant="outline">Send another message</Button>
                 </div>
-              ) : (
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <TextField form={form} name="_honeypot" label="" className="hidden" aria-hidden="true" tabIndex={-1} />
-                    <TextField form={form} name="name" label="Your Name" placeholder="John Doe" />
-                    <div className="grid sm:grid-cols-2 gap-6">
-                      <TextField form={form} name="email" label="Email Address" type="email" placeholder="john@example.com" />
-                      <TextField form={form} name="phone" label="Phone Number" placeholder="+234 80..." />
-                    </div>
-                    <TextAreaField form={form} name="message" label="Message" placeholder="How can we help you?" rows={5} />
-                    
-                    <div className="flex items-start gap-3">
-                      <Checkbox id="contact-consent" checked={consent} onCheckedChange={(checked) => form.setValue("consent", checked === true, { shouldValidate: true })} aria-invalid={!!form.formState.errors.consent} />
-                      <Label htmlFor="contact-consent" className="text-sm leading-relaxed">I agree to the <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link> and consent to being contacted about this message.</Label>
-                    </div>
-                    {form.formState.errors.consent && <p role="alert" className="text-sm text-destructive">{form.formState.errors.consent.message}</p>}
-                    
-                    <Button type="submit" disabled={loading} className="w-full h-12 rounded-full text-base">
-                      {loading ? "Sending..." : "Send Message"}
-                    </Button>
-                  </form>
-                </Form>
               )}
-            </GlassCard>
-          </div>
-        </Section>
-      </main>
-      <SiteFooter />
-    </div>
+
+              {whatsappAvailable && (
+                <div className="flex items-start gap-3.5">
+                  <FaWhatsapp className="h-5 w-5 text-[#25D366] shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-foreground">WhatsApp Chat</h3>
+                    <a
+                      href={`https://wa.me/${siteConfig.whatsapp.replace(/[^0-9]/g, "")}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-[#25D366] font-medium hover:underline mt-0.5 block"
+                    >
+                      Chat with church greeters
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {emailAvailable && (
+                <div className="flex items-start gap-3.5">
+                  <Mail className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-foreground">Email Inquiries</h3>
+                    <a
+                      href={`mailto:${siteConfig.email}`}
+                      className="text-xs text-primary font-medium hover:underline mt-0.5 block"
+                    >
+                      {siteConfig.email}
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-border/60 pt-4 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                <Clock className="h-4 w-4 text-gold" />
+                <span>Office & Service Hours</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Sundays: 8:00 AM – 1:00 PM <br />
+                Wednesdays: 5:00 PM – 8:00 PM
+              </p>
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* Right Column: Contact Form */}
+        <div className="lg:col-span-7">
+          <GlassCard surface="strong" padding="lg" className="border border-border shadow-xl">
+            {success ? (
+              <div className="text-center py-12 space-y-4">
+                <div className="w-16 h-16 bg-emerald-500/15 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h3 className="text-2xl font-display font-bold text-foreground">
+                  Message Sent Successfully
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  Thank you for reaching out to Grace of God Mission Asaba. Our church administration
+                  team will review your message and reply promptly.
+                </p>
+                <div className="pt-4">
+                  <Button
+                    onClick={() => setSuccess(false)}
+                    variant="outline"
+                    className="rounded-xl"
+                  >
+                    Send another message
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <TextField
+                    form={form}
+                    name="_honeypot"
+                    label=""
+                    className="hidden"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  />
+
+                  <TextField
+                    form={form}
+                    name="name"
+                    label="Your Full Name"
+                    placeholder="e.g. Chukwuma Obi"
+                  />
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <TextField
+                      form={form}
+                      name="email"
+                      label="Email Address"
+                      type="email"
+                      placeholder="chukwuma@example.com"
+                    />
+                    <TextField
+                      form={form}
+                      name="phone"
+                      label="Phone Number"
+                      placeholder="+234 80..."
+                    />
+                  </div>
+
+                  <TextAreaField
+                    form={form}
+                    name="message"
+                    label="How Can We Help You?"
+                    placeholder="Type your message, inquiry, or question here..."
+                    rows={5}
+                  />
+
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="contact-consent"
+                      checked={consent}
+                      onCheckedChange={(checked) =>
+                        form.setValue("consent", checked === true, { shouldValidate: true })
+                      }
+                      aria-invalid={!!form.formState.errors.consent}
+                    />
+                    <Label
+                      htmlFor="contact-consent"
+                      className="text-xs leading-relaxed text-muted-foreground"
+                    >
+                      I agree to the{" "}
+                      <Link href="/privacy" className="underline hover:text-primary">
+                        Privacy Notice
+                      </Link>{" "}
+                      and consent to being contacted by church staff regarding this inquiry.
+                    </Label>
+                  </div>
+                  {form.formState.errors.consent && (
+                    <p role="alert" className="text-xs text-destructive">
+                      {form.formState.errors.consent.message}
+                    </p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-12 rounded-xl text-sm font-bold bg-primary hover:brightness-110 shadow-md transition"
+                  >
+                    {loading ? "Sending Message..." : "Send Message"}
+                  </Button>
+                </form>
+              </Form>
+            )}
+          </GlassCard>
+        </div>
+      </div>
+    </PublicPageLayout>
   );
 }

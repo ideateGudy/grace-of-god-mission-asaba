@@ -1,10 +1,78 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
+import { GlassCard } from "@/components/shared/GlassCard";
 import { siteConfig } from "@/config/site";
+import { ShieldCheck, Info } from "lucide-react";
 
-export const metadata: Metadata = { title: "Privacy notice", description: "How Grace of God Mission Asaba handles information sent through this website." };
+export const metadata: Metadata = {
+  title: "Privacy Notice | Grace of God Mission Asaba",
+  description:
+    "How Grace of God Mission Asaba handles personal data submitted through our contact and prayer request forms.",
+  alternates: { canonical: "/privacy" },
+};
 
 export default function PrivacyPolicyPage() {
-  return <PublicPageLayout title="Privacy notice" description="A plain-language overview of information submitted through this website."><article className="max-w-3xl space-y-8 leading-relaxed"><p><strong>Draft for church review.</strong> The church must confirm its data controller contact, lawful basis, processors, retention schedule, and internal request process before this notice is treated as final.</p><section><h2 className="font-display text-2xl">Information we receive</h2><p className="mt-2">When you send a contact message, we receive your name, message, and any email address or phone number you choose to provide. A prayer request may include your name and contact details, but these are optional. Do not include information you do not want the prayer team to receive.</p></section><section><h2 className="font-display text-2xl">How it is used</h2><p className="mt-2">Contact details are used to reply to your message. Prayer requests are made available to authorised prayer inbox staff so they can respond and pray. Admin access is permission-controlled. The site also uses a necessary, HTTP-only cookie when an administrator signs in.</p></section><section><h2 className="font-display text-2xl">Storage and retention</h2><p className="mt-2">Submitted messages are stored in the church website database and are visible only to authorised staff. The church must set and publish a retention period, and delete personal information when it is no longer needed for its stated purpose. Hosting and database providers may process information to operate the service; the church must confirm the providers and applicable safeguards before launch.</p></section><section><h2 className="font-display text-2xl">Your privacy requests</h2><p className="mt-2">You may ask the church to provide access to, correct, or delete personal information, or raise a question about its use. Contact details for these requests must be confirmed: <Link href="/contact" className="underline text-primary">contact the church</Link> or use {siteConfig.email}. You may also contact the <a className="underline text-primary" href="https://ndpc.gov.ng/" target="_blank" rel="noreferrer">Nigeria Data Protection Commission</a>. The Nigeria Data Protection Act 2023 describes data subject rights; this notice does not replace the church’s review of its obligations under that Act.</p></section><section><h2 className="font-display text-2xl">Updates</h2><p className="mt-2">This notice should be updated when the church confirms its privacy contact, lawful bases, retention practices, and service providers.</p></section></article></PublicPageLayout>;
+  return (
+    <PublicPageLayout
+      title="Privacy Notice"
+      description="A plain-language overview of how personal information submitted through this website is handled with care and confidentiality."
+      eyebrow="Data Protection · Nigeria Data Protection Act 2023"
+    >
+      <div className="max-w-4xl mx-auto">
+        <GlassCard surface="strong" padding="lg" className="border border-border shadow-xl space-y-8">
+          <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-800 dark:text-amber-200">
+            <Info className="h-5 w-5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+            <p className="leading-relaxed">
+              <strong>Draft for Church Review:</strong> The church administration must confirm its
+              data controller contact, retention schedule, and internal fulfillment workflows before
+              this notice is deemed final.
+            </p>
+          </div>
+
+          <section className="space-y-3">
+            <h2 className="font-display text-2xl font-bold text-foreground">
+              Information We Collect
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              When you submit a message through our Contact form, we receive your name, message, and
+              any email address or phone number you choose to provide. When submitting a Prayer
+              Request, your contact details are entirely optional. We only collect the details you
+              freely share.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="font-display text-2xl font-bold text-foreground">How Information Is Used</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Contact information is strictly used to reply to your inquiries. Prayer requests are
+              made available exclusively to authorized pastoral intercessors so they can agree with you
+              in prayer. Administrative access is protected by strict role-based access control.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="font-display text-2xl font-bold text-foreground">Storage & Retention</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Submitted messages are stored in our secure database and are visible only to authorized
+              personnel. We retain messages only as long as necessary to address your request.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="font-display text-2xl font-bold text-foreground">Your Rights & Requests</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Under the Nigeria Data Protection Act (NDPA) 2023, you have the right to request
+              access to, correction of, or permanent deletion of your personal information from our
+              records at any time. To make a request, please{" "}
+              <Link href="/contact" className="font-semibold text-primary underline">
+                contact the church office
+              </Link>
+              . You may also contact the Nigeria Data Protection Commission (NDPC).
+            </p>
+          </section>
+        </GlassCard>
+      </div>
+    </PublicPageLayout>
+  );
 }

@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PlayCircle, Search } from "lucide-react";
+import { PlayCircle, Search, BookOpen, Clock, ArrowRight, Sparkles } from "lucide-react";
 import { api } from "@/lib/api/client";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
+import { GlassCard } from "@/components/shared/GlassCard";
 
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Sermons",
-  description: "Browse sermons and biblical teaching from Grace of God Mission Asaba.",
+  title: "Sermons & Teachings | Grace of God Mission Asaba",
+  description:
+    "Listen to and watch spirit-filled sermons and Biblical teachings from pastors at Grace of God Mission Asaba.",
   alternates: { canonical: "/sermons" },
 };
 
@@ -20,6 +22,8 @@ type Sermon = {
   preachedAt: string;
   scripture?: string | null;
   series?: string | null;
+  description?: string | null;
+  thumbnailUrl?: string | null;
 };
 
 export default async function SermonsPage({
@@ -44,84 +48,128 @@ export default async function SermonsPage({
 
   return (
     <PublicPageLayout
-      title="Sermons"
-      description="Browse recorded teaching and messages from the church."
+      title="Sermons & The Living Word"
+      description="Equipping believers through sound, Christ-centered Biblical exposition, faith-filled teachings, and practical discipleship."
+      eyebrow="The Word of God · Teachings Archive"
     >
-      <form
-        className="mb-8 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
-        action="/sermons"
-        role="search"
-      >
-        <label className="sr-only" htmlFor="sermon-search">
-          Search sermons
-        </label>
-        <input
-          id="sermon-search"
-          name="q"
-          defaultValue={q}
-          placeholder="Search title or preacher"
-          className="min-h-11 rounded-md border border-input bg-background px-3 focus-visible:outline-2 focus-visible:outline-ring"
-        />
-        <label className="sr-only" htmlFor="sermon-series">
-          Series
-        </label>
-        <input
-          id="sermon-series"
-          name="series"
-          defaultValue={series}
-          placeholder="Filter by series"
-          className="min-h-11 rounded-md border border-input bg-background px-3 focus-visible:outline-2 focus-visible:outline-ring"
-        />
-        <button
-          type="submit"
-          className="min-h-11 rounded-md bg-primary px-5 font-semibold text-primary-foreground transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-ring"
-        >
-          <Search className="mr-2 inline size-4" aria-hidden="true" />
-          Search
-        </button>
-      </form>
+      <div className="space-y-10">
+        {/* Search & Filter Bar */}
+        <GlassCard surface="strong" padding="md" className="border border-border shadow-md">
+          <form
+            className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
+            action="/sermons"
+            role="search"
+          >
+            <label className="sr-only" htmlFor="sermon-search">
+              Search sermons
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                id="sermon-search"
+                name="q"
+                defaultValue={q}
+                placeholder="Search title, speaker, or topic..."
+                className="w-full min-h-11 rounded-xl border border-input bg-background pl-10 pr-4 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              />
+            </div>
 
-      {sermons.length ? (
-        <ul className="divide-y divide-border" role="list">
-          {sermons.map((sermon) => (
-            <li key={sermon.id} className="py-5">
+            <label className="sr-only" htmlFor="sermon-series">
+              Series
+            </label>
+            <input
+              id="sermon-series"
+              name="series"
+              defaultValue={series}
+              placeholder="Filter by sermon series (e.g. Grace)"
+              className="w-full min-h-11 rounded-xl border border-input bg-background px-4 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+            />
+
+            <button
+              type="submit"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 transition"
+            >
+              <span>Search</span>
+            </button>
+          </form>
+        </GlassCard>
+
+        {/* Sermons Grid */}
+        {sermons.length ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {sermons.map((sermon) => (
               <Link
-                className="group flex min-h-16 items-center gap-4 focus-visible:outline-2 focus-visible:outline-ring rounded-lg p-1"
+                key={sermon.id}
                 href={`/sermons/${encodeURIComponent(sermon.slug)}`}
+                className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/50"
               >
-                <PlayCircle
-                  aria-hidden="true"
-                  className="size-8 shrink-0 text-primary transition group-hover:scale-105"
-                />
-                <div>
-                  <strong className="text-lg font-medium group-hover:text-primary transition-colors">
-                    {sermon.title}
-                  </strong>
-                  <span className="block text-sm text-muted-foreground">
-                    {sermon.preacher}
-                    {sermon.series ? ` · ${sermon.series}` : ""} ·{" "}
-                    {new Intl.DateTimeFormat("en-NG", {
-                      dateStyle: "long",
-                      timeZone: "Africa/Lagos",
-                    }).format(new Date(sermon.preachedAt))}
-                  </span>
-                  {sermon.scripture && (
-                    <span className="mt-1 block text-sm text-muted-foreground">
-                      {sermon.scripture}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2.5 py-1 font-semibold text-primary">
+                      {sermon.series || "Message"}
                     </span>
+                    {sermon.preachedAt && (
+                      <span className="font-medium">
+                        {new Intl.DateTimeFormat("en-NG", {
+                          dateStyle: "medium",
+                          timeZone: "Africa/Lagos",
+                        }).format(new Date(sermon.preachedAt))}
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="font-display text-xl font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                    {sermon.title}
+                  </h3>
+
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Preacher: <strong className="text-foreground">{sermon.preacher}</strong>
+                    {sermon.scripture ? ` · ${sermon.scripture}` : ""}
+                  </p>
+
+                  {sermon.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                      {sermon.description}
+                    </p>
                   )}
                 </div>
+
+                <div className="mt-6 flex items-center justify-between border-t border-border/60 pt-4 text-xs font-semibold text-primary">
+                  <span className="inline-flex items-center gap-1.5">
+                    <PlayCircle className="h-4 w-4 text-primary" />
+                    <span>Listen / Watch Message</span>
+                  </span>
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </div>
               </Link>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
-          {q || series
-            ? "No sermons match these filters."
-            : "Sermons will appear here when published by the church."}
-        </p>
-      )}
+            ))}
+          </div>
+        ) : (
+          <GlassCard surface="glass" padding="lg" className="text-center py-16">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <BookOpen className="h-8 w-8" />
+            </div>
+            <h3 className="font-display text-2xl font-bold text-foreground">
+              {q || series ? "No Sermons Match Your Search" : "Sermon Archive Coming Soon"}
+            </h3>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
+              {q || series
+                ? "Try adjusting your search keywords or clearing the series filter to see more messages."
+                : "Recordings are currently being catalogued. Join us this Sunday at the Asaba sanctuary to receive the living Word live!"}
+            </p>
+            {(q || series) && (
+              <div className="mt-6">
+                <Link
+                  href="/sermons"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+                >
+                  Clear search filters
+                </Link>
+              </div>
+            )}
+          </GlassCard>
+        )}
+      </div>
     </PublicPageLayout>
   );
 }
