@@ -3,7 +3,30 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { AdminRole, Permission } from '@prisma/client';
+import { AdminRole, Permission, Prisma } from '@prisma/client';
+
+export interface AdminUserRecord {
+  id: string;
+  email: string;
+  name: string;
+  role: AdminRole;
+  permissions: Permission[];
+  isActive: boolean;
+  mustChangePassword: boolean;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+}
+
+export interface AdminUserListItem extends AdminUserRecord {
+  status: 'Deactivated' | 'Must change password' | 'Active';
+}
+
+export interface AuthenticatedActor {
+  id: string;
+  name: string;
+  email?: string;
+  role?: AdminRole;
+}
 
 @Injectable()
 export class UsersService {
@@ -16,7 +39,7 @@ export class UsersService {
     return crypto.randomBytes(16).toString('base64').slice(0, 20); // 20+ chars
   }
 
-  async listUsers() {
+  async listUsers(): Promise<AdminUserListItem[]> {
     const users = await this.prisma.adminUser.findMany({
       orderBy: [
         { role: 'asc' },
@@ -35,7 +58,7 @@ export class UsersService {
       },
     });
 
-    return users.map((user: any) => ({
+    return users.map((user: AdminUserRecord): AdminUserListItem => ({
       ...user,
       status: !user.isActive 
         ? 'Deactivated' 
@@ -45,7 +68,7 @@ export class UsersService {
     }));
   }
 
-  async getUser(id: string) {
+  async getUser(id: string): Promise<AdminUserRecord> {
     const user = await this.prisma.adminUser.findUnique({
       where: { id },
       select: {
@@ -64,7 +87,7 @@ export class UsersService {
     return user;
   }
 
-  async createUser(actor: any, dto: { name: string; email: string; permissions: Permission[] }) {
+  async createUser(actor: AuthenticatedActor, dto: { name: string; email: string; permissions: Permission[] }) {
     const tempPassword = this.generatePassword();
     const passwordHash = await bcrypt.hash(tempPassword, 12);
 
@@ -103,7 +126,7 @@ export class UsersService {
     return { user, temporaryPassword: tempPassword };
   }
 
-  async updateUser(actor: any, id: string, dto: { name?: string; permissions?: Permission[]; isActive?: boolean }) {
+  async updateUser(actor: AuthenticatedActor, id: string, dto: { name?: string; permissions?: Permission[]; isActive?: boolean }) {
     const targetUser = await this.prisma.adminUser.findUnique({ where: { id } });
     if (!targetUser) throw new NotFoundException('User not found');
 
@@ -111,7 +134,7 @@ export class UsersService {
       throw new ForbiddenException('Cannot edit the super-admin user');
     }
 
-    const data: any = {};
+    const data: Prisma.AdminUserUpdateInput = {};
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.permissions !== undefined) data.permissions = dto.permissions;
     
@@ -152,7 +175,7 @@ export class UsersService {
     return updated;
   }
 
-  async deleteUser(actor: any, id: string) {
+  async deleteUser(actor: AuthenticatedActor, id: string): Promise<void> {
     const targetUser = await this.prisma.adminUser.findUnique({ where: { id } });
     if (!targetUser) throw new NotFoundException('User not found');
 
@@ -172,7 +195,7 @@ export class UsersService {
     });
   }
 
-  async resetPassword(actor: any, id: string) {
+  async resetPassword(actor: AuthenticatedActor, id: string) {
     const targetUser = await this.prisma.adminUser.findUnique({ where: { id } });
     if (!targetUser) throw new NotFoundException('User not found');
 
@@ -204,7 +227,7 @@ export class UsersService {
   }
 
   async listAudit(page: number = 1, limit: number = 12, actorId?: string, entity?: string) {
-    const where: any = {};
+    const where: Prisma.AuditLogWhereInput = {};
     if (actorId) where.actorId = actorId;
     if (entity) where.entity = entity;
 

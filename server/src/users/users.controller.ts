@@ -1,8 +1,13 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
-import { UsersService } from './users.service.js';
+import { Request } from 'express';
+import { UsersService, type AuthenticatedActor } from './users.service.js';
 import { SuperAdminOnly } from '../auth/decorators/super-admin-only.decorator.js';
 import { createAdminUserSchema, updateAdminUserSchema, type CreateAdminUserDto, type UpdateAdminUserDto } from '@ggm/types';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
+
+export interface AuthenticatedRequest extends Request {
+  activeUser: AuthenticatedActor;
+}
 
 @Controller('admin')
 @SuperAdminOnly()
@@ -17,7 +22,7 @@ export class UsersController {
 
   @Post('users')
   async createUser(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body(new ZodValidationPipe(createAdminUserSchema)) dto: CreateAdminUserDto,
   ) {
     const data = await this.usersService.createUser(req.activeUser, dto);
@@ -32,7 +37,7 @@ export class UsersController {
 
   @Patch('users/:id')
   async updateUser(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(updateAdminUserSchema)) dto: UpdateAdminUserDto,
   ) {
@@ -41,13 +46,13 @@ export class UsersController {
   }
 
   @Delete('users/:id')
-  async deleteUser(@Req() req: any, @Param('id') id: string) {
+  async deleteUser(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     await this.usersService.deleteUser(req.activeUser, id);
     return { data: null };
   }
 
   @Post('users/:id/reset-password')
-  async resetPassword(@Req() req: any, @Param('id') id: string) {
+  async resetPassword(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const data = await this.usersService.resetPassword(req.activeUser, id);
     return { data };
   }
