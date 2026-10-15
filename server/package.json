@@ -7,7 +7,7 @@
     "license": "UNLICENSED",
     "type": "module",
     "scripts": {
-        "build": "nest build",
+        "build": "prisma generate --config prisma.config.ts && nest build",
         "typecheck": "tsc --noEmit",
         "deploy": "nest deploy",
         "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -25,7 +25,7 @@
         "migrate:dev": "prisma migrate dev --config prisma.config.ts",
         "migrate:deploy": "prisma migrate deploy --config prisma.config.ts",
         "generate": "prisma generate --config prisma.config.ts",
-        "postinstall": "prisma skills sync || exit 0",
+        "postinstall": "prisma generate --config prisma.config.ts || exit 0",
         "cli:reset-super-admin": "tsx src/cli/reset-super-admin.ts"
     },
     "dependencies": {

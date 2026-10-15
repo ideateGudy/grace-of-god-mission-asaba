@@ -35,7 +35,7 @@ export class UsersService {
       },
     });
 
-    return users.map(user => ({
+    return users.map((user: any) => ({
       ...user,
       status: !user.isActive 
         ? 'Deactivated' 
