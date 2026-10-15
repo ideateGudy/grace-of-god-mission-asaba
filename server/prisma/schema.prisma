@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum Permission {
+  SERMONS_MANAGE
+  EVENTS_MANAGE
+  ANNOUNCEMENTS_MANAGE
+  GALLERY_MANAGE
+  HERO_MANAGE
+  CONTACT_INBOX
+  PRAYER_INBOX
+}
+
+enum MessageStatus {
+  NEW
+  READ
+  ARCHIVED
+}
+
+model AdminUser {
+  id                 String       @id @default(cuid())
+  email              String       @unique
+  name               String
+  passwordHash       String
+  role               AdminRole    @default(ADMIN)
+  permissions        Permission[]                       // ignored for SUPER_ADMIN (holds all)
+  isActive           Boolean      @default(true)
+  mustChangePassword Boolean      @default(true)
+  tokenVersion       Int          @default(0)           // bump to invalidate every session
+  createdById        String?
+  lastLoginAt        DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+}
+
+model Sermon {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  title        String
+  preacher     String
+  preachedAt   DateTime
+  scripture    String?
+  series       String?
+  videoUrl     String?
+  audioUrl     String?
+  thumbnailUrl String?
+  description  String?
+  published    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([published, preachedAt])
+  @@index([series])
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  startsAt    DateTime
+  endsAt      DateTime?
+  venue       String
+  address     String?
+  mapUrl      String?
+  description String?
+  imageUrl    String?
+  published   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@index([published, startsAt])
+}
+
+model Announcement {
+  id          String    @id @default(cuid())
+  title       String
+  body        String
+  pinned      Boolean   @default(false)
+  publishFrom DateTime?
+  expiresAt   DateTime?
+  published   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@index([published, pinned, createdAt])
+}
+
+model GalleryImage {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  caption   String?
+  album     String?
+  width     Int?
+  height    Int?
+  sortOrder Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  @@index([album, sortOrder])
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  message   String
+  status    MessageStatus @default(NEW)
+  createdAt DateTime      @default(now())
+  @@index([status, createdAt])
+}
+
+model PrayerRequest {
+  id        String        @id @default(cuid())
+  name      String?
+  email     String?
+  phone     String?
+  request   String
+  status    MessageStatus @default(NEW)
+  createdAt DateTime      @default(now())
+  @@index([status, createdAt])
+}
+
+enum HeroMode {
+  SINGLE
+  CAROUSEL
+}
+
+enum HeroLayout {
+  FULL_BLEED
+  SPLIT
+  TEXT_ONLY
+}
+
+enum HeroAlign {
+  START
+  CENTER
+  END
+}
+
+enum HeroTextTone {
+  LIGHT
+  DARK
+}
+
+enum HeroBgType {
+  IMAGE
+  COLOR
+  GRADIENT
+}
+
+model Hero {
+  id              String      @id @default(cuid())
+  name            String
+  mode            HeroMode    @default(SINGLE)
+  autoplay        Boolean     @default(false)
+  intervalSeconds Int         @default(7)
+  published       Boolean     @default(false)
+  startsAt        DateTime?
+  endsAt          DateTime?
+  slides          HeroSlide[]
+  createdById     String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  @@index([published, startsAt, endsAt])
+}
+
+model HeroSlide {
+  id             String       @id @default(cuid())
+  heroId         String
+  hero           Hero         @relation(fields: [heroId], references: [id], onDelete: Cascade)
+  sortOrder      Int          @default(0)
+  layout         HeroLayout   @default(FULL_BLEED)
+  align          HeroAlign    @default(START)
+  title          String
+  subtitle       String?
+  primaryLabel   String?
+  primaryUrl     String?
+  secondaryLabel String?
+  secondaryUrl   String?
+  bgType         HeroBgType   @default(IMAGE)
+  bgColor        String?
+  bgGradient     String?
+  imageUrl       String?
+  mobileImageUrl String?
+  imageAlt       String?
+  imageDecorative Boolean     @default(false)
+  focalX         Int          @default(50)
+  focalY         Int          @default(50)
+  overlay        Int          @default(40)
+  textTone       HeroTextTone @default(LIGHT)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  @@index([heroId, sortOrder])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorName  String?
+  action     String
+  entity     String
+  entityId   String?
+  meta       Json?
+  createdAt  DateTime @default(now())
+  @@index([createdAt])
+  @@index([entity, entityId])
+}
