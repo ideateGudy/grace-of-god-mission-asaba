@@ -34,6 +34,40 @@ async function main() {
     }
   }
 
+  const existingHero = await prisma.hero.findFirst();
+  if (!existingHero) {
+    await prisma.hero.create({
+      data: {
+        name: 'Sanctuary Welcome',
+        mode: 'SINGLE',
+        autoplay: false,
+        intervalSeconds: 7,
+        published: true,
+        slides: {
+          create: [
+            {
+              sortOrder: 0,
+              layout: 'FULL_BLEED',
+              align: 'CENTER',
+              title: 'A Sanctuary of Grace, Truth, and Loving Community',
+              subtitle: 'Connecting lives to the heart of Jesus Christ in Asaba, Delta State. Join us for spirit-filled worship, Bible-grounded teaching, and a family that walks with you in faith.',
+              primaryLabel: 'Plan your visit',
+              primaryUrl: '/visit',
+              secondaryLabel: 'Watch latest sermons',
+              secondaryUrl: '/sermons',
+              bgType: 'COLOR',
+              bgColor: '#141633',
+              textTone: 'LIGHT',
+              overlay: 40,
+              imageDecorative: true,
+            },
+          ],
+        },
+      },
+    });
+    console.log('Created official default hero: Sanctuary Welcome');
+  }
+
   if (process.argv.includes('--sample')) {
     console.log('Seeding SAMPLE data...');
 
