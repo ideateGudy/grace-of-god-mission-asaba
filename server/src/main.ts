@@ -62,6 +62,7 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new HttpExceptionFilter());
+  app.enableShutdownHooks();
 
   const nodeEnv = configService.get('NODE_ENV');
   if (nodeEnv !== 'production') {
@@ -75,7 +76,15 @@ async function bootstrap() {
   }
 
   const port = configService.get<number>('PORT') || 5000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED_REJECTION]', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT_EXCEPTION]', err);
+});
 
 await bootstrap();

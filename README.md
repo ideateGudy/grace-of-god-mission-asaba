@@ -1,6 +1,8 @@
 # Grace of God Mission Asaba — Monorepo
 
-The official website and administrative portal for Grace of God Mission Asaba. Built as a high-performance, accessible, and secure monorepo managed with `pnpm` workspaces.
+The official website and administrative portal for **Grace of God Mission Asaba** (No. 33 Arthur Richard Street, Akwuebulu, Cable Point, Asaba, Delta State, Nigeria).
+
+This monorepo is engineered as a high-performance, accessible, and secure digital platform using `pnpm` workspaces, **Next.js 16** (frontend), and **NestJS 12** (backend API), backed by **Neon Serverless PostgreSQL** and **Prisma 7**.
 
 ---
 
@@ -9,72 +11,148 @@ The official website and administrative portal for Grace of God Mission Asaba. B
 ```text
 grace-of-god-mission-asaba/
 ├── client/              # Next.js 16 frontend (App Router, Tailwind CSS v4, proxy.ts)
-├── server/              # NestJS backend API (/api/v1, Prisma 7, Neon Postgres, Cloudinary)
+├── server/              # NestJS 12 REST API (/api/v1, Prisma 7, Neon Postgres, Cloudinary)
 ├── packages/
 │   └── types/           # Shared TypeScript types & Zod contract schemas (@ggm/types)
 ├── pnpm-workspace.yaml  # Monorepo workspace configuration
 ├── gom-asaba-prd.md     # Product Requirement Document (PRD v2.1)
-└── README.md            # Monorepo documentation
+└── README.md            # Monorepo architecture & deployment guide
 ```
 
 ### Workspaces
-1. **[`client`](./client)** (`@ggm/client`): Next.js 16 application featuring the public church site, media galleries, sermon catalog, announcements, event calendars, contact/prayer forms, and a secure `/admin` management portal.
-2. **[`server`](./server)** (`@ggm/server`): NestJS API offering default-deny role-based authorization, JWT authentication in `httpOnly` cookies, rate-limiting, Cloudinary signed upload signatures, ISR cache revalidation, and Neon Postgres persistence.
+1. **[`client`](./client)** (`@ggm/client`): Next.js 16 web application featuring the public sanctuary site, sermons library, events calendar, announcements, photo gallery, online giving, visitor planning, and a secure `/admin` management portal.
+2. **[`server`](./server)** (`@ggm/server`): NestJS REST API with default-deny role-based authorization, JWT authentication in `httpOnly` cookies, rate-limiting, Cloudinary signed upload signatures, ISR cache revalidation, and Neon Postgres persistence.
 3. **[`packages/types`](./packages/types)** (`@ggm/types`): Shared contract defining DTOs, data models, permissions, and Zod schemas shared between client and server.
+
+---
+
+## 🌟 Comprehensive Feature Catalog
+
+### 1. Public Church Website (`client`)
+- **Sacred Celestial Aesthetics**: Curated midnight and celestial dawn palette (`#0B0D22`, `#141633`, `#D9A441`), glassmorphism, responsive ambient glows, and dark/light mode toggle with WCAG AA contrast compliance.
+- **Root Landing Page (`/`)**:
+  - Hero banner with sacred sunrise backdrop and direct Google Maps fellowship pill.
+  - Quick-info schedule banner (Sunday Services: 7:00 AM; Wednesday Midweek: 5:00 PM).
+  - Pinned announcement alerts.
+  - Featured sermon showcase with embedded video/audio player.
+  - Upcoming events ticker and ministry highlights.
+  - Verified bank transfer details with one-click copy buttons.
+  - Dedicated interactive **Sanctuary Location & Map** section (`#map`) embedding Google Maps with external navigation links.
+- **Plan a Visit (`/visit`)**: Worship schedules, parking availability, first-time guest expectations, FAQ accordion, and interactive church map.
+- **About Us (`/about`)**: Church vision, foundational mission, core Biblical beliefs, historical roots, and pastoral leadership profiles.
+- **Sermons Library (`/sermons`)**: Media catalog with search, series filter, preacher tags, scripture references, and responsive video/audio streaming.
+- **Events & Gatherings (`/events`)**: Tabbed upcoming and past event calendar with dates, times, venues, and one-click `.ics` calendar file downloads.
+- **Announcements (`/announcements`)**: Church bulletin with priority badges and pinned alerts.
+- **Media Gallery (`/gallery`)**: Photo albums celebrating church milestones, conventions, and worship nights with interactive full-screen image lightbox.
+- **Online Giving (`/give`)**: Secure tithe, offering, and project partnership banking details with instant clipboard copying.
+- **Prayer Requests (`/prayer`)**: Confidential prayer request form with honeypot spam protection.
+- **Contact & Inquiries (`/contact`)**: Interactive inquiry form, WhatsApp direct chat link, phone dialing, and full sanctuary street address.
+- **Privacy Notice (`/privacy`)**: Transparent privacy policy compliant with NDPR and international data protection standards.
+- **Navigation & Mobile Experience**: Fixed header with church emblem, mobile navigation drawer, and floating quick action bar.
+- **Production Error Boundaries**:
+  - `app/error.tsx`: Sacred recovery card with "Try again", "Return Home", and error reference tracking.
+  - `app/global-error.tsx`: Root-level recovery UI ensuring the application never crashes to a white screen.
+  - `app/not-found.tsx`: 404 navigation compass with quick links to Sermons, Events, and Visit.
+
+### 2. Administrative Portal (`/admin`)
+- **Protected Network Boundary ([`client/proxy.ts`](./client/proxy.ts))**: Next.js 16 proxy guarding all `/admin/*` routes before rendering.
+- **Authentication (`/admin/login`)**: Cookie-based JWT sessions with `httpOnly`, `sameSite=lax`, and `secure` flags.
+- **Enforced First-Time Password Reset**: Newly provisioned admins are required to update their temporary password at `/admin/account` before accessing any admin tools.
+- **Overview Dashboard (`/admin`)**: Real-time KPI statistics for published sermons, upcoming events, active announcements, gallery photos, and unread messages.
+- **Content Management Modules**:
+  - **Sermons Management**: Create, edit, and publish sermons with video URLs, audio links, preacher tags, and scriptures.
+  - **Events Management**: Schedule upcoming events, set locations, and publish calendar items.
+  - **Announcements**: Broadcast pinned bulletin notices with publication schedules.
+  - **Gallery Management**: Upload and organize photo albums with automated Cloudinary CDN delivery.
+  - **Hero Banner Editor (`/admin/hero`)**: Manage single slide vs. autoplay carousel banners, customize titles, button links, focal points, and overlays.
+- **Community Submissions**:
+  - **Contact Messages (`/admin/messages`)**: Review, filter, and archive visitor inquiries.
+  - **Prayer Requests**: Dedicated view for pastoral intercession with read status flags.
+- **User & Role Management (`/admin/users`) — *Super Admin Only***:
+  - Create administrative users with temporary passwords.
+  - Assign roles: `ADMIN` (content manager) or `SUPER_ADMIN` (full platform authority).
+  - Deactivate/activate accounts and trigger password resets.
+- **Audit Logging (`/admin/audit`) — *Super Admin Only***:
+  - Immutable audit trail recording actor, action, entity, entity ID, timestamp, and IP.
+
+### 3. Backend REST API (`server`)
+- **Prefix & Documentation**: All endpoints versioned under `/api/v1`. Swagger interactive documentation at `/api/docs` in development.
+- **Role-Based Access Control (RBAC)**: Strict default-deny policy verified by automated route scanner tests (`@RequirePermissions()`, `@SuperAdminOnly()`).
+- **Database & ORM**: Prisma 7 Client with Neon Serverless Postgres adapter, connection pooling (`DATABASE_URL`), and direct connection (`DIRECT_URL`).
+- **Cloudinary Signed Uploads**: Generates single-use signed upload parameters (`/api/v1/admin/uploads/signature`) allowing the browser to upload directly to Cloudinary without server memory overhead.
+- **Cache Invalidation (ISR)**: On-demand HTTP webhook triggers to Next.js (`/api/revalidate`) using shared secret HMAC validation whenever content is created, updated, or deleted.
+- **Resilience & Production Error Handling**:
+  - Global `HttpExceptionFilter` with automatic Prisma error code mapping (`P2002` → 409 Conflict, `P2025` → 404 Not Found, `P2003` → 400 Bad Request, `P1001` → 503 Unavailable).
+  - Structured request logging with Pino, assigning a unique `x-request-id` to every transaction.
+  - Process-level `unhandledRejection` and `uncaughtException` logging.
+  - Graceful shutdown hooks (`app.enableShutdownHooks()`).
+  - Public health check endpoint at `/api/v1/health` with live database query execution.
+
+### 4. Shared Contract Package (`packages/types`)
+- Single source of truth for DTOs, schemas, pagination interfaces, role definitions, and permission flags.
+- Full runtime validation via Zod schemas and compile-time TypeScript type safety.
 
 ---
 
 ## ⚡ Prerequisites
 
 - **Node.js**: v22.0.0 or newer
-- **pnpm**: v10.0.0 or newer (v12 supported)
-- **PostgreSQL**: Neon Postgres (pooled connection for runtime + direct connection for migrations)
+- **pnpm**: v10.0.0 or newer
+- **PostgreSQL**: Neon Serverless Postgres account ([neon.tech](https://neon.tech))
+- **Cloudinary**: Cloudinary account for media uploads ([cloudinary.com](https://cloudinary.com))
 
 ---
 
-## 🚀 Quickstart & Local Development
+## 🚀 Local Development Setup
 
-### 1. Install Dependencies
+### 1. Install Monorepo Dependencies
 Run from the root directory:
 ```bash
 pnpm install
 ```
 
-### 2. Configure Environment Files
+### 2. Configure Local Environment Files
 
-* **Backend (`server/.env`)**:
-  Copy the template and fill in your database credentials and secrets:
-  ```bash
-  cp server/.env.example server/.env
-  ```
-  Key values:
-  - `DATABASE_URL`: Pooled connection string (`-pooler`) for Prisma runtime.
-  - `DIRECT_URL`: Direct connection string for Prisma migrations.
-  - `JWT_SECRET`: High-entropy signing secret.
-  - `CORS_ORIGIN`: `http://localhost:3000`
-  - `SUPER_ADMIN_SEED_EMAIL`: Email for initial super admin (e.g. `admin@example.com`).
-  - `SUPER_ADMIN_SEED_PASSWORD`: Temporary password for initial super admin.
-  - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`: For signed image uploads.
-  - `NEON_API_KEY`, `NEON_PROJECT_ID`: Required only for running backend E2E tests (`test:e2e`).
+#### A. Backend Environment (`server/.env`)
+```bash
+cp server/.env.example server/.env
+```
+Key configuration values:
+```env
+NODE_ENV=development
+PORT=5000
+DATABASE_URL="postgresql://user:pass@ep-xyz-pooler.neon.tech/neondb?sslmode=require"
+DIRECT_URL="postgresql://user:pass@ep-xyz.neon.tech/neondb?sslmode=require"
+JWT_SECRET="replace-with-a-random-secret-key-at-least-32-chars-long"
+JWT_EXPIRES_IN=10h
+CORS_ORIGIN="http://localhost:3000"
+SUPER_ADMIN_SEED_EMAIL="admin@graceofgodasaba.org"
+SUPER_ADMIN_SEED_PASSWORD="TemporaryPassword123!"
+REVALIDATE_SECRET="replace-with-a-long-random-revalidation-secret"
+WEB_REVALIDATE_URL="http://localhost:3000/api/revalidate"
+IMAGE_ALLOWED_HOSTS="images.unsplash.com,res.cloudinary.com"
+PRISMA_HIDE_UPDATE_MESSAGE=true
+```
 
-* **Frontend (`client/.env.local`)**:
-  ```bash
-  cp client/.env.example client/.env.local
-  ```
-  Key values:
-  - `NEXT_PUBLIC_SITE_URL`: `http://localhost:3000`
-  - `API_INTERNAL_URL`: `http://localhost:5000`
-  - `REVALIDATE_SECRET`: Matches `REVALIDATE_SECRET` in `server/.env`.
-  - `IMAGE_ALLOWED_HOSTS`: `images.unsplash.com,res.cloudinary.com`
-  - `USE_MOCK_API`: `false`
+#### B. Frontend Environment (`client/.env.local`)
+```bash
+cp client/.env.example client/.env.local
+```
+Key configuration values:
+```env
+NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+API_INTERNAL_URL="http://localhost:5000"
+REVALIDATE_SECRET="replace-with-a-long-random-revalidation-secret"
+IMAGE_ALLOWED_HOSTS="images.unsplash.com,res.cloudinary.com"
+USE_MOCK_API=false
+```
 
-### 3. Initialize Database & Types
-
+### 3. Initialize Database & Compile Types
 ```bash
 # 1. Compile shared types
 pnpm --filter @ggm/types build
 
-# 2. Generate Prisma Client & apply database migrations
+# 2. Generate Prisma Client and apply migrations
 pnpm --filter @ggm/server generate
 pnpm --filter @ggm/server migrate:dev
 
@@ -83,40 +161,169 @@ pnpm --filter @ggm/server seed
 ```
 
 ### 4. Start Development Servers
-
-Open two terminals or run concurrently:
-
+Run concurrently in two terminals:
 ```bash
-# Terminal 1: Backend API (runs on port 5000)
+# Terminal 1: Backend API (port 5000)
 pnpm --filter @ggm/server dev
 
-# Terminal 2: Frontend Website (runs on port 3000)
+# Terminal 2: Frontend Client (port 3000)
 pnpm --filter @ggm/client dev
 ```
 
 - **Frontend**: [http://localhost:3000](http://localhost:3000)
 - **Admin Login**: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
 - **Backend API**: [http://localhost:5000/api/v1](http://localhost:5000/api/v1)
-- **Swagger Docs**: [http://localhost:5000/api/docs](http://localhost:5000/api/docs) *(available in non-production mode)*
+- **API Health Check**: [http://localhost:5000/api/v1/health](http://localhost:5000/api/v1/health)
+- **Swagger Documentation**: [http://localhost:5000/api/docs](http://localhost:5000/api/docs)
+
+---
+
+## 🌐 Production Deployment Guide (Vercel & Render)
+
+```mermaid
+flowchart LR
+    User["Website Visitors & Admins"] -->|"HTTPS Requests"| Vercel["Vercel (Next.js 16 Client)"]
+    Vercel -->|"API Proxy /api/v1/*"| Render["Render (NestJS 12 Server)"]
+    Render -->|"Pooled Queries (Port 5432)"| Neon[("Neon Serverless Postgres")]
+    Vercel -->|"Direct Image Loads"| Cloudinary[("Cloudinary CDN")]
+    Render -->|"Signed Upload Signatures"| Cloudinary
+```
+
+---
+
+### Phase 1: Database Setup on Neon
+
+1. Log in to [neon.tech](https://neon.tech) and create a project named `grace-of-god-mission-asaba`.
+2. From the project dashboard, locate the **Connection Details** widget:
+   - Select **Pooled connection**: Copy the connection string. This is your `DATABASE_URL`.
+   - Select **Direct connection**: Copy the connection string. This is your `DIRECT_URL`.
+
+---
+
+### Phase 2: Deploy Backend API on Render
+
+1. Go to [dashboard.render.com](https://dashboard.render.com) and click **New +** → **Web Service**.
+2. Connect your GitHub repository: `grace-of-god-mission-asaba`.
+3. Configure the service settings:
+   - **Name**: `ggm-asaba-api` (or your preferred name)
+   - **Region**: Choose Frankfurt (EU) or Oregon (US)
+   - **Branch**: `main`
+   - **Root Directory**: Leave blank (runs from repository root)
+   - **Runtime**: `Node`
+   - **Build Command**:
+     ```bash
+     pnpm install && pnpm --filter @ggm/types build && pnpm --filter @ggm/server build && pnpm --filter @ggm/server migrate:deploy && pnpm --filter @ggm/server seed
+     ```
+   - **Start Command**:
+     ```bash
+     pnpm --filter @ggm/server start:prod
+     ```
+   - **Plan**: Starter or Free
+4. Add the **Environment Variables** in the Render Dashboard:
+
+| Variable | Example / Value | Description |
+| :--- | :--- | :--- |
+| `NODE_ENV` | `production` | Enables production security & optimizations |
+| `DATABASE_URL` | `postgresql://user:pass@ep-xyz-pooler.neon.tech/neondb?sslmode=require` | Neon Pooled string |
+| `DIRECT_URL` | `postgresql://user:pass@ep-xyz.neon.tech/neondb?sslmode=require` | Neon Direct string for Prisma migrations |
+| `JWT_SECRET` | *(Random 64-char string)* | E.g. generate via `openssl rand -hex 32` |
+| `JWT_EXPIRES_IN` | `10h` | Standard admin session lifetime |
+| `CORS_ORIGIN` | `https://your-frontend.vercel.app` | Your Vercel frontend URL (no trailing slash) |
+| `SUPER_ADMIN_SEED_EMAIL` | `admin@graceofgodasaba.org` | Initial Super Admin login email |
+| `SUPER_ADMIN_SEED_PASSWORD` | *(Strong initial password)* | Seeded on initial deployment |
+| `REVALIDATE_SECRET` | *(Random 32-char string)* | Must match frontend `REVALIDATE_SECRET` |
+| `WEB_REVALIDATE_URL` | `https://your-frontend.vercel.app/api/revalidate` | On-demand cache invalidation route |
+| `IMAGE_ALLOWED_HOSTS` | `images.unsplash.com,res.cloudinary.com` | Allowed remote image hosts |
+| `CLOUDINARY_CLOUD_NAME` | *(Your Cloudinary cloud name)* | For sermon/event media uploads |
+| `CLOUDINARY_API_KEY` | *(Your Cloudinary API key)* | |
+| `CLOUDINARY_API_SECRET` | *(Your Cloudinary API secret)* | |
+| `PRISMA_HIDE_UPDATE_MESSAGE` | `true` | Suppresses RC update notice |
+
+5. Under **Advanced Settings**:
+   - **Health Check Path**: `/api/v1/health`
+6. Click **Create Web Service**. Once deployed, copy your service URL (e.g., `https://ggm-asaba-api.onrender.com`).
+
+---
+
+### Phase 3: Deploy Frontend on Vercel
+
+1. Log in to [vercel.com](https://vercel.com) and click **Add New...** → **Project**.
+2. Import the `grace-of-god-mission-asaba` GitHub repository.
+3. Configure the project settings:
+   - **Framework Preset**: `Next.js`
+   - **Root Directory**: Click **Edit**, choose **`client`**, and ensure the checkbox **"Include source files outside of the Root Directory in the Build Step"** is checked (this allows Vercel to access `packages/types`).
+4. **Build and Output Settings**:
+   - **Build Command**:
+     ```bash
+     pnpm --filter @ggm/types build && next build
+     ```
+   - **Install Command**:
+     ```bash
+     pnpm install
+     ```
+5. Add the **Environment Variables** in the Vercel Dashboard:
+
+| Variable | Example / Value | Description |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_SITE_URL` | `https://your-frontend.vercel.app` | Canonical production site URL |
+| `API_INTERNAL_URL` | `https://ggm-asaba-api.onrender.com` | Your deployed Render backend URL (no trailing slash) |
+| `REVALIDATE_SECRET` | *(Same secret set on Render)* | Authenticates on-demand cache purges |
+| `IMAGE_ALLOWED_HOSTS` | `images.unsplash.com,res.cloudinary.com` | Allowed domains for Next/Image |
+| `USE_MOCK_API` | `false` | Connects frontend to live backend API |
+
+6. Click **Deploy**.
+
+---
+
+### Phase 4: Production Verification & Initial Login
+
+1. **Verify API Health**:
+   Visit `https://ggm-asaba-api.onrender.com/api/v1/health` in your browser. It should return:
+   ```json
+   { "status": "ok", "timestamp": "2026-..." }
+   ```
+2. **Access Admin Portal**:
+   - Navigate to `https://your-frontend.vercel.app/admin/login`.
+   - Log in with your `SUPER_ADMIN_SEED_EMAIL` and `SUPER_ADMIN_SEED_PASSWORD`.
+   - On first login, you will be automatically prompted to set a permanent, secure password at `/admin/account`.
+3. **Emergency Super-Admin Password Reset**:
+   If the super-admin password is ever lost in production, open the **Render Shell** and run:
+   ```bash
+   pnpm --filter @ggm/server cli:reset-super-admin
+   ```
+   This generates a secure temporary password, invalidates previous sessions, and sets `mustChangePassword: true`.
+4. **Custom Domain & CORS**:
+   If you connect a custom domain (e.g., `https://graceofgodasaba.org`):
+   - Update `NEXT_PUBLIC_SITE_URL` in Vercel.
+   - Update `CORS_ORIGIN` in Render to match your exact custom domain.
+   - Update `WEB_REVALIDATE_URL` in Render to `https://graceofgodasaba.org/api/revalidate`.
 
 ---
 
 ## 🧪 Testing & Verification
 
-| Workspace | Test Command | Purpose |
+| Command | Workspace | Description |
 | :--- | :--- | :--- |
-| **Monorepo** | `pnpm --filter @ggm/* typecheck` | Validates TypeScript across all workspaces |
-| **Server** | `pnpm --filter @ggm/server test` | Runs unit tests, upload signature tests, and route authorization audit |
-| **Server** | `pnpm --filter @ggm/server test:e2e` | Runs E2E database tests against ephemeral Neon test branches |
-| **Client** | `pnpm --filter @ggm/client test:styleguide` | Verifies UI components and design tokens in Playwright |
-| **Client** | `pnpm --filter @ggm/client test:e2e` | Production build + Playwright browser e2e testing suite |
+| `pnpm --filter @ggm/* typecheck` | Monorepo | Validates TypeScript across all workspaces |
+| `pnpm --filter @ggm/server test` | Server | Runs unit tests and route authorization scanner |
+| `pnpm --filter @ggm/server test:e2e` | Server | Runs end-to-end database tests against Neon test branches |
+| `pnpm --filter @ggm/client test:styleguide` | Client | Verifies UI components and design tokens in Playwright |
+| `pnpm --filter @ggm/client test:e2e` | Client | Full Next.js production build and browser E2E test suite |
 
 ---
 
 ## 🔒 Security Best Practices
 
-1. **Default-Deny Authorization**: Every `/api/v1/admin/*` endpoint strictly enforces `@RequirePermissions(...)` or `@SuperAdminOnly()`, verified by an automated route scanner test (`route-scan.spec.ts`).
-2. **Next.js 16 Proxy Layer**: The Next.js 16 boundary proxy ([`client/proxy.ts`](./client/proxy.ts)) enforces session presence on all `/admin/*` routes before pages render.
+1. **Strict Default-Deny Authorization**: Every `/api/v1/admin/*` endpoint strictly enforces `@RequirePermissions(...)` or `@SuperAdminOnly()`, verified by an automated route scanner test (`route-scan.spec.ts`).
+2. **Next.js 16 Network Proxy**: The boundary proxy ([`client/proxy.ts`](./client/proxy.ts)) enforces session presence on all `/admin/*` routes before pages render.
 3. **Session Cookies**: Signed tokens in `gom_session` cookies are `httpOnly`, `sameSite=lax`, and `secure` in production.
 4. **Forced Password Reset**: Newly seeded or reset administrator accounts are forced to reset their temporary password at `/admin/account` before gaining access to other admin features.
 5. **Signed Cloudinary Uploads**: Binary files are uploaded directly from the browser to Cloudinary using single-use SHA-1 signatures from the API, preventing server memory bottlenecks.
+6. **Graceful Error Recovery**: Client and server global error filters prevent application crashes, scrub sensitive internal messages from 500 responses, and log structured stack traces for diagnostics.
+
+---
+
+## 📄 License & Credits
+
+Built for **Grace of God Mission Asaba**.  
+Copyright &copy; 2026 Grace of God Mission Asaba. All rights reserved.
