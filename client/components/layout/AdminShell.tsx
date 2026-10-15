@@ -76,8 +76,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
-      <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card">
+    <div className="h-screen w-full bg-background flex flex-col md:flex-row overflow-hidden">
+      {/* Mobile Header */}
+      <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card shrink-0">
         <Logo className="text-xl" />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
@@ -85,14 +86,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <Menu className="w-6 h-6" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="glass-strong border-r border-border w-64 p-0 flex flex-col">
-            <SheetHeader className="p-6 text-left border-b border-border">
+          <SheetContent side="left" className="glass-strong border-r border-border w-64 p-0 flex flex-col h-full">
+            <SheetHeader className="p-6 text-left border-b border-border shrink-0">
               <SheetTitle><Logo className="text-xl" /></SheetTitle>
             </SheetHeader>
-            <div className="flex-1 overflow-y-auto p-4 space-y-1">
+            <div className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
               {renderNavItems()}
             </div>
-            <div className="p-4 border-t border-border flex items-center justify-between">
+            <div className="p-4 border-t border-border flex items-center justify-between shrink-0">
               <ThemeToggle />
               <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign Out">
                 <LogOut className="w-5 h-5 text-destructive" />
@@ -102,14 +103,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </Sheet>
       </header>
 
-      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-card">
-        <div className="p-6 border-b border-border">
+      {/* Desktop Sidebar with independent vertical scroll */}
+      <aside className="hidden md:flex flex-col w-64 h-screen border-r border-border bg-card shrink-0 select-none overflow-hidden">
+        <div className="p-6 border-b border-border shrink-0">
           <Link href="/"><Logo className="text-xl" /></Link>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-1">
+        <div className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
           {renderNavItems()}
         </div>
-        <div className="p-4 border-t border-border flex items-center justify-between">
+        <div className="p-4 border-t border-border flex items-center justify-between shrink-0">
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign Out">
             <LogOut className="w-5 h-5 text-destructive" />
@@ -117,7 +119,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto p-4 md:p-8">
+      {/* Main Content Area with independent vertical scroll */}
+      <main className="flex-1 h-full overflow-y-auto p-4 md:p-8 custom-scrollbar">
         <div className="max-w-5xl mx-auto">
           {children}
         </div>

@@ -113,8 +113,49 @@
   .hero-sequence-line { animation: none; opacity: 1; transform: none; }
 }
 
+@utility custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--primary);
+  }
+}
+
 @layer base {
-  * { @apply border-border outline-ring/50; box-sizing: border-box; }
+  * { 
+    @apply border-border outline-ring/50; 
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--primary);
+  }
   body { @apply bg-background text-foreground; }
   button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
   html { @apply font-sans; }
