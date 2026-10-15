@@ -14,7 +14,10 @@ export const metadata: Metadata = {
   title: { default: "Grace of God Mission Asaba", template: "%s | Grace of God Mission Asaba" },
   description: "Service information, sermons, events, and ways to connect with Grace of God Mission Asaba.",
   icons: {
-    icon: "/ggm_logo.png",
+    icon: [
+      { url: "/ggm_logo.png", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
     shortcut: "/ggm_logo.png",
     apple: "/ggm_logo.png",
   },

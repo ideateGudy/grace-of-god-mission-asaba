@@ -160,11 +160,7 @@ export default async function HomePage() {
                 </Link>
                 <div className="flex gap-2">
                   <a
-                    href={
-                      siteConfig.googleMapsUrl.startsWith("[")
-                        ? "https://maps.google.com/?q=Asaba+Delta+State"
-                        : siteConfig.googleMapsUrl
-                    }
+                    href={siteConfig.googleMapsUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex flex-1 min-h-10 items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition hover:bg-muted"
