@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { MapPin, PlayCircle, Sparkles, ExternalLink } from "lucide-react";
 import { HeroSequence } from "@/components/motion/HeroSequence";
@@ -22,17 +21,6 @@ export function DefaultHero() {
       />
 
       <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
-        {/* Church Emblem badge with golden glow */}
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-gold/40 bg-white/10 p-2.5 shadow-[0_0_35px_rgba(217,164,65,0.28)] backdrop-blur-md transition-transform duration-300 hover:scale-105">
-          <Image
-            src="/ggm_logo.png"
-            alt="Grace of God Mission Emblem"
-            width={72}
-            height={72}
-            priority
-            className="h-full w-full object-contain"
-          />
-        </div>
 
         {/* Welcome Pill */}
         <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-gold backdrop-blur-sm">
