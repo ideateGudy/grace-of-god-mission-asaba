@@ -112,14 +112,20 @@ export default async function HomePage() {
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between border-b border-border/60 pb-1.5">
-                    <span className="font-semibold text-foreground">Sunday Worship</span>
-                    <span className="text-muted-foreground font-mono">8:00 AM & 10:30 AM</span>
+                    <div>
+                      <span className="font-semibold text-foreground">Sunday Services</span>
+                      <p className="text-[11px] text-muted-foreground">Regular, Celebrations & African Praise</p>
+                    </div>
+                    <span className="text-primary font-bold font-mono text-sm">7:00 AM</span>
                   </div>
                   <div className="flex items-center justify-between border-b border-border/60 pb-1.5">
-                    <span className="font-semibold text-foreground">Wednesday Midweek</span>
-                    <span className="text-muted-foreground font-mono">6:00 PM</span>
+                    <div>
+                      <span className="font-semibold text-foreground">Wednesday Midweek</span>
+                      <p className="text-[11px] text-muted-foreground">Prayer & Word Encounter</p>
+                    </div>
+                    <span className="text-primary font-bold font-mono text-sm">5:00 PM</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground pt-0.5">
                     Fellowships for children, youth, women & men.
                   </p>
                 </div>
@@ -131,13 +137,11 @@ export default async function HomePage() {
                   <MapPin className="h-4 w-4 text-gold" aria-hidden="true" />
                   <span>Sanctuary Location</span>
                 </div>
-                <p className="text-sm font-medium text-foreground">
-                  Grace of God Mission, Asaba Division
+                <p className="text-sm font-semibold text-foreground">
+                  Grace of God Mission Asaba Hq
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  {siteConfig.churchAddress.startsWith("[")
-                    ? "Asaba, Delta State, Nigeria · Easy access with on-site parking and friendly ushers."
-                    : siteConfig.churchAddress}
+                  {siteConfig.address}
                 </p>
                 <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                   <CheckCircle2 className="h-3.5 w-3.5" />
@@ -623,7 +627,7 @@ export default async function HomePage() {
                 Sanctuary Location & Map
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Easily locate Grace of God Mission Asaba Hq in Delta State, Nigeria.
+                No. 33 Arthur Richard Street, Akwuebulu (Cable Point), Asaba, Delta State
               </p>
             </div>
             <a

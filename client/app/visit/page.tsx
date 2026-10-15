@@ -65,42 +65,28 @@ export default function PlanaVisitPage() {
                 <div className="rounded-xl border border-border/80 bg-card p-4 transition hover:border-gold/50">
                   <div className="flex items-center justify-between">
                     <span className="font-display text-base font-bold text-foreground">
-                      Sunday Morning Worship
+                      Sunday Services
                     </span>
                     <span className="rounded-full bg-gold/10 px-2.5 py-0.5 text-xs font-bold text-gold">
-                      8:00 AM – 10:00 AM
+                      Starts at 7:00 AM
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Early devotion, praise, prayer, and morning impartation.
+                    Regular services, special monthly celebrations, and African Praise Sundays.
                   </p>
                 </div>
 
                 <div className="rounded-xl border border-border/80 bg-card p-4 transition hover:border-primary/50">
                   <div className="flex items-center justify-between">
                     <span className="font-display text-base font-bold text-foreground">
-                      Sunday Celebration Service
+                      Wednesday Midweek Service
                     </span>
                     <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
-                      10:30 AM – 12:30 PM
+                      5:00 PM
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Vibrant praise, congregational worship, and in-depth Biblical teaching.
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-border/80 bg-card p-4 transition hover:border-indigo-soft/50">
-                  <div className="flex items-center justify-between">
-                    <span className="font-display text-base font-bold text-foreground">
-                      Wednesday Midweek Encounter
-                    </span>
-                    <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-bold text-primary">
-                      6:00 PM – 7:30 PM
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Bible study, spiritual growth, and breakthrough deliverance prayers.
+                    Regular prayer and word encounters for spiritual strength and breakthrough.
                   </p>
                 </div>
               </div>
@@ -131,12 +117,10 @@ export default function PlanaVisitPage() {
 
               <div className="mt-6 rounded-2xl border border-border bg-card p-5 space-y-3">
                 <p className="text-base font-semibold text-foreground">
-                  Grace of God Mission, Asaba Division
+                  Grace of God Mission Asaba Hq
                 </p>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {siteConfig.address.startsWith("[")
-                    ? "Asaba, Delta State, Nigeria (Contact church office for exact street address)"
-                    : siteConfig.address}
+                  {siteConfig.address}
                 </p>
                 <div className="pt-2 border-t border-border/60 space-y-1.5 text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">

@@ -21,9 +21,13 @@ export function ChurchMap({
     >
       {showCardHeader && (
         <div className="flex items-center justify-between border-b border-border/80 bg-muted/30 px-5 py-3 text-xs">
-          <div className="flex items-center gap-2 font-semibold text-foreground">
-            <MapPin className="h-4 w-4 text-gold" />
-            <span>Grace of God Mission Asaba Hq</span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 font-semibold text-foreground">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-gold shrink-0" />
+              <span>Grace of God Mission Asaba Hq</span>
+            </div>
+            <span className="hidden sm:inline text-muted-foreground">·</span>
+            <span className="text-[11px] font-normal text-muted-foreground">{siteConfig.address}</span>
           </div>
           <a
             href={siteConfig.googleMapsUrl}

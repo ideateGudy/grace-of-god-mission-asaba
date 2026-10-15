@@ -150,7 +150,7 @@ export default async function EventsPage({
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
               {scope === "past"
                 ? "Past events will be archived here as they conclude."
-                : "Join us for our weekly gatherings: Sunday Worship (8:00 AM & 10:30 AM) and Wednesday Midweek Encounter (6:00 PM)."}
+                : "Join us for our weekly gatherings: Sunday Services (7:00 AM) and Wednesday Midweek Encounter (5:00 PM)."}
             </p>
             {scope !== "past" && (
               <div className="mt-6">

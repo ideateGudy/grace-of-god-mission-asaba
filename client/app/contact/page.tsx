@@ -177,8 +177,8 @@ export default function ContactPage() {
                 <span>Office & Service Hours</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Sundays: 8:00 AM – 1:00 PM <br />
-                Wednesdays: 5:00 PM – 8:00 PM
+                Sundays: Services start at 7:00 AM <br />
+                Wednesdays: Midweek Encounter at 5:00 PM
               </p>
             </div>
           </GlassCard>

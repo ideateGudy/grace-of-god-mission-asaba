@@ -9,7 +9,7 @@ export const siteConfig = {
   phone: "[PHONE NUMBER - CONFIRM WITH CHURCH]",
   whatsapp: "[WHATSAPP NUMBER WITH COUNTRY CODE - e.g. +2348012345678]",
   email: "[EMAIL ADDRESS - CONFIRM WITH CHURCH]",
-  address: "Grace of God Mission Asaba Hq, Asaba, Delta State, Nigeria",
+  address: "No. 33 Arthur Richard Street, Akwuebulu (Cable Point), Asaba, Delta State",
   city: "Asaba",
   state: "Delta State",
   country: "Nigeria",
@@ -17,7 +17,9 @@ export const siteConfig = {
   googleMapsEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3053.4168993678427!2d6.746476945982947!3d6.1763103233292345!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1043ed616ce913ef%3A0x5cda51b288ccb076!2sGrace%20of%20God%20Mission%20Asaba%20Hq!5e0!3m2!1sen!2sng!4v1792062152635!5m2!1sen!2sng",
 
   // Services
-  serviceTimes: "[SERVICE TIMES - e.g. Sundays 8:00 AM & 10:30 AM, Wednesdays 6:00 PM]",
+  serviceTimes: "Sundays 7:00 AM, Wednesdays 5:00 PM",
+  sundaySchedule: "Regular services, special monthly celebrations, and African Praise Sundays start at 7:00 AM.",
+  midweekSchedule: "Regular prayer and word encounters are held on Wednesdays at 5:00 PM.",
 
   // Content
   vision: "[VISION STATEMENT - CONFIRM WITH CHURCH]",
