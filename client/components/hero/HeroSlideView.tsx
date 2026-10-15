@@ -67,6 +67,12 @@ export function HeroSlideView({
           style={{ opacity: slide.overlay / 100 }}
         />
       )}
+      {slide.bgType !== "IMAGE" && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_-5%,rgba(217,164,65,0.18),transparent_70%)]"
+        />
+      )}
       <div
         className={cn(
           "mx-auto grid min-h-[min(760px,92svh)] max-w-6xl items-center gap-10 px-5 pb-16 pt-28 md:px-8",
