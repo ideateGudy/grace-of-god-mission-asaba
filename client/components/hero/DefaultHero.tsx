@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, PlayCircle, Sparkles } from "lucide-react";
+import { MapPin, PlayCircle, Sparkles, ExternalLink } from "lucide-react";
 import { HeroSequence } from "@/components/motion/HeroSequence";
+import { siteConfig } from "@/config/site";
 
 export function DefaultHero() {
   return (
@@ -69,14 +70,21 @@ export function DefaultHero() {
           </Link>
         </div>
 
-        {/* Weekly Fellowship Pill */}
-        <div className="mt-12 inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs sm:text-sm text-slate-300 backdrop-blur-md">
+        {/* Weekly Fellowship Pill & Direct Link to Google Maps */}
+        <a
+          href={siteConfig.googleMapsUrl}
+          target="_blank"
+          rel="noreferrer"
+          title="Open Grace of God Mission Asaba Hq on Google Maps"
+          className="mt-12 inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs sm:text-sm text-slate-300 backdrop-blur-md transition-all duration-200 hover:bg-white/15 hover:text-white hover:border-gold/40 group"
+        >
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
-          <span>Sunday Worship: 8:00 AM & 10:30 AM · Wednesday: 6:00 PM · Asaba Sanctuary</span>
-        </div>
+          <span>Sunday Worship: 8:00 AM & 10:30 AM · Wednesday: 6:00 PM · Grace of God Mission Asaba Hq</span>
+          <ExternalLink className="h-3.5 w-3.5 text-gold transition-transform group-hover:translate-x-0.5" />
+        </a>
       </div>
     </section>
   );

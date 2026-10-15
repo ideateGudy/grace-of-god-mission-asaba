@@ -28,6 +28,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { Section, SectionHeading } from "@/components/shared/Section";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { CopyButton } from "@/components/shared/CopyButton";
+import { ChurchMap } from "@/components/shared/ChurchMap";
 
 export const metadata: Metadata = {
   title: "Grace of God Mission Asaba | Sanctuary of Grace & Truth",
@@ -608,6 +609,35 @@ export default async function HomePage() {
               </div>
             </GlassCard>
           </div>
+        </Section>
+
+        {/* 8. Sanctuary Location & Interactive Map Section */}
+        <Section id="map" className="py-16 md:py-24">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+            <div>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-primary">
+                <MapPin className="h-3.5 w-3.5 text-gold" />
+                <span>Visit Us in Person</span>
+              </span>
+              <h2 className="mt-2 font-display text-3xl sm:text-4xl font-bold text-foreground">
+                Sanctuary Location & Map
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Easily locate Grace of God Mission Asaba Hq in Delta State, Nigeria.
+              </p>
+            </div>
+            <a
+              href={siteConfig.googleMapsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 transition"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span>Open in Google Maps App</span>
+            </a>
+          </div>
+
+          <ChurchMap showCardHeader />
         </Section>
       </main>
 

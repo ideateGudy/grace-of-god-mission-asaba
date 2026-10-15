@@ -105,6 +105,8 @@ export function HeroSlideView({
                 <Link
                   className="inline-flex min-h-11 items-center justify-center rounded-md bg-gold px-6 font-semibold text-midnight transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   href={slide.primaryUrl}
+                  target={slide.primaryUrl.startsWith("http") ? "_blank" : undefined}
+                  rel={slide.primaryUrl.startsWith("http") ? "noreferrer" : undefined}
                 >
                   {slide.primaryLabel}
                 </Link>
@@ -116,6 +118,8 @@ export function HeroSlideView({
                     slide.layout === "SPLIT" ? "text-foreground" : text
                   )}
                   href={slide.secondaryUrl}
+                  target={slide.secondaryUrl.startsWith("http") ? "_blank" : undefined}
+                  rel={slide.secondaryUrl.startsWith("http") ? "noreferrer" : undefined}
                 >
                   {slide.secondaryLabel}
                 </Link>

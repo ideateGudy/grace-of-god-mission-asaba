@@ -15,6 +15,7 @@ import {
 import { FaWhatsapp } from "react-icons/fa6";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { ChurchMap } from "@/components/shared/ChurchMap";
 import { siteConfig } from "@/config/site";
 
 export const revalidate = 300;
@@ -168,6 +169,9 @@ export default function PlanaVisitPage() {
             </div>
           </GlassCard>
         </div>
+
+        {/* Interactive Google Map of Grace of God Mission Asaba Hq */}
+        <ChurchMap showCardHeader />
 
         {/* 2. What to Expect as a Guest */}
         <GlassCard surface="solid" padding="lg" className="border border-border shadow-lg">

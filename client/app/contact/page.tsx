@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { MapPin, Phone, Mail, Clock, MessageSquare, CheckCircle2 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa6";
+import { ChurchMap } from "@/components/shared/ChurchMap";
 import { siteConfig } from "@/config/site";
 
 const contactSchema = z
@@ -289,6 +290,9 @@ export default function ContactPage() {
             )}
           </GlassCard>
         </div>
+
+        {/* Embedded Interactive Map */}
+        <ChurchMap showCardHeader className="mt-14" />
       </div>
     </PublicPageLayout>
   );
