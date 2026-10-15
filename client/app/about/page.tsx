@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Metadata } from "next";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
@@ -22,15 +23,28 @@ export default function AboutUsPage() {
     >
       <div className="space-y-8">
         <GlassCard surface="solid" padding="lg">
-          <h2 className="font-display text-2xl font-semibold text-foreground">Our Story</h2>
-          <p className="mt-4 leading-relaxed text-muted-foreground whitespace-pre-wrap">
-            {siteConfig.story}
-          </p>
-          {!siteConfig.foundedYear.startsWith("[") && (
-            <p className="mt-4 text-sm font-medium text-foreground">
-              Founded: {siteConfig.foundedYear}
-            </p>
-          )}
+          <div className="flex flex-col sm:flex-row items-start gap-6">
+            <div className="relative w-20 h-20 shrink-0 rounded-2xl overflow-hidden border border-border bg-card p-2 flex items-center justify-center shadow-xs">
+              <Image
+                src="/ggm_logo.png"
+                alt="Grace of God Mission Asaba Emblem"
+                width={72}
+                height={72}
+                className="object-contain rounded-full"
+              />
+            </div>
+            <div className="flex-1 space-y-3">
+              <h2 className="font-display text-2xl font-semibold text-foreground">Our Story</h2>
+              <p className="leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                {siteConfig.story}
+              </p>
+              {!siteConfig.foundedYear.startsWith("[") && (
+                <p className="text-sm font-medium text-foreground">
+                  Founded: {siteConfig.foundedYear}
+                </p>
+              )}
+            </div>
+          </div>
         </GlassCard>
 
         <div className="grid gap-6 md:grid-cols-2">

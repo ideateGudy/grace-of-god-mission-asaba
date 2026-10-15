@@ -1,5 +1,6 @@
 export const siteConfig = {
   name: "Grace of God Mission Asaba",
+  logoUrl: "/ggm_logo.png",
   tagline: "[TAGLINE - CONFIRM WITH CHURCH]",
   description: "[DESCRIPTION - CONFIRM WITH CHURCH]",
   url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",

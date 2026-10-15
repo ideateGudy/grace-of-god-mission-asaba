@@ -13,7 +13,26 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: { default: "Grace of God Mission Asaba", template: "%s | Grace of God Mission Asaba" },
   description: "Service information, sermons, events, and ways to connect with Grace of God Mission Asaba.",
-  openGraph: { type: "website", locale: "en_NG", siteName: "Grace of God Mission Asaba", title: "Grace of God Mission Asaba", description: "Service information, sermons, events, and ways to connect with Grace of God Mission Asaba." },
+  icons: {
+    icon: "/ggm_logo.png",
+    shortcut: "/ggm_logo.png",
+    apple: "/ggm_logo.png",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_NG",
+    siteName: "Grace of God Mission Asaba",
+    title: "Grace of God Mission Asaba",
+    description: "Service information, sermons, events, and ways to connect with Grace of God Mission Asaba.",
+    images: [
+      {
+        url: "/ggm_logo.png",
+        width: 1280,
+        height: 1280,
+        alt: "Grace of God Mission Asaba Emblem",
+      },
+    ],
+  },
   robots: { index: true, follow: true },
 };
 

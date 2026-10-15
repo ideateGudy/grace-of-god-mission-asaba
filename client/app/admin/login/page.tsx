@@ -51,7 +51,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-tr from-midnight/25 via-background to-indigo/25 pointer-events-none" />
-      <div className="mb-8 relative z-10"><Logo /></div>
+      <div className="mb-8 relative z-10"><Logo size="lg" /></div>
       <GlassCard surface="strong" padding="lg" className="w-full max-w-md relative z-10 border border-border shadow-xl">
         <div className="mb-6 space-y-1">
           <h1 className="text-2xl font-display font-semibold text-foreground">Sign In</h1>
