@@ -1,9 +1,19 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import type { CookieOptions } from 'express';
+import type { AdminUser } from '@prisma/client';
+import type { LoginDto, ChangePasswordDto, SessionUser } from '@ggm/types';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import type { AuthenticatedActor } from '../common/types.js';
 import * as bcrypt from 'bcrypt';
+
+export interface AuthResult {
+  token: string;
+  user: AdminUser;
+  cookieOptions: CookieOptions;
+}
 
 @Injectable()
 export class AuthService {
@@ -14,7 +24,7 @@ export class AuthService {
     private readonly audit: AuditService,
   ) {}
 
-  async login(dto: any): Promise<{ token: string; user: any; cookieOptions: any }> {
+  async login(dto: LoginDto): Promise<AuthResult> {
     const user = await this.prisma.adminUser.findUnique({
       where: { email: dto.email.toLowerCase() },
     });
@@ -50,17 +60,17 @@ export class AuthService {
     });
 
     const isProduction = this.configService.get('NODE_ENV') === 'production';
-    const cookieOptions = {
+    const cookieOptions: CookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax' as const,
+      sameSite: 'lax',
       path: '/',
     };
 
     return { token, user, cookieOptions };
   }
 
-  async logout(user: any): Promise<void> {
+  async logout(user: AuthenticatedActor): Promise<void> {
     void this.audit.log({
       actorId: user.id,
       actorName: user.name,
@@ -70,18 +80,18 @@ export class AuthService {
     });
   }
 
-  async me(user: any) {
+  async me(user: AuthenticatedActor): Promise<SessionUser> {
     return {
       id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      permissions: user.permissions,
-      mustChangePassword: user.mustChangePassword,
+      email: user.email ?? '',
+      name: user.name ?? '',
+      role: (user.role ?? 'ADMIN') as SessionUser['role'],
+      permissions: (user.permissions ?? []) as unknown as SessionUser['permissions'],
+      mustChangePassword: user.mustChangePassword ?? false,
     };
   }
 
-  async changePassword(user: any, dto: any): Promise<any> {
+  async changePassword(user: AdminUser, dto: ChangePasswordDto): Promise<AuthResult> {
     const isMatch = await bcrypt.compare(dto.currentPassword, user.passwordHash);
     if (!isMatch) {
       throw new UnauthorizedException('Invalid current password');

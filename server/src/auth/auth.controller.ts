@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, Req, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthService } from './auth.service.js';
 import { PublicRoute } from './decorators/public-route.decorator.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
@@ -6,6 +7,7 @@ import { ActiveUserGuard } from './guards/active-user.guard.js';
 import { Throttle } from '@nestjs/throttler';
 import { changePasswordSchema, loginSchema, type ChangePasswordDto, type LoginDto } from '@ggm/types';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
+import type { AuthenticatedRequest } from '../common/types.js';
 
 @Controller('auth')
 export class AuthController {
@@ -14,7 +16,7 @@ export class AuthController {
   @PublicRoute()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
-  async login(@Body(new ZodValidationPipe(loginSchema)) dto: LoginDto, @Res({ passthrough: true }) res: any) {
+  async login(@Body(new ZodValidationPipe(loginSchema)) dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const { token, user, cookieOptions } = await this.authService.login(dto);
     res.cookie('gom_session', token, cookieOptions);
     return { data: {
@@ -29,7 +31,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('logout')
-  async logout(@Req() req: any, @Res({ passthrough: true }) res: any) {
+  async logout(@Req() req: AuthenticatedRequest, @Res({ passthrough: true }) res: Response) {
     await this.authService.logout(req.activeUser);
     res.clearCookie('gom_session');
     return { data: null };
@@ -37,14 +39,14 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Get('me')
-  async me(@Req() req: any) {
+  async me(@Req() req: AuthenticatedRequest) {
     const data = await this.authService.me(req.activeUser);
     return { data };
   }
 
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('change-password')
-  async changePassword(@Req() req: any, @Body(new ZodValidationPipe(changePasswordSchema)) dto: ChangePasswordDto, @Res({ passthrough: true }) res: any) {
+  async changePassword(@Req() req: AuthenticatedRequest, @Body(new ZodValidationPipe(changePasswordSchema)) dto: ChangePasswordDto, @Res({ passthrough: true }) res: Response) {
     const { token, user, cookieOptions } = await this.authService.changePassword(req.activeUser, dto);
     res.cookie('gom_session', token, cookieOptions);
     return { data: {

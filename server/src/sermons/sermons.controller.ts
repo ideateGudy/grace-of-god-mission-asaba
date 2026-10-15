@@ -2,8 +2,9 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, ParseInt
 import { SermonsService } from './sermons.service.js';
 import { PublicRoute } from '../auth/decorators/public-route.decorator.js';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator.js';
-import { createSermonSchema } from '@ggm/types';
+import { createSermonSchema, type CreateSermonDto, type UpdateSermonDto } from '@ggm/types';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
+import type { AuthenticatedRequest } from '../common/types.js';
 
 @Controller()
 export class SermonsController {
@@ -45,21 +46,28 @@ export class SermonsController {
 
   @RequirePermissions('SERMONS_MANAGE')
   @Post('admin/sermons')
-  async create(@Req() req: any, @Body(new ZodValidationPipe(createSermonSchema)) dto: any) {
+  async create(
+    @Req() req: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(createSermonSchema)) dto: CreateSermonDto,
+  ) {
     const data = await this.sermonsService.create(req.activeUser, dto);
     return { data };
   }
 
   @RequirePermissions('SERMONS_MANAGE')
   @Patch('admin/sermons/:id')
-  async update(@Req() req: any, @Param('id') id: string, @Body(new ZodValidationPipe(createSermonSchema.partial())) dto: any) {
+  async update(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(createSermonSchema.partial())) dto: UpdateSermonDto,
+  ) {
     const data = await this.sermonsService.update(req.activeUser, id, dto);
     return { data };
   }
 
   @RequirePermissions('SERMONS_MANAGE')
   @Delete('admin/sermons/:id')
-  async delete(@Req() req: any, @Param('id') id: string) {
+  async delete(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     await this.sermonsService.delete(req.activeUser, id);
     return { data: null };
   }

@@ -2,8 +2,15 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, ParseInt
 import { GalleryService } from './gallery.service.js';
 import { PublicRoute } from '../auth/decorators/public-route.decorator.js';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator.js';
-import { createGalleryImageSchema, reorderGallerySchema } from '@ggm/types';
+import {
+  createGalleryImageSchema,
+  reorderGallerySchema,
+  type CreateGalleryImageDto,
+  type UpdateGalleryImageDto,
+  type ReorderGalleryDto,
+} from '@ggm/types';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
+import type { AuthenticatedRequest } from '../common/types.js';
 
 @Controller()
 export class GalleryController {
@@ -30,7 +37,10 @@ export class GalleryController {
 
   @RequirePermissions('GALLERY_MANAGE')
   @Post('admin/gallery/reorder')
-  async reorder(@Req() req: any, @Body(new ZodValidationPipe(reorderGallerySchema)) dto: { ids: string[] }) {
+  async reorder(
+    @Req() req: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(reorderGallerySchema)) dto: ReorderGalleryDto,
+  ) {
     const data = await this.galleryService.reorder(req.activeUser, dto.ids);
     return { data };
   }
@@ -44,21 +54,28 @@ export class GalleryController {
 
   @RequirePermissions('GALLERY_MANAGE')
   @Post('admin/gallery')
-  async create(@Req() req: any, @Body(new ZodValidationPipe(createGalleryImageSchema)) dto: any) {
+  async create(
+    @Req() req: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(createGalleryImageSchema)) dto: CreateGalleryImageDto,
+  ) {
     const data = await this.galleryService.create(req.activeUser, dto);
     return { data };
   }
 
   @RequirePermissions('GALLERY_MANAGE')
   @Patch('admin/gallery/:id')
-  async update(@Req() req: any, @Param('id') id: string, @Body(new ZodValidationPipe(createGalleryImageSchema.partial())) dto: any) {
+  async update(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(createGalleryImageSchema.partial())) dto: UpdateGalleryImageDto,
+  ) {
     const data = await this.galleryService.update(req.activeUser, id, dto);
     return { data };
   }
 
   @RequirePermissions('GALLERY_MANAGE')
   @Delete('admin/gallery/:id')
-  async delete(@Req() req: any, @Param('id') id: string) {
+  async delete(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     await this.galleryService.delete(req.activeUser, id);
     return { data: null };
   }

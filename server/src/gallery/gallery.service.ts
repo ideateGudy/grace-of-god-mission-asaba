@@ -2,7 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { normalizeUrl } from '../common/utils/url.util.js';
-import { Prisma } from '@prisma/client';
+import type { Prisma, GalleryImage } from '@prisma/client';
+import type { AuthenticatedActor } from '../common/types.js';
+import type { CreateGalleryImageDto, UpdateGalleryImageDto } from '@ggm/types';
 
 @Injectable()
 export class GalleryService {
@@ -48,13 +50,13 @@ export class GalleryService {
     return { data, meta: { page, limit, total } };
   }
 
-  async getAdmin(id: string) {
+  async getAdmin(id: string): Promise<GalleryImage> {
     const image = await this.prisma.galleryImage.findUnique({ where: { id } });
     if (!image) throw new NotFoundException('Gallery image not found');
     return image;
   }
 
-  async reorder(actor: any, ids: string[]) {
+  async reorder(actor: AuthenticatedActor, ids: string[]): Promise<{ updated: number }> {
     await this.prisma.$transaction(ids.map((id, sortOrder) =>
       this.prisma.galleryImage.update({ where: { id }, data: { sortOrder } }),
     ));
@@ -70,11 +72,15 @@ export class GalleryService {
     return { updated: ids.length };
   }
 
-  async create(actor: any, dto: any) {
-    const data = { ...dto };
-    data.imageUrl = normalizeUrl(data.imageUrl);
+  async create(actor: AuthenticatedActor, dto: CreateGalleryImageDto): Promise<GalleryImage> {
+    const imageUrl = normalizeUrl(dto.imageUrl) ?? dto.imageUrl;
 
-    const image = await this.prisma.galleryImage.create({ data });
+    const image = await this.prisma.galleryImage.create({
+      data: {
+        ...dto,
+        imageUrl,
+      },
+    });
 
     if (image.published) {
       await this.audit.log({
@@ -89,20 +95,25 @@ export class GalleryService {
     return image;
   }
 
-  async update(actor: any, id: string, dto: any) {
+  async update(actor: AuthenticatedActor, id: string, dto: UpdateGalleryImageDto): Promise<GalleryImage> {
     const existing = await this.prisma.galleryImage.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Gallery image not found');
 
-    const data = { ...dto };
-    if (data.imageUrl !== undefined) data.imageUrl = normalizeUrl(data.imageUrl);
+    const imageUrl = dto.imageUrl !== undefined ? (normalizeUrl(dto.imageUrl) ?? undefined) : undefined;
 
-    const image = await this.prisma.galleryImage.update({ where: { id }, data });
+    const image = await this.prisma.galleryImage.update({
+      where: { id },
+      data: {
+        ...dto,
+        ...(imageUrl ? { imageUrl } : {}),
+      },
+    });
 
-    if (data.published !== undefined && data.published !== existing.published) {
+    if (dto.published !== undefined && dto.published !== existing.published) {
       await this.audit.log({
         actorId: actor?.id,
         actorName: actor?.name,
-        action: data.published ? 'gallery.publish' : 'gallery.unpublish',
+        action: dto.published ? 'gallery.publish' : 'gallery.unpublish',
         entity: 'GalleryImage',
         entityId: image.id,
       });
@@ -111,7 +122,7 @@ export class GalleryService {
     return image;
   }
 
-  async delete(actor: any, id: string) {
+  async delete(actor: AuthenticatedActor, id: string): Promise<void> {
     const image = await this.prisma.galleryImage.findUnique({ where: { id } });
     if (!image) throw new NotFoundException('Gallery image not found');
 

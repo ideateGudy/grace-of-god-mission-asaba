@@ -7,7 +7,7 @@ export interface AuditLogEntry {
   action: string;
   entity: string;
   entityId?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 @Injectable()
@@ -36,7 +36,7 @@ export class AuditService {
     }
   }
 
-  private sanitizeMeta(meta?: Record<string, any>): Record<string, any> | undefined {
+  private sanitizeMeta(meta?: Record<string, unknown>): Record<string, unknown> | undefined {
     if (!meta) return undefined;
     const sanitized = { ...meta };
     

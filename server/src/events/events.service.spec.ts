@@ -34,7 +34,8 @@ describe('EventsService', () => {
     event.create.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({ id: 'event-1', ...data }));
 
     await service.create({ id: 'admin-1' }, {
-      title: 'Sunday Worship & Praise', startsAt: new Date('2026-12-01T10:00:00Z'),
+      title: 'Sunday Worship & Praise', startsAt: '2026-12-01T10:00:00.000Z',
+      venue: 'Sanctuary Main Hall',
       mapUrl: 'maps.example.test/church', imageUrl: 'https://images.example.test/event.jpg', published: false,
     });
 

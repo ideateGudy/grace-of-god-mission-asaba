@@ -5,8 +5,9 @@ import { RequirePermissions } from '../auth/decorators/require-permissions.decor
 import { SuperAdminOnly } from '../auth/decorators/super-admin-only.decorator.js';
 import { MessageStatus } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
-import { createContactSchema, createPrayerSchema } from '@ggm/types';
+import { createContactSchema, createPrayerSchema, type CreateContactDto, type CreatePrayerDto } from '@ggm/types';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
+import type { AuthenticatedRequest } from '../common/types.js';
 
 @Controller()
 export class MessagesController {
@@ -15,14 +16,14 @@ export class MessagesController {
   @PublicRoute()
   @Throttle({ short: { limit: 5, ttl: 60000 }, long: { limit: 30, ttl: 3600000 } })
   @Post('contact')
-  async createContact(@Body(new ZodValidationPipe(createContactSchema)) dto: any) {
+  async createContact(@Body(new ZodValidationPipe(createContactSchema)) dto: CreateContactDto) {
     return this.messagesService.createContact(dto);
   }
 
   @PublicRoute()
   @Throttle({ short: { limit: 5, ttl: 60000 }, long: { limit: 30, ttl: 3600000 } })
   @Post('prayer-requests')
-  async createPrayer(@Body(new ZodValidationPipe(createPrayerSchema)) dto: any) {
+  async createPrayer(@Body(new ZodValidationPipe(createPrayerSchema)) dto: CreatePrayerDto) {
     return this.messagesService.createPrayer(dto);
   }
 
@@ -38,14 +39,18 @@ export class MessagesController {
 
   @RequirePermissions('CONTACT_INBOX')
   @Patch('admin/contact/:id')
-  async updateContactStatus(@Req() req: any, @Param('id') id: string, @Body('status', new ParseEnumPipe(MessageStatus)) status: MessageStatus) {
+  async updateContactStatus(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body('status', new ParseEnumPipe(MessageStatus)) status: MessageStatus,
+  ) {
     const data = await this.messagesService.updateContactStatus(req.activeUser, id, status);
     return { data };
   }
 
   @SuperAdminOnly()
   @Delete('admin/contact/:id')
-  async deleteContact(@Req() req: any, @Param('id') id: string) {
+  async deleteContact(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     await this.messagesService.deleteContact(req.activeUser, id);
     return { data: null };
   }
@@ -62,21 +67,25 @@ export class MessagesController {
 
   @RequirePermissions('PRAYER_INBOX')
   @Patch('admin/prayer-requests/:id')
-  async updatePrayerStatus(@Req() req: any, @Param('id') id: string, @Body('status', new ParseEnumPipe(MessageStatus)) status: MessageStatus) {
+  async updatePrayerStatus(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body('status', new ParseEnumPipe(MessageStatus)) status: MessageStatus,
+  ) {
     const data = await this.messagesService.updatePrayerStatus(req.activeUser, id, status);
     return { data };
   }
 
   @SuperAdminOnly()
   @Delete('admin/prayer-requests/:id')
-  async deletePrayer(@Req() req: any, @Param('id') id: string) {
+  async deletePrayer(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     await this.messagesService.deletePrayer(req.activeUser, id);
     return { data: null };
   }
 
   @RequirePermissions()
   @Get('admin/stats')
-  async getStats(@Req() req: any) {
+  async getStats(@Req() req: AuthenticatedRequest) {
     return this.messagesService.getStats(req.activeUser);
   }
 }

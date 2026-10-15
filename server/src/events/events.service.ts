@@ -2,7 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { generateSlug, normalizeUrl } from '../common/utils/url.util.js';
-import { Prisma } from '@prisma/client';
+import type { Prisma, Event } from '@prisma/client';
+import type { AuthenticatedActor } from '../common/types.js';
+import type { CreateEventDto, UpdateEventDto } from '@ggm/types';
 
 @Injectable()
 export class EventsService {
@@ -54,24 +56,28 @@ export class EventsService {
     return { data, meta: { page, limit, total } };
   }
 
-  async getAdmin(id: string) {
+  async getAdmin(id: string): Promise<Event> {
     const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) throw new NotFoundException('Event not found');
     return event;
   }
 
-  async create(actor: any, dto: any) {
-    const data = { ...dto };
-    data.slug = data.slug || generateSlug(data.title);
-    data.mapUrl = normalizeUrl(data.mapUrl);
-    data.imageUrl = normalizeUrl(data.imageUrl);
+  async create(actor: AuthenticatedActor, dto: CreateEventDto): Promise<Event> {
+    let slug: string = dto.slug || generateSlug(dto.title);
 
-    const existing = await this.prisma.event.findUnique({ where: { slug: data.slug } });
+    const existing = await this.prisma.event.findUnique({ where: { slug } });
     if (existing) {
-      data.slug = `${data.slug}-${Date.now().toString().slice(-4)}`;
+      slug = `${slug}-${Date.now().toString().slice(-4)}`;
     }
 
-    const event = await this.prisma.event.create({ data });
+    const event = await this.prisma.event.create({
+      data: {
+        ...dto,
+        slug,
+        mapUrl: normalizeUrl(dto.mapUrl),
+        imageUrl: normalizeUrl(dto.imageUrl),
+      },
+    });
 
     if (event.published) {
       await this.audit.log({
@@ -87,7 +93,7 @@ export class EventsService {
     return event;
   }
 
-  async update(actor: any, id: string, dto: any) {
+  async update(actor: AuthenticatedActor, id: string, dto: UpdateEventDto): Promise<Event> {
     const existing = await this.prisma.event.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Event not found');
 
@@ -116,7 +122,7 @@ export class EventsService {
     return event;
   }
 
-  async delete(actor: any, id: string) {
+  async delete(actor: AuthenticatedActor, id: string): Promise<void> {
     const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) throw new NotFoundException('Event not found');
 

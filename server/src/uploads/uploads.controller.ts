@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Req } from '@nestjs/common';
 import { UploadsService } from './uploads.service.js';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator.js';
+import type { AuthenticatedRequest } from '../common/types.js';
 
 @Controller('admin/uploads')
 export class UploadsController {
@@ -9,7 +10,7 @@ export class UploadsController {
   @RequirePermissions('GALLERY_MANAGE', 'SERMONS_MANAGE', 'EVENTS_MANAGE', 'ANNOUNCEMENTS_MANAGE', 'HERO_MANAGE')
   @Post('signature')
   async getSignature(
-    @Req() _req: any,
+    @Req() _req: AuthenticatedRequest,
     @Body() body?: { scope?: string; publicId?: string },
   ) {
     const data = await this.uploadsService.getSignature(body?.scope, body?.publicId);

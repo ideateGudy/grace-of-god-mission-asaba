@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { HeroService } from './hero.service.js';
+import type { CreateHeroDto } from '@ggm/types';
 
 function createHeroService(options?: { heroes?: Array<Record<string, unknown>>; allowedHosts?: string }) {
   const prisma = {
@@ -52,7 +53,7 @@ describe('HeroService', () => {
 
     await expect(service.create({ id: 'admin' }, {
       name: 'One slide', mode: 'CAROUSEL', published: true, slides: [{ title: 'Welcome' }],
-    } as any)).rejects.toThrow('Carousel mode requires at least 2 slides to publish');
+    } as unknown as CreateHeroDto)).rejects.toThrow('Carousel mode requires at least 2 slides to publish');
     expect(prisma.hero.create).not.toHaveBeenCalled();
   });
 
@@ -62,7 +63,7 @@ describe('HeroService', () => {
     await expect(service.create({ id: 'admin' }, {
       name: 'Low contrast', mode: 'SINGLE', published: true,
       slides: [{ title: 'Welcome', bgType: 'COLOR', bgColor: '#FFFFFF', textTone: 'LIGHT' }],
-    } as any)).rejects.toThrow(/must be at least 4\.5:1 to publish/i);
+    } as unknown as CreateHeroDto)).rejects.toThrow(/must be at least 4\.5:1 to publish/i);
     expect(prisma.hero.create).not.toHaveBeenCalled();
   });
 
@@ -72,7 +73,7 @@ describe('HeroService', () => {
     await expect(service.create({ id: 'admin' }, {
       name: 'Draft', mode: 'SINGLE', published: false,
       slides: [{ title: 'Welcome', bgType: 'COLOR', bgColor: '#FFFFFF', textTone: 'LIGHT' }],
-    } as any)).resolves.toMatchObject({ warnings: ['contrast_low'] });
+    } as unknown as CreateHeroDto)).resolves.toMatchObject({ warnings: ['contrast_low'] });
   });
 
   it('rejects image URLs outside the HTTPS host allowlist', async () => {
@@ -81,7 +82,7 @@ describe('HeroService', () => {
     await expect(service.create({ id: 'admin' }, {
       name: 'Unsafe image', mode: 'SINGLE', published: false,
       slides: [{ title: 'Welcome', bgType: 'IMAGE', imageUrl: 'http://untrusted.example.test/image.jpg' }],
-    } as any)).rejects.toThrow('Hero image URLs must use HTTPS and a host listed in IMAGE_ALLOWED_HOSTS');
+    } as unknown as CreateHeroDto)).rejects.toThrow('Hero image URLs must use HTTPS and a host listed in IMAGE_ALLOWED_HOSTS');
     expect(prisma.hero.create).not.toHaveBeenCalled();
   });
 });

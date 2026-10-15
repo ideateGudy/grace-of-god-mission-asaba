@@ -68,7 +68,20 @@ export const reorderGallerySchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(500).refine((ids) => new Set(ids).size === ids.length, 'Image ids must be unique'),
 }).strict();
 
-export type GalleryImageDto = z.infer<typeof createGalleryImageSchema> & {
+export type CreateSermonDto = z.infer<typeof createSermonSchema>;
+export type UpdateSermonDto = Partial<CreateSermonDto>;
+
+export type CreateEventDto = z.infer<typeof createEventSchema>;
+export type UpdateEventDto = Partial<CreateEventDto>;
+
+export type CreateAnnouncementDto = z.infer<typeof createAnnouncementSchema>;
+export type UpdateAnnouncementDto = Partial<CreateAnnouncementDto>;
+
+export type CreateGalleryImageDto = z.infer<typeof createGalleryImageSchema>;
+export type UpdateGalleryImageDto = Partial<CreateGalleryImageDto>;
+export type ReorderGalleryDto = z.infer<typeof reorderGallerySchema>;
+
+export type GalleryImageDto = CreateGalleryImageDto & {
   id: string;
   createdAt: string;
 };

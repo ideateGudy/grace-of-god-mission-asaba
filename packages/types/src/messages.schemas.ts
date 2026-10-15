@@ -13,7 +13,9 @@ export const createContactSchema = z.object({
   path: ["email"]
 });
 
-export type ContactMessageDto = z.infer<typeof createContactSchema> & {
+export type CreateContactDto = z.infer<typeof createContactSchema>;
+
+export type ContactMessageDto = CreateContactDto & {
   id: string;
   status: 'NEW' | 'READ' | 'ARCHIVED';
   createdAt: string;
@@ -28,7 +30,9 @@ export const createPrayerSchema = z.object({
   consent: z.boolean().refine((value) => value, "Consent is required"),
 }).strict();
 
-export type PrayerRequestDto = z.infer<typeof createPrayerSchema> & {
+export type CreatePrayerDto = z.infer<typeof createPrayerSchema>;
+
+export type PrayerRequestDto = CreatePrayerDto & {
   id: string;
   status: 'NEW' | 'READ' | 'ARCHIVED';
   createdAt: string;
@@ -56,6 +60,6 @@ export type AuditLogDto = {
   action: string;
   entity: string;
   entityId: string | null;
-  meta: any;
+  meta: Record<string, unknown> | null;
   createdAt: string;
 };

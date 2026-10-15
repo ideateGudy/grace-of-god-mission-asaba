@@ -5,6 +5,8 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { AdminRole, Permission, Prisma } from '@prisma/client';
 
+import type { AuthenticatedActor } from '../common/types.js';
+
 export interface AdminUserRecord {
   id: string;
   email: string;
@@ -21,12 +23,7 @@ export interface AdminUserListItem extends AdminUserRecord {
   status: 'Deactivated' | 'Must change password' | 'Active';
 }
 
-export interface AuthenticatedActor {
-  id: string;
-  name: string;
-  email?: string;
-  role?: AdminRole;
-}
+export type { AuthenticatedActor };
 
 @Injectable()
 export class UsersService {

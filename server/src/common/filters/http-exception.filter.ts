@@ -24,17 +24,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
-      const exceptionResponse = exception.getResponse() as any;
+      const exceptionResponse = exception.getResponse() as Record<string, unknown> | string;
 
       if (typeof exceptionResponse === 'string') {
         message = [exceptionResponse];
       } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         if (Array.isArray(exceptionResponse.message)) {
-          message = exceptionResponse.message;
+          message = exceptionResponse.message.map((item) => String(item));
         } else if (typeof exceptionResponse.message === 'string') {
           message = [exceptionResponse.message];
         }
-        error = exceptionResponse.error || error;
+        if (typeof exceptionResponse.error === 'string') {
+          error = exceptionResponse.error;
+        }
       }
     } else if (typeof exception === 'object' && exception !== null && 'code' in exception) {
       // Prisma known request error mapping

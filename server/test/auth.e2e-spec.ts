@@ -3,6 +3,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
+import type { AdminUser } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 describe('AuthController (e2e)', () => {
@@ -27,7 +28,7 @@ describe('AuthController (e2e)', () => {
     await app.close();
   });
 
-  let testUser: any;
+  let testUser: AdminUser;
   let cookie: string;
   let originalCookie: string;
 

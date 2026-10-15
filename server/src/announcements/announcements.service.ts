@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma, Announcement } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import type { AuthenticatedActor } from '../common/types.js';
 
 @Injectable()
 export class AnnouncementsService {
@@ -52,13 +54,13 @@ export class AnnouncementsService {
     return { data, meta: { page, limit, total } };
   }
 
-  async getAdmin(id: string) {
+  async getAdmin(id: string): Promise<Announcement> {
     const announcement = await this.prisma.announcement.findUnique({ where: { id } });
     if (!announcement) throw new NotFoundException('Announcement not found');
     return announcement;
   }
 
-  async create(actor: any, dto: any) {
+  async create(actor: AuthenticatedActor, dto: Prisma.AnnouncementCreateInput): Promise<Announcement> {
     const announcement = await this.prisma.announcement.create({ data: dto });
 
     if (announcement.published) {
@@ -75,7 +77,7 @@ export class AnnouncementsService {
     return announcement;
   }
 
-  async update(actor: any, id: string, dto: any) {
+  async update(actor: AuthenticatedActor, id: string, dto: Prisma.AnnouncementUpdateInput): Promise<Announcement> {
     const existing = await this.prisma.announcement.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Announcement not found');
 
@@ -95,7 +97,7 @@ export class AnnouncementsService {
     return announcement;
   }
 
-  async delete(actor: any, id: string) {
+  async delete(actor: AuthenticatedActor, id: string): Promise<void> {
     const announcement = await this.prisma.announcement.findUnique({ where: { id } });
     if (!announcement) throw new NotFoundException('Announcement not found');
 

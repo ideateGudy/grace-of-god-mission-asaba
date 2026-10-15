@@ -1,13 +1,9 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
-import { Request } from 'express';
-import { UsersService, type AuthenticatedActor } from './users.service.js';
+import { UsersService } from './users.service.js';
 import { SuperAdminOnly } from '../auth/decorators/super-admin-only.decorator.js';
 import { createAdminUserSchema, updateAdminUserSchema, type CreateAdminUserDto, type UpdateAdminUserDto } from '@ggm/types';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
-
-export interface AuthenticatedRequest extends Request {
-  activeUser: AuthenticatedActor;
-}
+import type { AuthenticatedRequest } from '../common/types.js';
 
 @Controller('admin')
 @SuperAdminOnly()

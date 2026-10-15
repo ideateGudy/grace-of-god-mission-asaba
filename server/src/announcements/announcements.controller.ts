@@ -2,8 +2,9 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, ParseInt
 import { AnnouncementsService } from './announcements.service.js';
 import { PublicRoute } from '../auth/decorators/public-route.decorator.js';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator.js';
-import { createAnnouncementSchema } from '@ggm/types';
+import { createAnnouncementSchema, type CreateAnnouncementDto, type UpdateAnnouncementDto } from '@ggm/types';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
+import type { AuthenticatedRequest } from '../common/types.js';
 
 @Controller()
 export class AnnouncementsController {
@@ -33,21 +34,28 @@ export class AnnouncementsController {
 
   @RequirePermissions('ANNOUNCEMENTS_MANAGE')
   @Post('admin/announcements')
-  async create(@Req() req: any, @Body(new ZodValidationPipe(createAnnouncementSchema)) dto: any) {
+  async create(
+    @Req() req: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(createAnnouncementSchema)) dto: CreateAnnouncementDto,
+  ) {
     const data = await this.announcementsService.create(req.activeUser, dto);
     return { data };
   }
 
   @RequirePermissions('ANNOUNCEMENTS_MANAGE')
   @Patch('admin/announcements/:id')
-  async update(@Req() req: any, @Param('id') id: string, @Body(new ZodValidationPipe(createAnnouncementSchema.partial())) dto: any) {
+  async update(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(createAnnouncementSchema.partial())) dto: UpdateAnnouncementDto,
+  ) {
     const data = await this.announcementsService.update(req.activeUser, id, dto);
     return { data };
   }
 
   @RequirePermissions('ANNOUNCEMENTS_MANAGE')
   @Delete('admin/announcements/:id')
-  async delete(@Req() req: any, @Param('id') id: string) {
+  async delete(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     await this.announcementsService.delete(req.activeUser, id);
     return { data: null };
   }

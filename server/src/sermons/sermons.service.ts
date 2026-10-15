@@ -2,7 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { generateSlug, normalizeUrl } from '../common/utils/url.util.js';
-import { Prisma } from '@prisma/client';
+import type { Prisma, Sermon } from '@prisma/client';
+import type { AuthenticatedActor } from '../common/types.js';
+import type { CreateSermonDto, UpdateSermonDto } from '@ggm/types';
 
 @Injectable()
 export class SermonsService {
@@ -56,26 +58,30 @@ export class SermonsService {
     return { data, meta: { page, limit, total } };
   }
 
-  async getAdmin(id: string) {
+  async getAdmin(id: string): Promise<Sermon> {
     const sermon = await this.prisma.sermon.findUnique({ where: { id } });
     if (!sermon) throw new NotFoundException('Sermon not found');
     return sermon;
   }
 
-  async create(actor: any, dto: any) {
-    const data = { ...dto };
-    data.slug = data.slug || generateSlug(data.title);
-    data.videoUrl = normalizeUrl(data.videoUrl);
-    data.audioUrl = normalizeUrl(data.audioUrl);
-    data.thumbnailUrl = normalizeUrl(data.thumbnailUrl);
+  async create(actor: AuthenticatedActor, dto: CreateSermonDto): Promise<Sermon> {
+    let slug: string = dto.slug || generateSlug(dto.title);
     
     // Ensure unique slug
-    const existing = await this.prisma.sermon.findUnique({ where: { slug: data.slug } });
+    const existing = await this.prisma.sermon.findUnique({ where: { slug } });
     if (existing) {
-      data.slug = `${data.slug}-${Date.now().toString().slice(-4)}`;
+      slug = `${slug}-${Date.now().toString().slice(-4)}`;
     }
 
-    const sermon = await this.prisma.sermon.create({ data });
+    const sermon = await this.prisma.sermon.create({
+      data: {
+        ...dto,
+        slug,
+        videoUrl: normalizeUrl(dto.videoUrl),
+        audioUrl: normalizeUrl(dto.audioUrl),
+        thumbnailUrl: normalizeUrl(dto.thumbnailUrl),
+      },
+    });
 
     if (sermon.published) {
       await this.audit.log({
@@ -91,7 +97,7 @@ export class SermonsService {
     return sermon;
   }
 
-  async update(actor: any, id: string, dto: any) {
+  async update(actor: AuthenticatedActor, id: string, dto: UpdateSermonDto): Promise<Sermon> {
     const existing = await this.prisma.sermon.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Sermon not found');
 
@@ -121,7 +127,7 @@ export class SermonsService {
     return sermon;
   }
 
-  async delete(actor: any, id: string) {
+  async delete(actor: AuthenticatedActor, id: string): Promise<void> {
     const sermon = await this.prisma.sermon.findUnique({ where: { id } });
     if (!sermon) throw new NotFoundException('Sermon not found');
 

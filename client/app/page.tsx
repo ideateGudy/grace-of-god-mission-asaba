@@ -54,6 +54,15 @@ type ContentItem = {
   scripture?: string | null;
 };
 
+type AnnouncementItem = {
+  id: string;
+  title: string;
+  pinned?: boolean;
+  body?: string;
+  description?: string | null;
+  excerpt?: string | null;
+};
+
 async function safe<T>(load: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await load();
@@ -78,8 +87,8 @@ export default async function HomePage() {
 
   const sermons = sermonResult.data as ContentItem[];
   const events = eventResult.data as ContentItem[];
-  const announcements = announcementResult.data as ContentItem[];
-  const pinnedAnnouncement = announcements.find((a: any) => a.pinned) ?? announcements[0];
+  const announcements = announcementResult.data as AnnouncementItem[];
+  const pinnedAnnouncement = announcements.find((a: AnnouncementItem) => a.pinned) ?? announcements[0];
 
   const hasRealBankDetails =
     siteConfig.accountNumber &&

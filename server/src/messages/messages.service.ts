@@ -1,7 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
-import { MessageStatus } from '@prisma/client';
+import { MessageStatus, type ContactMessage, type PrayerRequest, type AuditLog } from '@prisma/client';
+import type { AuthenticatedActor } from '../common/types.js';
+import type { CreateContactDto, CreatePrayerDto } from '@ggm/types';
+
+export interface DashboardStats {
+  publishedSermons?: number;
+  upcomingEvents?: number;
+  unreadContactMessages?: number;
+  unreadPrayerRequests?: number;
+  liveHero?: { name: string; slides: number } | null;
+  activeAdmins?: number;
+  recentAudit?: AuditLog[];
+}
+
+export type CreateContactInput = CreateContactDto | { honeypot: string };
+export type CreatePrayerInput = CreatePrayerDto | { honeypot: string };
 
 @Injectable()
 export class MessagesService {
@@ -10,31 +25,33 @@ export class MessagesService {
     private readonly audit: AuditService,
   ) {}
 
-  async createContact(dto: any) {
-    if (dto.honeypot) {
+  async createContact(dto: CreateContactInput): Promise<{ success: boolean }> {
+    if ('honeypot' in dto && dto.honeypot) {
       return { success: true };
     }
+    const data = dto as CreateContactDto;
     await this.prisma.contactMessage.create({
       data: {
-        name: dto.name,
-        email: dto.email,
-        phone: dto.phone,
-        message: dto.message,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        message: data.message,
       },
     });
     return { success: true };
   }
 
-  async createPrayer(dto: any) {
-    if (dto.honeypot) {
+  async createPrayer(dto: CreatePrayerInput): Promise<{ success: boolean }> {
+    if ('honeypot' in dto && dto.honeypot) {
       return { success: true };
     }
+    const data = dto as CreatePrayerDto;
     await this.prisma.prayerRequest.create({
       data: {
-        name: dto.name,
-        email: dto.email,
-        phone: dto.phone,
-        request: dto.request,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        request: data.request,
       },
     });
     return { success: true };
@@ -63,7 +80,7 @@ export class MessagesService {
     return { data, meta: { page, limit, total } };
   }
 
-  async updateContactStatus(actor: any, id: string, status: MessageStatus) {
+  async updateContactStatus(actor: AuthenticatedActor, id: string, status: MessageStatus): Promise<ContactMessage> {
     const msg = await this.prisma.contactMessage.update({
       where: { id },
       data: { status },
@@ -72,7 +89,7 @@ export class MessagesService {
     return msg;
   }
 
-  async deleteContact(actor: any, id: string) {
+  async deleteContact(actor: AuthenticatedActor, id: string): Promise<void> {
     await this.prisma.contactMessage.delete({ where: { id } });
     await this.audit.log({
       actorId: actor?.id,
@@ -106,7 +123,7 @@ export class MessagesService {
     return { data, meta: { page, limit, total } };
   }
 
-  async updatePrayerStatus(actor: any, id: string, status: MessageStatus) {
+  async updatePrayerStatus(actor: AuthenticatedActor, id: string, status: MessageStatus): Promise<PrayerRequest> {
     const msg = await this.prisma.prayerRequest.update({
       where: { id },
       data: { status },
@@ -115,7 +132,7 @@ export class MessagesService {
     return msg;
   }
 
-  async deletePrayer(actor: any, id: string) {
+  async deletePrayer(actor: AuthenticatedActor, id: string): Promise<void> {
     await this.prisma.prayerRequest.delete({ where: { id } });
     await this.audit.log({
       actorId: actor?.id,
@@ -126,12 +143,12 @@ export class MessagesService {
     });
   }
 
-  async getStats(actor: any) {
+  async getStats(actor: AuthenticatedActor): Promise<{ data: DashboardStats }> {
     const permissions = actor.role === 'SUPER_ADMIN' 
       ? ['SERMONS_MANAGE', 'EVENTS_MANAGE', 'CONTACT_INBOX', 'PRAYER_INBOX', 'HERO_MANAGE'] 
-      : actor.permissions;
+      : (actor.permissions ?? []);
 
-    const stats: any = {};
+    const stats: DashboardStats = {};
     const now = new Date();
 
     if (permissions.includes('SERMONS_MANAGE') || actor.role === 'SUPER_ADMIN') {
