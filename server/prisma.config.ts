@@ -1,4 +1,5 @@
 import 'dotenv/config';
+process.env.PRISMA_HIDE_UPDATE_MESSAGE = 'true';
 import { defineConfig, env } from 'prisma/config';
 
 export default defineConfig({
