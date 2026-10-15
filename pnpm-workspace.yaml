@@ -1,0 +1,13 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'server'
+  - 'client'
+allowBuilds:
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@prisma/composer-cli@0.28.0'
+  - '@prisma/composer@0.28.0'
+  - '@prisma/orm-framework@8.0.0-rc.16'
+  - '@prisma/orm-toolchain@8.0.0-rc.16'
+  - prisma@8.0.0-rc.21
