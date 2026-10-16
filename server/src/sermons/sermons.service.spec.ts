@@ -65,7 +65,7 @@ describe('SermonsService', () => {
     prismaMock.sermon.findUnique.mockResolvedValue(null);
     prismaMock.sermon.create.mockResolvedValue(created);
 
-    const result = await service.create(actor, dto);
+    const result = await service.create(actor as any, dto);
     expect(result).toEqual(created);
     expect(auditMock.log).toHaveBeenCalledWith(
       expect.objectContaining({

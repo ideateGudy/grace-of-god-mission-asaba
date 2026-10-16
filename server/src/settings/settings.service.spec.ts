@@ -83,7 +83,7 @@ describe('SettingsService', () => {
     const updated = { id: 'default', ...dto };
     prismaMock.siteSetting.upsert.mockResolvedValue(updated);
 
-    const result = await service.updateSettings(actor, dto);
+    const result = await service.updateSettings(actor as any, dto);
     expect(result).toEqual(updated);
     expect(prismaMock.siteSetting.upsert).toHaveBeenCalledWith(
       expect.objectContaining({

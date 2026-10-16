@@ -7,7 +7,6 @@ export const createContactSchema = z.object({
   phone: z.string().trim().max(40).nullable().optional(),
   message: z.string().trim().min(1).max(2000),
   honeypot: z.string().max(500).optional(),
-  turnstileToken: z.string().max(2048).optional(),
   consent: z.boolean().refine((value) => value, "Consent is required"),
 }).strict().refine(data => data.email || data.phone, {
   message: "Either email or phone must be provided",
@@ -28,7 +27,6 @@ export const createPrayerSchema = z.object({
   phone: z.string().trim().max(40).nullable().optional(),
   request: z.string().trim().min(1).max(2000),
   honeypot: z.string().max(500).optional(),
-  turnstileToken: z.string().max(2048).optional(),
   consent: z.boolean().refine((value) => value, "Consent is required"),
 }).strict();
 

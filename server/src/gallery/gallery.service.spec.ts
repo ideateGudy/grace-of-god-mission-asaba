@@ -67,7 +67,7 @@ describe('GalleryService', () => {
     const created = { id: 'img-100', sortOrder: 5, ...dto };
     prismaMock.galleryImage.create.mockResolvedValue(created);
 
-    const result = await service.create(actor, dto);
+    const result = await service.create(actor as any, dto as any);
     expect(result).toEqual(created);
     expect(auditMock.log).toHaveBeenCalledWith(
       expect.objectContaining({

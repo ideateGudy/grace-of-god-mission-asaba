@@ -17,22 +17,18 @@ export class MessagesController {
   @Throttle({ short: { limit: 5, ttl: 60000 }, long: { limit: 30, ttl: 3600000 } })
   @Post('contact')
   async createContact(
-    @Req() req: any,
     @Body(new ZodValidationPipe(createContactSchema)) dto: CreateContactDto,
   ) {
-    const remoteIp = (req.headers?.['x-forwarded-for'] as string) || req.socket?.remoteAddress;
-    return this.messagesService.createContact(dto, remoteIp);
+    return this.messagesService.createContact(dto);
   }
 
   @PublicRoute()
   @Throttle({ short: { limit: 5, ttl: 60000 }, long: { limit: 30, ttl: 3600000 } })
   @Post('prayer-requests')
   async createPrayer(
-    @Req() req: any,
     @Body(new ZodValidationPipe(createPrayerSchema)) dto: CreatePrayerDto,
   ) {
-    const remoteIp = (req.headers?.['x-forwarded-for'] as string) || req.socket?.remoteAddress;
-    return this.messagesService.createPrayer(dto, remoteIp);
+    return this.messagesService.createPrayer(dto);
   }
 
   @RequirePermissions('CONTACT_INBOX')

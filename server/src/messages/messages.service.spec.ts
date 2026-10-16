@@ -5,7 +5,6 @@ describe('MessagesService', () => {
   const contactMessage = { create: vi.fn(), count: vi.fn(), findMany: vi.fn() };
   const prayerRequest = { create: vi.fn() };
   const audit = { log: vi.fn().mockResolvedValue(undefined) };
-  const turnstile = { verifyToken: vi.fn().mockResolvedValue(true) };
   const notifications = {
     sendContactAlert: vi.fn().mockResolvedValue(undefined),
     sendPrayerAlert: vi.fn().mockResolvedValue(undefined),
@@ -13,7 +12,6 @@ describe('MessagesService', () => {
   const service = new MessagesService(
     { contactMessage, prayerRequest } as never,
     audit as never,
-    turnstile as never,
     notifications as never,
   );
 

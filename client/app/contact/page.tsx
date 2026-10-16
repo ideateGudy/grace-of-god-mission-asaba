@@ -16,7 +16,6 @@ import Link from "next/link";
 import { MapPin, Phone, Mail, Clock, MessageSquare, CheckCircle2 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa6";
 import { ChurchMap } from "@/components/shared/ChurchMap";
-import { TurnstileWidget } from "@/components/shared/TurnstileWidget";
 import { siteConfig } from "@/config/site";
 
 const contactSchema = z
@@ -38,7 +37,6 @@ const contactSchema = z
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string>("");
 
   const phoneAvailable = !siteConfig.phone.startsWith("[") && Boolean(siteConfig.phone);
   const whatsappAvailable =
@@ -72,7 +70,6 @@ export default function ContactPage() {
           message: data.message,
           consent: data.consent,
           honeypot: data._honeypot,
-          turnstileToken: turnstileToken || undefined,
         }),
       });
 
@@ -281,8 +278,6 @@ export default function ContactPage() {
                       {form.formState.errors.consent.message}
                     </p>
                   )}
-
-                  <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
 
                   <Button
                     type="submit"
