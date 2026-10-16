@@ -30,6 +30,9 @@
   --hero-gradient-dawn: linear-gradient(135deg, var(--midnight), var(--indigo), var(--sky));
   --hero-gradient-daybreak: linear-gradient(135deg, var(--indigo), #5964b8, var(--sky));
   --hero-gradient-glow: linear-gradient(135deg, var(--night), var(--midnight), var(--indigo));
+  --hero-gradient-radiance: linear-gradient(135deg, #FFFFFF 0%, #FAF8F2 35%, #F4E8D0 75%, #E9DECA 100%);
+  --hero-gradient-serenity: linear-gradient(135deg, #FFFFFF 0%, #F5F8FE 35%, #E1ECFC 75%, #DCE6F7 100%);
+  --hero-gradient-parchment: linear-gradient(135deg, #FFFFFF 0%, #FAF8F5 45%, #EFECE4 100%);
 }
 
 .dark {
@@ -53,6 +56,9 @@
   --hero-gradient-dawn: linear-gradient(135deg, var(--night), var(--midnight), #1D2050);
   --hero-gradient-daybreak: linear-gradient(135deg, var(--midnight), #30366f, #1D2050);
   --hero-gradient-glow: linear-gradient(135deg, var(--night), var(--midnight), #30366f);
+  --hero-gradient-radiance: linear-gradient(135deg, #2D2517 0%, #201C2B 50%, #141633 100%);
+  --hero-gradient-serenity: linear-gradient(135deg, #182238 0%, #171B3D 50%, #141633 100%);
+  --hero-gradient-parchment: linear-gradient(135deg, #22222E 0%, #1A1A28 50%, #141633 100%);
 }
 
 @media (min-width: 768px) { :root { --glass-blur: 18px; } }

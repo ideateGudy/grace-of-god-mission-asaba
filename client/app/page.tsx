@@ -98,7 +98,7 @@ export default async function HomePage() {
   return (
     <div className="relative flex min-h-screen flex-col bg-background text-foreground">
       <SunriseBackdrop />
-      <SiteHeader />
+      <SiteHeader initialHeroTextTone={heroResult.data?.slides?.[0]?.textTone ?? "LIGHT"} />
       <MobileNav />
 
       <main id="main-content" className="flex-1">

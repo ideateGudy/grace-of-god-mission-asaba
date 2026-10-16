@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MapPin, PlayCircle, Sparkles, ExternalLink } from "lucide-react";
@@ -5,12 +6,18 @@ import type { HeroSlideDto } from "@ggm/types";
 import { cn } from "@/lib/utils";
 import { HeroSequence } from "@/components/motion/HeroSequence";
 import { siteConfig } from "@/config/site";
+import { useUiStore } from "@/store/useUiStore";
 
-const gradients = {
+const gradients: Record<string, string> = {
   dawn: "--hero-gradient-dawn",
   daybreak: "--hero-gradient-daybreak",
   glow: "--hero-gradient-glow",
-} as const;
+  radiance: "--hero-gradient-radiance",
+  serenity: "--hero-gradient-serenity",
+  parchment: "--hero-gradient-parchment",
+};
+
+const lightGradients = new Set(["radiance", "serenity", "parchment"]);
 
 export function HeroSlideView({
   slide,
@@ -25,8 +32,15 @@ export function HeroSlideView({
 }) {
   const isSplit = slide.layout === "SPLIT";
   const isImageBg = slide.bgType === "IMAGE" && !isSplit && Boolean(slide.imageUrl);
-  const isDarkTone = slide.textTone === "DARK";
+  const isLightGradient = slide.bgType === "GRADIENT" && lightGradients.has(slide.bgGradient ?? "");
+  const isDarkTone = slide.textTone === "DARK" || isLightGradient;
   const textTone = isDarkTone ? "text-midnight" : "text-white";
+
+  useEffect(() => {
+    if (isFirst) {
+      useUiStore.getState().setHeroTextTone(isDarkTone ? "DARK" : "LIGHT");
+    }
+  }, [isFirst, isDarkTone]);
 
   const isDefaultMidnight =
     !isImageBg &&

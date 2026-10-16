@@ -136,10 +136,13 @@ export class HeroService {
         ...rest,
         createdById: actor?.id,
         slides: {
-          create: slides.map((s, index: number) => ({
-            ...s,
-            sortOrder: s.sortOrder ?? index,
-          })),
+          create: slides.map((s, index: number) => {
+            const { id: _slideId, ...slideData } = s;
+            return {
+              ...slideData,
+              sortOrder: s.sortOrder ?? index,
+            };
+          }),
         },
       },
       include: { slides: true },
@@ -173,10 +176,13 @@ export class HeroService {
         data: {
           ...rest,
           slides: {
-            create: slides.map((s, index: number) => ({
-              ...s,
-              sortOrder: s.sortOrder ?? index,
-            })),
+            create: slides.map((s, index: number) => {
+              const { id: _slideId, ...slideData } = s;
+              return {
+                ...slideData,
+                sortOrder: s.sortOrder ?? index,
+              };
+            }),
           },
         },
         include: { slides: { orderBy: { sortOrder: 'asc' } } },

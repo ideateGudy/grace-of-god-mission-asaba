@@ -13,7 +13,7 @@ export const heroSlideSchema = z.object({
   secondaryUrl: z.string().nullable(),
   bgType: z.enum(['IMAGE', 'COLOR', 'GRADIENT']),
   bgColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable(),
-  bgGradient: z.enum(['dawn', 'daybreak', 'glow']).nullable(),
+  bgGradient: z.enum(['dawn', 'daybreak', 'glow', 'radiance', 'serenity', 'parchment']).nullable(),
   imageUrl: z.string().url().nullable(),
   mobileImageUrl: z.string().url().nullable(),
   imageAlt: z.string().nullable(),

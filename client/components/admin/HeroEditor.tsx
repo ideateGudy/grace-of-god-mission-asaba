@@ -45,6 +45,7 @@ const colorPresets = [
   { label: "Sky", value: "#DCE6F7" },
   { label: "Gold", value: "#D9A441" },
   { label: "Paper", value: "#FAFAF7" },
+  { label: "White", value: "#FFFFFF" },
 ]
 function contrastRatio(background: string, foreground: string) {
   const luminance = (hex: string) => {
@@ -71,31 +72,37 @@ const blankHero = (): CreateHeroDto => ({
 })
 const dateValue = (value: string | null | undefined) =>
   toLagosDateTimeInput(value)
-const nullable = (value: string) => (value.trim() ? value : null)
+const nullable = (value: string) => (value.trim() ? value.trim() : null)
 
-const sanitizeSlide = (slide: HeroSlideDto, index: number): HeroSlideDto => ({
-  id: slide.id,
-  sortOrder: index,
-  layout: slide.layout,
-  align: slide.align,
-  title: slide.title,
-  subtitle: slide.subtitle ?? null,
-  primaryLabel: slide.primaryLabel ?? null,
-  primaryUrl: slide.primaryUrl ?? null,
-  secondaryLabel: slide.secondaryLabel ?? null,
-  secondaryUrl: slide.secondaryUrl ?? null,
-  bgType: slide.bgType,
-  bgColor: slide.bgColor ?? null,
-  bgGradient: slide.bgGradient ?? null,
-  imageUrl: slide.imageUrl ?? null,
-  mobileImageUrl: slide.mobileImageUrl ?? null,
-  imageAlt: slide.imageAlt ?? null,
-  imageDecorative: Boolean(slide.imageDecorative),
-  focalX: slide.focalX ?? 50,
-  focalY: slide.focalY ?? 50,
-  overlay: slide.overlay ?? 40,
-  textTone: slide.textTone ?? "LIGHT",
-})
+const sanitizeSlide = (slide: HeroSlideDto, index: number): HeroSlideDto => {
+  const isImageBackground = slide.layout === "FULL_BLEED" && slide.bgType === "IMAGE"
+  const isSplitWithImage = slide.layout === "SPLIT"
+  const allowsImage = isImageBackground || isSplitWithImage
+
+  return {
+    id: slide.id,
+    sortOrder: index,
+    layout: slide.layout,
+    align: slide.align,
+    title: slide.title?.trim() || "A Sanctuary of Grace, Truth, and Loving Community",
+    subtitle: slide.subtitle?.trim() ? slide.subtitle.trim() : null,
+    primaryLabel: slide.primaryLabel?.trim() ? slide.primaryLabel.trim() : null,
+    primaryUrl: slide.primaryLabel?.trim() && slide.primaryUrl?.trim() ? slide.primaryUrl.trim() : null,
+    secondaryLabel: slide.secondaryLabel?.trim() ? slide.secondaryLabel.trim() : null,
+    secondaryUrl: slide.secondaryLabel?.trim() && slide.secondaryUrl?.trim() ? slide.secondaryUrl.trim() : null,
+    bgType: slide.bgType,
+    bgColor: slide.bgType === "COLOR" ? (slide.bgColor?.trim() || "#141633") : null,
+    bgGradient: slide.bgType === "GRADIENT" ? (slide.bgGradient || "dawn") : null,
+    imageUrl: allowsImage && slide.imageUrl?.trim() ? slide.imageUrl.trim() : null,
+    mobileImageUrl: isImageBackground && slide.mobileImageUrl?.trim() ? slide.mobileImageUrl.trim() : null,
+    imageAlt: allowsImage && slide.imageAlt?.trim() ? slide.imageAlt.trim() : null,
+    imageDecorative: allowsImage ? Boolean(slide.imageDecorative) : false,
+    focalX: slide.focalX ?? 50,
+    focalY: slide.focalY ?? 50,
+    overlay: slide.overlay ?? 40,
+    textTone: slide.textTone ?? "LIGHT",
+  }
+}
 
 export function HeroEditor({ id }: { id: string }) {
   const router = useRouter()
@@ -106,6 +113,14 @@ export function HeroEditor({ id }: { id: string }) {
   const [previewMobile, setPreviewMobile] = useState(false)
   const [previewSlideIndex, setPreviewSlideIndex] = useState(0)
   const [previewViewMode, setPreviewViewMode] = useState<"slide" | "carousel">("slide")
+
+  const currentPreviewSlide = hero.slides[previewSlideIndex] ?? hero.slides[0]
+  const isLightHeroBg =
+    currentPreviewSlide?.textTone === "DARK" ||
+    (currentPreviewSlide?.bgType === "GRADIENT" &&
+      (currentPreviewSlide.bgGradient === "radiance" ||
+        currentPreviewSlide.bgGradient === "serenity" ||
+        currentPreviewSlide.bgGradient === "parchment"))
   useEffect(() => {
     if (isNew) return
     let cancelled = false
@@ -140,14 +155,14 @@ export function HeroEditor({ id }: { id: string }) {
       ),
     }))
   }
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const handleSave = async (publishDirectly?: boolean) => {
+    const isPublishing = publishDirectly !== undefined ? publishDirectly : Boolean(hero.published)
     const payload: CreateHeroDto = {
-      name: hero.name,
+      name: hero.name.trim() || "New hero",
       mode: hero.mode,
       autoplay: hero.autoplay,
       intervalSeconds: hero.intervalSeconds,
-      published: hero.published,
+      published: isPublishing,
       startsAt: fromLagosDateTimeInput(hero.startsAt ?? ""),
       endsAt: fromLagosDateTimeInput(hero.endsAt ?? ""),
       slides: hero.slides.map(sanitizeSlide),
@@ -171,18 +186,24 @@ export function HeroEditor({ id }: { id: string }) {
       )
       const result = await response.json().catch(() => null)
       if (!response.ok)
-        throw new Error(result?.message ?? "Unable to save this hero.")
+        throw new Error(result?.message ?? "Unable to save this hero to database.")
       toast.success(
-        "Hero saved as a draft. Review the preview, then publish it from the hero list."
+        isPublishing
+          ? "Hero design saved and published live to database & website!"
+          : "Hero design saved as draft in database."
       )
       router.push("/admin/hero")
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save this hero."
+        error instanceof Error ? error.message : "Unable to save this hero to database."
       )
     } finally {
       setSaving(false)
     }
+  }
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    await handleSave()
   }
   if (loading)
     return (
@@ -290,6 +311,29 @@ export function HeroEditor({ id }: { id: string }) {
             <p className="text-xs text-muted-foreground">
               Optional schedule: Leave both empty to display immediately upon publishing and remain active indefinitely.
             </p>
+          </div>
+          <div className="flex items-center justify-between rounded-xl border border-border p-4 bg-muted/20">
+            <div className="space-y-0.5">
+              <Label htmlFor="hero-published" className="text-base font-semibold cursor-pointer">Published status</Label>
+              <p className="text-xs text-muted-foreground">
+                When enabled, this hero will be active and visible on the public landing page (respects schedule if set).
+              </p>
+            </div>
+            <label htmlFor="hero-published" className="flex items-center gap-2 cursor-pointer font-medium text-sm">
+              <input
+                id="hero-published"
+                name="published"
+                type="checkbox"
+                className="size-5 accent-primary cursor-pointer"
+                checked={hero.published}
+                onChange={(event) =>
+                  setHero({ ...hero, published: event.target.checked })
+                }
+              />
+              <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-semibold", hero.published ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground")}>
+                {hero.published ? "Published (Live)" : "Draft"}
+              </span>
+            </label>
           </div>
         </GlassCard>
         {hero.slides.map((slide, index) => (
@@ -515,21 +559,27 @@ export function HeroEditor({ id }: { id: string }) {
                 <div className="space-y-2">
                   <Label htmlFor={`slide-bg-color-${index}`}>Background colour</Label>
                   <div className="flex flex-wrap gap-2" role="group" aria-label="Background colour presets">
-                    {colorPresets.map((preset) => (
-                      <button
-                        key={preset.value}
-                        type="button"
-                        aria-label={`Use ${preset.label} background colour`}
-                        aria-pressed={slide.bgColor?.toUpperCase() === preset.value}
-                        title={preset.label}
-                        onClick={() => setSlide(index, { bgColor: preset.value })}
-                        className={cn(
-                          "size-11 rounded-full border-2 border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-transform hover:scale-105 active:scale-95",
-                          slide.bgColor?.toUpperCase() === preset.value.toUpperCase() && "ring-2 ring-primary ring-offset-2 border-primary"
-                        )}
-                        style={{ backgroundColor: preset.value }}
-                      />
-                    ))}
+                    {colorPresets.map((preset) => {
+                      const isLightColor = preset.value === "#FFFFFF" || preset.value === "#FAFAF7" || preset.value === "#DCE6F7"
+                      return (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          aria-label={`Use ${preset.label} background colour`}
+                          aria-pressed={slide.bgColor?.toUpperCase() === preset.value}
+                          title={preset.label}
+                          onClick={() => setSlide(index, {
+                            bgColor: preset.value,
+                            textTone: isLightColor ? "DARK" : "LIGHT"
+                          })}
+                          className={cn(
+                            "size-11 rounded-full border-2 border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-transform hover:scale-105 active:scale-95 shadow-xs",
+                            slide.bgColor?.toUpperCase() === preset.value.toUpperCase() && "ring-2 ring-primary ring-offset-2 border-primary"
+                          )}
+                          style={{ backgroundColor: preset.value }}
+                        />
+                      )
+                    })}
                   </div>
                   <div className="grid grid-cols-[auto_1fr] gap-3">
                     <Input
@@ -538,8 +588,14 @@ export function HeroEditor({ id }: { id: string }) {
                       type="color"
                       aria-label="Choose background colour"
                       value={/^#[0-9a-f]{6}$/i.test(slide.bgColor ?? "") ? slide.bgColor! : "#141633"}
-                      onChange={(event) => setSlide(index, { bgColor: event.target.value })}
-                      className="h-11 w-16 p-1"
+                      onChange={(event) => {
+                        const val = event.target.value
+                        const contrastWithDark = contrastRatio(val, "#141633") ?? 1
+                        const contrastWithWhite = contrastRatio(val, "#FFFFFF") ?? 1
+                        const autoTone: "LIGHT" | "DARK" = contrastWithDark > contrastWithWhite ? "DARK" : "LIGHT"
+                        setSlide(index, { bgColor: val, textTone: autoTone })
+                      }}
+                      className="h-11 w-16 p-1 cursor-pointer"
                     />
                     <Input
                       id={`slide-bg-color-${index}`}
@@ -547,15 +603,28 @@ export function HeroEditor({ id }: { id: string }) {
                       aria-label="Background colour hex"
                       value={slide.bgColor ?? "#141633"}
                       maxLength={7}
-                      onChange={(event) => setSlide(index, { bgColor: event.target.value })}
+                      onChange={(event) => {
+                        const val = event.target.value
+                        const updates: Partial<HeroSlideDto> = { bgColor: val }
+                        if (/^#[0-9a-f]{6}$/i.test(val)) {
+                          const contrastWithDark = contrastRatio(val, "#141633") ?? 1
+                          const contrastWithWhite = contrastRatio(val, "#FFFFFF") ?? 1
+                          updates.textTone = contrastWithDark > contrastWithWhite ? "DARK" : "LIGHT"
+                        }
+                        setSlide(index, updates)
+                      }}
                     />
                   </div>
                   {(() => {
                     const ratio = contrastRatio(slide.bgColor ?? "#141633", slide.textTone === "LIGHT" ? "#FFFFFF" : "#141633")
                     if (ratio === null) return <p role="alert" className="text-sm text-destructive">Enter a valid six-digit hex colour.</p>
-                    return <p role="status" className={`text-sm ${ratio < 4.5 ? "text-destructive" : "text-muted-foreground"}`}>
-                      Contrast {ratio.toFixed(2)}:1 {ratio < 4.5 ? "· Below the 4.5:1 publishing requirement" : "· Meets the 4.5:1 requirement"}
-                    </p>
+                    return (
+                      <div className="space-y-1">
+                        <p role="status" className={`text-sm ${ratio < 4.5 ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                          Contrast {ratio.toFixed(2)}:1 {ratio < 4.5 ? "· Below the 4.5:1 publishing requirement. Switch text tone to " + (slide.textTone === "LIGHT" ? "Dark" : "Light") + " below." : "· Meets the 4.5:1 requirement"}
+                        </p>
+                      </div>
+                    )
                   })()}
                 </div>
               ) : slide.bgType === "GRADIENT" ? (
@@ -566,17 +635,31 @@ export function HeroEditor({ id }: { id: string }) {
                     name={`slide_${index}_bg_gradient`}
                     className="min-h-11 w-full rounded-md border border-input bg-background px-3"
                     value={slide.bgGradient ?? "dawn"}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const nextGrad = event.target.value as HeroSlideDto["bgGradient"]
+                      const isLight = nextGrad === "radiance" || nextGrad === "serenity" || nextGrad === "parchment"
                       setSlide(index, {
-                        bgGradient: event.target
-                          .value as HeroSlideDto["bgGradient"],
+                        bgGradient: nextGrad,
+                        textTone: isLight ? "DARK" : "LIGHT"
                       })
-                    }
+                    }}
                   >
-                    <option value="dawn">Dawn</option>
-                    <option value="daybreak">Daybreak</option>
-                    <option value="glow">Glow</option>
+                    <optgroup label="Light Background Gradients (White & Luminous)">
+                      <option value="radiance">Radiance (Ivory & Morning Gold — Light)</option>
+                      <option value="serenity">Serenity (Pure White & Sky — Light)</option>
+                      <option value="parchment">Parchment (Linen & Alabaster — Light)</option>
+                    </optgroup>
+                    <optgroup label="Dark Background Gradients (Deep Midnight & Celestial)">
+                      <option value="dawn">Dawn (Midnight & Indigo — Dark)</option>
+                      <option value="daybreak">Daybreak (Indigo & Sky — Dark)</option>
+                      <option value="glow">Glow (Night & Midnight — Dark)</option>
+                    </optgroup>
                   </select>
+                  <p className="text-xs text-muted-foreground">
+                    {slide.bgGradient === "radiance" || slide.bgGradient === "serenity" || slide.bgGradient === "parchment"
+                      ? "Light gradient active: Typography and navigation automatically adjust to high-contrast dark tones."
+                      : "Dark gradient active: Typography and navigation automatically adjust to luminous white tones."}
+                  </p>
                 </div>
               ) : null}
               {(slide.bgType === "IMAGE" || slide.layout === "SPLIT") && (
@@ -835,10 +918,55 @@ export function HeroEditor({ id }: { id: string }) {
           <div
             className={
               previewMobile
-                ? "mx-auto max-w-sm overflow-hidden border-x border-border shadow-inner"
-                : "overflow-hidden"
+                ? "relative mx-auto max-w-sm overflow-hidden border-x border-border shadow-inner"
+                : "relative overflow-hidden"
             }
           >
+            {/* Live Navigation Bar Preview: shows how nav text dynamically adapts to the hero background */}
+            <div
+              className={cn(
+                "w-full px-4 sm:px-6 py-2.5 transition-colors flex items-center justify-between border-b z-20",
+                isLightHeroBg
+                  ? "bg-background/90 text-foreground border-border/60 shadow-xs"
+                  : "bg-black/40 text-white border-white/10 backdrop-blur-xs"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <span className="font-display font-bold tracking-tight text-xs sm:text-sm">
+                  Grace of God Mission
+                </span>
+                <span
+                  className={cn(
+                    "hidden sm:inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+                    isLightHeroBg
+                      ? "border-primary/30 bg-primary/10 text-primary"
+                      : "border-white/30 bg-white/10 text-white"
+                  )}
+                >
+                  {isLightHeroBg ? "Nav: Dark text (Light Hero)" : "Nav: White text (Dark Hero)"}
+                </span>
+              </div>
+              <div className="hidden md:flex items-center gap-4 text-xs font-medium opacity-90">
+                <span className={isLightHeroBg ? "text-foreground/80" : "text-white/80"}>About</span>
+                <span className={isLightHeroBg ? "text-foreground/80" : "text-white/80"}>Sermons</span>
+                <span className={isLightHeroBg ? "text-foreground/80" : "text-white/80"}>Events</span>
+                <span className={isLightHeroBg ? "text-foreground/80" : "text-white/80"}>Ministries</span>
+                <span className="font-semibold text-primary">Give</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors",
+                    isLightHeroBg
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "bg-white/20 text-white border border-white/30"
+                  )}
+                >
+                  Plan a visit
+                </span>
+              </div>
+            </div>
+
             <HeroRenderer
               hero={{
                 id,
@@ -852,18 +980,47 @@ export function HeroEditor({ id }: { id: string }) {
             />
           </div>
         </GlassCard>
-        <div className="sticky bottom-0 z-30 -mx-4 -mb-4 md:-mx-8 md:-mb-8 mt-8 flex justify-end gap-3 border-t border-border bg-background/95 p-4 md:px-8 backdrop-blur">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push("/admin/hero")}
-            disabled={saving}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={saving}>
-            {saving ? "Saving…" : "Save draft"}
-          </Button>
+        <div className="sticky bottom-0 z-30 -mx-4 -mb-4 md:-mx-8 md:-mb-8 mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background/95 p-4 md:px-8 backdrop-blur">
+          <div className="text-xs text-muted-foreground flex items-center gap-2">
+            <span
+              className={cn(
+                "size-2 rounded-full",
+                hero.published ? "bg-emerald-500 ring-2 ring-emerald-500/20" : "bg-amber-500"
+              )}
+            />
+            <span>
+              Target status:{" "}
+              <strong className="text-foreground">
+                {hero.published ? "Published (Live on website)" : "Draft (Database only)"}
+              </strong>
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push("/admin/hero")}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => handleSave(false)}
+              disabled={saving}
+            >
+              {saving ? "Saving…" : "Save as draft"}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => handleSave(true)}
+              disabled={saving}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium shadow-xs"
+            >
+              {saving ? "Saving…" : "Save & Publish live"}
+            </Button>
+          </div>
         </div>
       </form>
     </div>
