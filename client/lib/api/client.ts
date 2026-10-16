@@ -10,9 +10,9 @@ export class ApiError extends Error {
   }
 }
 
-async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: string[], revalidate?: number }): Promise<T> {
+async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: string[], revalidate?: number; timeoutMs?: number }): Promise<T> {
   const url = IS_SERVER 
-    ? `${process.env.API_INTERNAL_URL || 'http://localhost:5000'}/api/v1${endpoint}`
+    ? `${process.env.API_INTERNAL_URL || 'http://127.0.0.1:5000'}/api/v1${endpoint}`
     : `/api/v1${endpoint}`;
 
   if (MOCK_API) {
@@ -20,12 +20,21 @@ async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: str
     return { data: [], meta: { page: 1, limit: 12, total: 0 } } as T;
   }
 
-  const { tags, revalidate = 60, ...rest } = options || {};
+  const { tags, revalidate = 60, timeoutMs = 4000, ...rest } = options || {};
   
+  const getSignal = () => {
+    if (rest.signal) return rest.signal;
+    if (IS_SERVER && typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+      return AbortSignal.timeout(timeoutMs);
+    }
+    return undefined;
+  };
+
   let res: Response;
   try {
     res = await fetch(url, {
       ...rest,
+      signal: getSignal(),
       headers: {
         "Content-Type": "application/json",
         ...rest.headers,
@@ -34,10 +43,11 @@ async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: str
     });
   } catch {
     if (!rest.method && rest.cache !== "no-store") {
-      await new Promise((resolve) => setTimeout(resolve, 900));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       try {
         res = await fetch(url, {
           ...rest,
+          signal: getSignal(),
           headers: { "Content-Type": "application/json", ...rest.headers },
           ...(IS_SERVER ? { next: { tags, revalidate } } : {})
         });

@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "clean": "node -e \"try { require('fs').rmSync('.next', { recursive: true, force: true }); } catch {}\"",
     "typecheck": "tsc --noEmit",
     "test:e2e": "pnpm --filter @ggm/types build && next build && playwright test",
     "test:styleguide": "playwright test --config playwright.styleguide.config.ts",
