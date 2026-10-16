@@ -20,9 +20,9 @@ grace-of-god-mission-asaba/
 ```
 
 ### Workspaces
-1. **[`client`](./client)** (`@ggm/client`): Next.js 16 web application featuring the public sanctuary site, sermons library, events calendar, announcements, photo gallery, online giving, visitor planning, and a secure `/admin` management portal.
-2. **[`server`](./server)** (`@ggm/server`): NestJS REST API with default-deny role-based authorization, JWT authentication in `httpOnly` cookies, rate-limiting, Cloudinary signed upload signatures, ISR cache revalidation, and Neon Postgres persistence.
-3. **[`packages/types`](./packages/types)** (`@ggm/types`): Shared contract defining DTOs, data models, permissions, and Zod schemas shared between client and server.
+1. **[`client`](./client)** (`@ggm/client`): Next.js 16 web application featuring the public sanctuary site, sermons library, events calendar, announcements, photo gallery, church fundraising projects, Paystack online giving, visitor planning, and a secure `/admin` management portal.
+2. **[`server`](./server)** (`@ggm/server`): NestJS REST API with default-deny role-based authorization, JWT authentication in `httpOnly` cookies, rate-limiting, Cloudinary signed upload signatures, Paystack payment processing & HMAC SHA-512 webhooks, ISR cache revalidation, and Neon Postgres persistence.
+3. **[`packages/types`](./packages/types)** (`@ggm/types`): Shared contract defining DTOs, data models, permissions, project schemas, giving schemas, and Zod contracts shared between client and server.
 
 ---
 
@@ -44,7 +44,17 @@ grace-of-god-mission-asaba/
 - **Events & Gatherings (`/events`)**: Tabbed upcoming and past event calendar with dates, times, venues, and one-click `.ics` calendar file downloads.
 - **Announcements (`/announcements`)**: Church bulletin with priority badges and pinned alerts.
 - **Media Gallery (`/gallery`)**: Photo albums celebrating church milestones, conventions, and worship nights with interactive full-screen image lightbox.
-- **Online Giving (`/give`)**: Secure tithe, offering, and project partnership banking details with instant clipboard copying.
+- **Church Projects Hub (`/projects` & `/projects/[slug]`)**:
+  - Transparent fundraising showcase for building campaigns, youth centers, and mission outreaches.
+  - Real-time progress bars, goal vs. raised amounts in Naira (₦), donor count, and target completion dates.
+  - Individual project detail pages with full vision descriptions, embedded contribution widgets, and public supporter feeds (with privacy protection).
+- **Online Giving & Tithes (`/give` & `/give/thanks`)**:
+  - Secure Paystack integration supporting debit cards, bank transfers, USSD, and Apple Pay.
+  - Preset giving amounts (₦1,000, ₦2,500, ₦5,000, ₦10,000, ₦25,000, ₦50,000) with custom input.
+  - Fund allocation selector (General Church Giving or specific Church Projects).
+  - Anonymity toggle to protect donor identity on public feeds.
+  - `/give/thanks`: Digital receipt confirmation screen with real-time Paystack transaction status verification.
+  - Direct verified bank account details alongside online giving with one-click copy buttons.
 - **Prayer Requests (`/prayer`)**: Confidential prayer request form with honeypot spam protection.
 - **Contact & Inquiries (`/contact`)**: Interactive inquiry form, WhatsApp direct chat link, phone dialing, and full sanctuary street address.
 - **Privacy Notice (`/privacy`)**: Transparent privacy policy compliant with NDPR and international data protection standards.
@@ -65,12 +75,17 @@ grace-of-god-mission-asaba/
   - **Announcements**: Broadcast pinned bulletin notices with publication schedules.
   - **Gallery Management**: Upload and organize photo albums with automated Cloudinary CDN delivery.
   - **Hero Banner Editor (`/admin/hero`)**: Manage single slide vs. autoplay carousel banners, customize titles, button links, focal points, and overlays.
+  - **Church Projects Management (`/admin/projects`)**: Create and edit fundraising campaigns, upload cover imagery, configure targets in ₦, set deadlines, and track real-time progress.
+  - **Offline Giving Recording**: Modal workflow allowing administrators to record direct bank transfers, cheques, and cash gifts against specific projects, updating the transparent donor feed.
+  - **Giving & Contributions Ledger (`/admin/contributions`)**: Full audit ledger tracking both Paystack online payments and manual offline contributions, filterable by project and status with financial summary cards.
+  - **Financial CSV Export**: One-click download of the complete contributions journal (`/api/v1/admin/contributions/export`) for external church accounting and financial reconciliation.
 - **Community Submissions**:
   - **Contact Messages (`/admin/messages`)**: Review, filter, and archive visitor inquiries.
   - **Prayer Requests**: Dedicated view for pastoral intercession with read status flags.
 - **User & Role Management (`/admin/users`) — *Super Admin Only***:
   - Create administrative users with temporary passwords.
   - Assign roles: `ADMIN` (content manager) or `SUPER_ADMIN` (full platform authority).
+  - Assign granular permissions: `SERMONS_MANAGE`, `EVENTS_MANAGE`, `ANNOUNCEMENTS_MANAGE`, `GALLERY_MANAGE`, `HERO_MANAGE`, `PROJECTS_MANAGE`, `GIVING_MANAGE`, `CONTACT_INBOX`, `PRAYER_INBOX`.
   - Deactivate/activate accounts and trigger password resets.
 - **Audit Logging (`/admin/audit`) — *Super Admin Only***:
   - Immutable audit trail recording actor, action, entity, entity ID, timestamp, and IP.
@@ -132,6 +147,8 @@ SUPER_ADMIN_SEED_PASSWORD="TemporaryPassword123!"
 REVALIDATE_SECRET="replace-with-a-long-random-revalidation-secret"
 WEB_REVALIDATE_URL="http://localhost:3000/api/revalidate"
 IMAGE_ALLOWED_HOSTS="images.unsplash.com,res.cloudinary.com"
+PAYSTACK_SECRET_KEY="sk_test_..."
+PAYSTACK_PUBLIC_KEY="pk_test_..."
 PRISMA_HIDE_UPDATE_MESSAGE=true
 ```
 
@@ -145,6 +162,7 @@ NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 API_INTERNAL_URL="http://localhost:5000"
 REVALIDATE_SECRET="replace-with-a-long-random-revalidation-secret"
 IMAGE_ALLOWED_HOSTS="images.unsplash.com,res.cloudinary.com"
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY="pk_test_..."
 USE_MOCK_API=false
 ```
 
@@ -239,11 +257,16 @@ flowchart LR
 | `CLOUDINARY_CLOUD_NAME` | *(Your Cloudinary cloud name)* | For sermon/event media uploads |
 | `CLOUDINARY_API_KEY` | *(Your Cloudinary API key)* | |
 | `CLOUDINARY_API_SECRET` | *(Your Cloudinary API secret)* | |
+| `PAYSTACK_SECRET_KEY` | `sk_live_...` (or `sk_test_...`) | Secret key for Paystack transaction initialization and verification |
+| `PAYSTACK_PUBLIC_KEY` | `pk_live_...` (or `pk_test_...`) | Public key for Paystack operations |
 | `PRISMA_HIDE_UPDATE_MESSAGE` | `true` | Suppresses RC update notice |
 
 5. Under **Advanced Settings**:
    - **Health Check Path**: `/api/v1/health`
 6. Click **Create Web Service**. Once deployed, copy your service URL (e.g., `https://ggm-asaba-api.onrender.com`).
+7. **Configure Paystack Webhooks**:
+   In your [Paystack Dashboard](https://dashboard.paystack.com/#/settings/developer) under **Settings → API Keys & Webhooks**:
+   - Set **Live/Test Webhook URL** to: `https://<your-render-app>.onrender.com/api/v1/webhooks/paystack`
 
 ---
 
@@ -271,6 +294,7 @@ flowchart LR
 | `API_INTERNAL_URL` | `https://ggm-asaba-api.onrender.com` | Your deployed Render backend URL (no trailing slash) |
 | `REVALIDATE_SECRET` | *(Same secret set on Render)* | Authenticates on-demand cache purges |
 | `IMAGE_ALLOWED_HOSTS` | `images.unsplash.com,res.cloudinary.com` | Allowed domains for Next/Image |
+| `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | `pk_live_...` (or `pk_test_...`) | Public Paystack key for browser transactions |
 | `USE_MOCK_API` | `false` | Connects frontend to live backend API |
 
 6. Click **Deploy**.
@@ -322,6 +346,8 @@ flowchart LR
 4. **Forced Password Reset**: Newly seeded or reset administrator accounts are forced to reset their temporary password at `/admin/account` before gaining access to other admin features.
 5. **Signed Cloudinary Uploads**: Binary files are uploaded directly from the browser to Cloudinary using single-use SHA-1 signatures from the API, preventing server memory bottlenecks.
 6. **Graceful Error Recovery**: Client and server global error filters prevent application crashes, scrub sensitive internal messages from 500 responses, and log structured stack traces for diagnostics.
+7. **Append-Only Financial Ledger**: Church project fundraising balances are never stored as mutable accumulators; they are derived on-demand via SQL aggregations over the immutable `Contribution` journal (`status = 'SUCCESS'`), guaranteeing zero ledger drift.
+8. **Idempotent Payment Reconciliation**: Paystack transaction references enforce a database-level `@unique` constraint in PostgreSQL. Dual reconciliation channels (HMAC SHA-512 signed webhooks and status callbacks) execute idempotent updates protected against race conditions and duplicate delivery. Kobo amounts and currency (`NGN`) are cryptographically reconciled against Paystack's API before status transitions.
 
 ---
 
