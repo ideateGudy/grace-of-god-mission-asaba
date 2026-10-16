@@ -37,10 +37,16 @@ async function verifyGiving(reference: string): Promise<VerifyResult | null> {
 export default async function GiveThanksPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ reference?: string; trxref?: string; mock?: string }>;
+  searchParams?: Promise<{ reference?: string | string[]; trxref?: string | string[]; mock?: string }>;
 }) {
   const resolved = searchParams ? await searchParams : {};
-  const ref = resolved.reference || resolved.trxref || "";
+  let rawRef: string | string[] = resolved.reference || resolved.trxref || "";
+  if (Array.isArray(rawRef)) {
+    rawRef = rawRef[0] || "";
+  } else if (typeof rawRef === "string" && rawRef.includes(",")) {
+    rawRef = rawRef.split(",")[0] || "";
+  }
+  const ref = (rawRef as string).trim();
   const result = ref ? await verifyGiving(ref) : null;
 
   const isSuccess = result?.status === "SUCCESS";

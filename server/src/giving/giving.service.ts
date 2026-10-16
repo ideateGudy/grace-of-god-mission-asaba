@@ -80,13 +80,13 @@ export class GivingService {
 
     const secretKey = this.getPaystackSecretKey();
     const siteUrl = this.getSiteUrl(dto.callbackUrl, requestOrigin);
-    const callbackUrl = `${siteUrl}/give/thanks?reference=${reference}`;
+    const callbackUrl = `${siteUrl}/give/thanks`;
 
     // If no live Paystack secret key is configured yet, provide a mock authorization url for local development
     if (!secretKey) {
       this.logger.warn('PAYSTACK_SECRET_KEY is not set. Using local development fallback redirect.');
       return {
-        authorization_url: `${callbackUrl}&mock=true`,
+        authorization_url: `${callbackUrl}?reference=${reference}&mock=true`,
         access_code: `mock_access_${reference}`,
         reference,
       };
@@ -133,8 +133,9 @@ export class GivingService {
   }
 
   async verifyPayment(reference: string) {
+    const cleanRef = (reference.includes(',') ? reference.split(',')[0] : reference).trim();
     const contribution = await this.prisma.contribution.findUnique({
-      where: { paystackRef: reference },
+      where: { paystackRef: cleanRef },
       include: { project: true },
     });
 
@@ -175,7 +176,7 @@ export class GivingService {
 
     // Verify directly with Paystack API
     try {
-      const res = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+      const res = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(cleanRef)}`, {
         headers: { Authorization: `Bearer ${secretKey}` },
       });
       const data = await res.json();
