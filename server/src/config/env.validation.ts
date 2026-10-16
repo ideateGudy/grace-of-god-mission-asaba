@@ -67,6 +67,10 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   CLOUDINARY_API_SECRET?: string;
+
+  @IsNumber()
+  @IsOptional()
+  THROTTLE_LIMIT?: number = 2000;
 }
 
 export function validate(config: Record<string, unknown>) {

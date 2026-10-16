@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Req } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { HeroService } from './hero.service.js';
 import { PublicRoute } from '../auth/decorators/public-route.decorator.js';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator.js';
@@ -6,6 +7,7 @@ import { createHeroSchema, publishHeroSchema, updateHeroSchema, type CreateHeroD
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
 import type { AuthenticatedRequest } from '../common/types.js';
 
+@SkipThrottle()
 @Controller()
 export class HeroController {
   constructor(private readonly heroService: HeroService) {}
