@@ -23,8 +23,8 @@ export class NotificationsService {
 
   private getNotificationEmail(): string {
     return (
-      this.configService.get<string>('NOTIFICATION_EMAIL') ||
-      this.configService.get<string>('SUPER_ADMIN_SEED_EMAIL') ||
+      this.configService.get<string>('NOTIFICATION_EMAIL')?.trim() ||
+      this.configService.get<string>('SUPER_ADMIN_SEED_EMAIL')?.trim() ||
       'pastor@ggmasaba.org'
     );
   }
@@ -85,7 +85,16 @@ export class NotificationsService {
     }
 
     try {
-      const fromEmail = this.configService.get<string>('SENDER_EMAIL') || 'notifications@ggmasaba.org';
+      const fromConfig =
+        this.configService.get<string>('RESEND_FROM_EMAIL')?.trim() ||
+        this.configService.get<string>('SENDER_EMAIL')?.trim() ||
+        'onboarding@resend.dev';
+
+      // Resend allows either "Sender Name <email@domain.com>" or plain "email@domain.com"
+      const from = fromConfig.includes('<')
+        ? fromConfig
+        : `Grace of God Mission <${fromConfig}>`;
+
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -93,7 +102,7 @@ export class NotificationsService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: `Grace of God Mission <${fromEmail}>`,
+          from,
           to: [to],
           subject,
           html,
@@ -102,7 +111,10 @@ export class NotificationsService {
 
       if (!response.ok) {
         const errText = await response.text();
-        this.logger.warn(`Failed to dispatch email via Resend: ${errText}`);
+        this.logger.warn(`Failed to dispatch email via Resend (${response.status}): ${errText}`);
+      } else {
+        const resData = (await response.json().catch(() => ({}))) as { id?: string };
+        this.logger.log(`[EMAIL DISPATCHED via Resend] ID: ${resData.id || 'ok'} | To: ${to} | Subject: "${subject}"`);
       }
     } catch (err: any) {
       this.logger.error(`Error sending email notification: ${err?.message}`);

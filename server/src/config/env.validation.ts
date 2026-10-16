@@ -80,6 +80,18 @@ class EnvironmentVariables {
   @IsOptional()
   PAYSTACK_PUBLIC_KEY?: string;
 
+  @IsString()
+  @IsOptional()
+  RESEND_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  RESEND_FROM_EMAIL?: string;
+
+  @IsString()
+  @IsOptional()
+  NOTIFICATION_EMAIL?: string;
+
   @IsNumber()
   @IsOptional()
   THROTTLE_LIMIT?: number = 2000;
