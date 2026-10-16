@@ -27,12 +27,20 @@
   --glass-border: rgb(255 255 255 / 0.65);
   --glass-shadow: 0 8px 32px rgb(20 22 51 / 0.10);
   --glass-blur: 12px;
-  --hero-gradient-dawn: linear-gradient(135deg, var(--midnight), var(--indigo), var(--sky));
-  --hero-gradient-daybreak: linear-gradient(135deg, var(--indigo), #5964b8, var(--sky));
-  --hero-gradient-glow: linear-gradient(135deg, var(--night), var(--midnight), var(--indigo));
-  --hero-gradient-radiance: linear-gradient(135deg, #FFFFFF 0%, #FAF8F2 35%, #F4E8D0 75%, #E9DECA 100%);
-  --hero-gradient-serenity: linear-gradient(135deg, #FFFFFF 0%, #F5F8FE 35%, #E1ECFC 75%, #DCE6F7 100%);
-  --hero-gradient-parchment: linear-gradient(135deg, #FFFFFF 0%, #FAF8F5 45%, #EFECE4 100%);
+  --hero-gradient-dawn: linear-gradient(135deg, #141633 0%, #222660 30%, #2E3192 60%, #4D59B2 80%, #DCE6F7 100%);
+  --hero-gradient-daybreak: linear-gradient(135deg, #2E3192 0%, #4D59B2 45%, #7685D6 75%, #DCE6F7 100%);
+  --hero-gradient-glow: linear-gradient(135deg, #0A0C1B 0%, #141633 50%, #2E3192 100%);
+  --hero-gradient-majesty: linear-gradient(135deg, #141633 0%, #2B1B3D 45%, #3B2050 70%, #996F28 100%);
+  --hero-gradient-celestial: linear-gradient(135deg, #080A1C 0%, #141633 40%, #19385C 75%, #2B5780 100%);
+
+  /* Light background gradients: Fresh milk color infused with church brand accents (Gold, Sky, Rose, Olive) */
+  --hero-gradient-milk-gold: linear-gradient(135deg, #FFFDF8 0%, #FAF5EA 35%, #F4E8CF 75%, #EADBBA 100%);
+  --hero-gradient-radiance: linear-gradient(135deg, #FFFDF8 0%, #FAF5EA 35%, #F4E8CF 75%, #EADBBA 100%);
+  --hero-gradient-milk-sky: linear-gradient(135deg, #FFFFFF 0%, #F5F8FE 35%, #E2EDFA 75%, #CFE1F7 100%);
+  --hero-gradient-serenity: linear-gradient(135deg, #FFFFFF 0%, #F5F8FE 35%, #E2EDFA 75%, #CFE1F7 100%);
+  --hero-gradient-milk-rose: linear-gradient(135deg, #FFFDFB 0%, #FDF3EF 35%, #F8E3DA 75%, #F0D0C4 100%);
+  --hero-gradient-milk-olive: linear-gradient(135deg, #FCFDFB 0%, #F3F8F1 35%, #E4EFE2 75%, #D3E5D0 100%);
+  --hero-gradient-parchment: linear-gradient(135deg, #FFFFFF 0%, #FAF8F5 45%, #F1ECE3 80%, #E6DED0 100%);
 }
 
 .dark {
@@ -53,12 +61,20 @@
   --glass-bg-strong: rgb(20 22 51 / 0.84);
   --glass-border: rgb(255 255 255 / 0.10);
   --glass-shadow: 0 8px 32px rgb(0 0 0 / 0.35);
-  --hero-gradient-dawn: linear-gradient(135deg, var(--night), var(--midnight), #1D2050);
-  --hero-gradient-daybreak: linear-gradient(135deg, var(--midnight), #30366f, #1D2050);
-  --hero-gradient-glow: linear-gradient(135deg, var(--night), var(--midnight), #30366f);
-  --hero-gradient-radiance: linear-gradient(135deg, #2D2517 0%, #201C2B 50%, #141633 100%);
-  --hero-gradient-serenity: linear-gradient(135deg, #182238 0%, #171B3D 50%, #141633 100%);
-  --hero-gradient-parchment: linear-gradient(135deg, #22222E 0%, #1A1A28 50%, #141633 100%);
+  --hero-gradient-dawn: linear-gradient(135deg, #0B0D22 0%, #141633 35%, #2E3192 70%, #5964B8 90%, #A8B7EC 100%);
+  --hero-gradient-daybreak: linear-gradient(135deg, #141633 0%, #2E3192 50%, #5964B8 80%, #BAC9F0 100%);
+  --hero-gradient-glow: linear-gradient(135deg, #05060E 0%, #0E1026 50%, #22256E 100%);
+  --hero-gradient-majesty: linear-gradient(135deg, #0B0D22 0%, #20132E 45%, #2F1A42 70%, #8C6524 100%);
+  --hero-gradient-celestial: linear-gradient(135deg, #050714 0%, #0E132B 45%, #152E4D 75%, #264C70 100%);
+
+  /* Light background gradients remain luminous in dark mode so dark text always retains high contrast */
+  --hero-gradient-milk-gold: linear-gradient(135deg, #FFFDF8 0%, #FAF5EA 35%, #F4E8CF 75%, #EADBBA 100%);
+  --hero-gradient-radiance: linear-gradient(135deg, #FFFDF8 0%, #FAF5EA 35%, #F4E8CF 75%, #EADBBA 100%);
+  --hero-gradient-milk-sky: linear-gradient(135deg, #FFFFFF 0%, #F5F8FE 35%, #E2EDFA 75%, #CFE1F7 100%);
+  --hero-gradient-serenity: linear-gradient(135deg, #FFFFFF 0%, #F5F8FE 35%, #E2EDFA 75%, #CFE1F7 100%);
+  --hero-gradient-milk-rose: linear-gradient(135deg, #FFFDFB 0%, #FDF3EF 35%, #F8E3DA 75%, #F0D0C4 100%);
+  --hero-gradient-milk-olive: linear-gradient(135deg, #FCFDFB 0%, #F3F8F1 35%, #E4EFE2 75%, #D3E5D0 100%);
+  --hero-gradient-parchment: linear-gradient(135deg, #FFFFFF 0%, #FAF8F5 45%, #F1ECE3 80%, #E6DED0 100%);
 }
 
 @media (min-width: 768px) { :root { --glass-blur: 18px; } }

@@ -14,12 +14,26 @@ const gradients: Record<string, string> = {
   dawn: "--hero-gradient-dawn",
   daybreak: "--hero-gradient-daybreak",
   glow: "--hero-gradient-glow",
+  majesty: "--hero-gradient-majesty",
+  celestial: "--hero-gradient-celestial",
   radiance: "--hero-gradient-radiance",
   serenity: "--hero-gradient-serenity",
   parchment: "--hero-gradient-parchment",
+  "milk-gold": "--hero-gradient-milk-gold",
+  "milk-sky": "--hero-gradient-milk-sky",
+  "milk-rose": "--hero-gradient-milk-rose",
+  "milk-olive": "--hero-gradient-milk-olive",
 };
 
-const lightGradients = new Set(["radiance", "serenity", "parchment"]);
+const lightGradients = new Set([
+  "radiance",
+  "serenity",
+  "parchment",
+  "milk-gold",
+  "milk-sky",
+  "milk-rose",
+  "milk-olive",
+]);
 
 export function HeroSlideView({
   slide,
@@ -35,7 +49,7 @@ export function HeroSlideView({
   const isSplit = slide.layout === "SPLIT";
   const isImageBg = slide.bgType === "IMAGE" && !isSplit && Boolean(slide.imageUrl);
   const isLightGradient = slide.bgType === "GRADIENT" && lightGradients.has(slide.bgGradient ?? "");
-  const isDarkTone = slide.textTone === "DARK" || isLightGradient;
+  const isDarkTone = slide.textTone ? slide.textTone === "DARK" : isLightGradient;
   const textTone = isDarkTone ? "text-midnight" : "text-white";
 
   useEffect(() => {

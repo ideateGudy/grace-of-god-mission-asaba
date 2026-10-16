@@ -120,7 +120,11 @@ export function HeroEditor({ id }: { id: string }) {
     (currentPreviewSlide?.bgType === "GRADIENT" &&
       (currentPreviewSlide.bgGradient === "radiance" ||
         currentPreviewSlide.bgGradient === "serenity" ||
-        currentPreviewSlide.bgGradient === "parchment"))
+        currentPreviewSlide.bgGradient === "parchment" ||
+        currentPreviewSlide.bgGradient === "milk-gold" ||
+        currentPreviewSlide.bgGradient === "milk-sky" ||
+        currentPreviewSlide.bgGradient === "milk-rose" ||
+        currentPreviewSlide.bgGradient === "milk-olive"))
   useEffect(() => {
     if (isNew) return
     let cancelled = false
@@ -629,7 +633,17 @@ export function HeroEditor({ id }: { id: string }) {
                 </div>
               ) : slide.bgType === "GRADIENT" ? (
                 <div className="space-y-2">
-                  <Label htmlFor={`slide-bg-gradient-${index}`}>Gradient preset</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor={`slide-bg-gradient-${index}`}>Gradient preset</Label>
+                    <span className={cn(
+                      "text-[11px] font-semibold px-2 py-0.5 rounded-full border",
+                      slide.textTone === "DARK"
+                        ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                        : "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30"
+                    )}>
+                      Tone: {slide.textTone === "DARK" ? "Dark text (Light BG)" : "Light text (Dark BG)"}
+                    </span>
+                  </div>
                   <select
                     id={`slide-bg-gradient-${index}`}
                     name={`slide_${index}_bg_gradient`}
@@ -637,28 +651,41 @@ export function HeroEditor({ id }: { id: string }) {
                     value={slide.bgGradient ?? "dawn"}
                     onChange={(event) => {
                       const nextGrad = event.target.value as HeroSlideDto["bgGradient"]
-                      const isLight = nextGrad === "radiance" || nextGrad === "serenity" || nextGrad === "parchment"
+                      const isLight =
+                        nextGrad === "milk-gold" ||
+                        nextGrad === "milk-sky" ||
+                        nextGrad === "milk-rose" ||
+                        nextGrad === "milk-olive" ||
+                        nextGrad === "parchment" ||
+                        nextGrad === "radiance" ||
+                        nextGrad === "serenity"
                       setSlide(index, {
                         bgGradient: nextGrad,
-                        textTone: isLight ? "DARK" : "LIGHT"
+                        textTone: isLight ? "DARK" : "LIGHT",
                       })
                     }}
                   >
-                    <optgroup label="Light Background Gradients (White & Luminous)">
-                      <option value="radiance">Radiance (Ivory & Morning Gold — Light)</option>
-                      <option value="serenity">Serenity (Pure White & Sky — Light)</option>
-                      <option value="parchment">Parchment (Linen & Alabaster — Light)</option>
+                    <optgroup label="Light Background Gradients (Milk + Brand Colors — Dark Text)">
+                      <option value="milk-gold">Milk &amp; Heavenly Gold (Warm Milk + Sacred Gold — Dark text)</option>
+                      <option value="milk-sky">Milk &amp; Celestial Sky (Pure Milk + Sky Blue — Dark text)</option>
+                      <option value="milk-rose">Milk &amp; Rose of Sharon (Alabaster Milk + Rose Blush — Dark text)</option>
+                      <option value="milk-olive">Milk &amp; Olive Branch (Linen Milk + Sacred Sage — Dark text)</option>
+                      <option value="parchment">Pure Parchment (Warm Linen + Alabaster Milk — Dark text)</option>
+                      <option value="radiance">Radiance (Ivory + Morning Gold — Dark text)</option>
+                      <option value="serenity">Serenity (Pure White + Sky — Dark text)</option>
                     </optgroup>
-                    <optgroup label="Dark Background Gradients (Deep Midnight & Celestial)">
-                      <option value="dawn">Dawn (Midnight & Indigo — Dark)</option>
-                      <option value="daybreak">Daybreak (Indigo & Sky — Dark)</option>
-                      <option value="glow">Glow (Night & Midnight — Dark)</option>
+                    <optgroup label="Dark Background Gradients (Deep Midnight, Indigo &amp; Celestial — Light Text)">
+                      <option value="dawn">Dawn (Sacred Midnight, Royal Indigo &amp; Sky) ⭐ — Light text</option>
+                      <option value="daybreak">Daybreak (Royal Indigo &amp; Sky Blue — Light text)</option>
+                      <option value="majesty">Majesty (Midnight, Royal Violet &amp; Gold — Light text)</option>
+                      <option value="celestial">Celestial (Deep Midnight Ocean &amp; Sapphire — Light text)</option>
+                      <option value="glow">Sacred Glow (Night &amp; Royal Indigo — Light text)</option>
                     </optgroup>
                   </select>
                   <p className="text-xs text-muted-foreground">
-                    {slide.bgGradient === "radiance" || slide.bgGradient === "serenity" || slide.bgGradient === "parchment"
-                      ? "Light gradient active: Typography and navigation automatically adjust to high-contrast dark tones."
-                      : "Dark gradient active: Typography and navigation automatically adjust to luminous white tones."}
+                    {slide.textTone === "DARK"
+                      ? "Light background active: Slide typography and site navigation automatically adjust to high-contrast dark tones."
+                      : "Dark background active: Slide typography and site navigation automatically adjust to luminous white tones."}
                   </p>
                 </div>
               ) : null}
