@@ -35,7 +35,7 @@ export function HeroSlideView({
   return (
     <section
       className={cn(
-        "relative isolate flex min-h-[min(820px,94svh)] flex-col items-center justify-center overflow-hidden bg-midnight text-white px-5 pt-28 pb-16 md:px-8",
+        "relative isolate flex min-h-[min(780px,94svh)] flex-col items-center justify-center overflow-hidden bg-midnight text-white px-4 sm:px-6 md:px-8 pt-24 sm:pt-28 pb-12 sm:pb-16",
         isSplit && (slide.bgType === "GRADIENT" ? "" : "bg-background")
       )}
       style={customBgStyle}
@@ -95,12 +95,12 @@ export function HeroSlideView({
           slide.align === "CENTER" && "items-center text-center",
           slide.align === "START" && "items-start text-left",
           slide.align === "END" && "items-end text-right",
-          isSplit && "grid md:grid-cols-2 max-w-6xl gap-10 items-center text-left"
+          isSplit && "grid md:grid-cols-2 max-w-6xl gap-8 md:gap-10 items-center text-left"
         )}
       >
         <div
           className={cn(
-            "relative z-10 flex flex-col",
+            "relative z-10 flex flex-col w-full",
             slide.align === "CENTER" && "items-center",
             slide.align === "START" && "items-start",
             slide.align === "END" && "items-end",
@@ -108,9 +108,9 @@ export function HeroSlideView({
           )}
         >
           {/* Welcome Pill Chip */}
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-gold backdrop-blur-sm">
-            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>Welcome to Grace of God Mission · Asaba Division</span>
+          <div className="mb-4 sm:mb-5 inline-flex max-w-full items-center gap-1.5 sm:gap-2 rounded-full border border-gold/30 bg-gold/10 px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gold backdrop-blur-sm text-center">
+            <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" aria-hidden="true" />
+            <span className="truncate">Welcome to Grace of God Mission · Asaba Division</span>
           </div>
 
           {/* Single Orchestrated Title Moment */}
@@ -118,7 +118,7 @@ export function HeroSlideView({
             as={isFirst ? "h1" : "h2"}
             title={slide.title}
             className={cn(
-              "font-display text-balance text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.08] tracking-tight",
+              "font-display text-balance text-3xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.12] sm:leading-[1.08] tracking-tight",
               !isSplit && textTone,
               isSplit && "text-foreground"
             )}
@@ -128,7 +128,7 @@ export function HeroSlideView({
           {slide.subtitle && (
             <p
               className={cn(
-                "mt-6 max-w-2xl text-base sm:text-lg md:text-xl font-light leading-relaxed",
+                "mt-4 sm:mt-6 max-w-2xl text-sm sm:text-base md:text-xl font-light leading-relaxed",
                 !isSplit && (slide.textTone === "DARK" ? "text-stone" : "text-slate-200/90"),
                 isSplit && "text-muted-foreground"
               )}
@@ -141,7 +141,7 @@ export function HeroSlideView({
           {(slide.primaryLabel || slide.secondaryLabel) && (
             <div
               className={cn(
-                "mt-8 flex flex-wrap items-center gap-4",
+                "mt-6 sm:mt-8 flex flex-col sm:flex-row flex-wrap items-center gap-3 sm:gap-4 w-full sm:w-auto",
                 slide.align === "CENTER" && "justify-center",
                 slide.align === "START" && "justify-start",
                 slide.align === "END" && "justify-end"
@@ -150,11 +150,11 @@ export function HeroSlideView({
               {slide.primaryLabel && slide.primaryUrl && (
                 <Link
                   href={slide.primaryUrl}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gold px-7 py-3 text-base font-bold text-midnight shadow-[0_4px_20px_rgba(217,164,65,0.35)] transition-all duration-200 hover:brightness-110 hover:shadow-[0_6px_25px_rgba(217,164,65,0.45)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-gold px-6 sm:px-7 py-2.5 sm:py-3 text-sm sm:text-base font-bold text-midnight shadow-[0_4px_20px_rgba(217,164,65,0.35)] transition-all duration-200 hover:brightness-110 hover:shadow-[0_6px_25px_rgba(217,164,65,0.45)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   target={slide.primaryUrl.startsWith("http") ? "_blank" : undefined}
                   rel={slide.primaryUrl.startsWith("http") ? "noreferrer" : undefined}
                 >
-                  <MapPin className="h-5 w-5" aria-hidden="true" />
+                  <MapPin className="h-5 w-5 shrink-0" aria-hidden="true" />
                   <span>{slide.primaryLabel}</span>
                 </Link>
               )}
@@ -162,13 +162,13 @@ export function HeroSlideView({
                 <Link
                   href={slide.secondaryUrl}
                   className={cn(
-                    "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-7 py-3 text-base font-semibold text-white backdrop-blur-md transition-all duration-200 hover:bg-white/20 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                    "inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-6 sm:px-7 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-white backdrop-blur-md transition-all duration-200 hover:bg-white/20 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                     isSplit && "border-border bg-card text-foreground hover:bg-muted"
                   )}
                   target={slide.secondaryUrl.startsWith("http") ? "_blank" : undefined}
                   rel={slide.secondaryUrl.startsWith("http") ? "noreferrer" : undefined}
                 >
-                  <PlayCircle className="h-5 w-5" aria-hidden="true" />
+                  <PlayCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
                   <span>{slide.secondaryLabel}</span>
                 </Link>
               )}
@@ -178,7 +178,7 @@ export function HeroSlideView({
           {/* Weekly Fellowship Pill & Direct Link to Google Maps */}
           <div
             className={cn(
-              "mt-12 flex w-full",
+              "mt-8 sm:mt-12 flex w-full",
               slide.align === "CENTER" && "justify-center",
               slide.align === "START" && "justify-start",
               slide.align === "END" && "justify-end",
@@ -190,21 +190,21 @@ export function HeroSlideView({
               target="_blank"
               rel="noreferrer"
               title="Open Grace of God Mission Asaba Hq on Google Maps"
-              className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs sm:text-sm text-slate-300 backdrop-blur-md transition-all duration-200 hover:bg-white/15 hover:text-white hover:border-gold/40 group"
+              className="inline-flex items-center gap-2 rounded-2xl sm:rounded-full border border-white/15 bg-white/5 px-3.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs md:text-sm text-slate-300 backdrop-blur-md transition-all duration-200 hover:bg-white/15 hover:text-white hover:border-gold/40 group text-center flex-wrap sm:flex-nowrap justify-center"
             >
-              <span className="relative flex h-2 w-2">
+              <span className="relative flex h-2 w-2 shrink-0">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
               <span>Sunday Services: 7:00 AM · Wednesday: 5:00 PM · No. 33 Arthur Richard St, Akwuebulu, Asaba</span>
-              <ExternalLink className="h-3.5 w-3.5 text-gold transition-transform group-hover:translate-x-0.5" />
+              <ExternalLink className="h-3.5 w-3.5 text-gold shrink-0 transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>
         </div>
 
         {/* Split layout image */}
         {isSplit && slide.imageUrl && (
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl">
             <Image
               src={slide.imageUrl}
               alt={slide.imageDecorative ? "" : slide.imageAlt ?? ""}
