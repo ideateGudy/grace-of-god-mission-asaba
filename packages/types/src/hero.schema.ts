@@ -22,7 +22,7 @@ export const heroSlideSchema = z.object({
   focalY: z.number().int().min(0).max(100).default(50),
   overlay: z.number().int().min(0).max(80).default(40),
   textTone: z.enum(['LIGHT', 'DARK'])
-}).strict().superRefine((data, ctx) => {
+}).superRefine((data, ctx) => {
   // FULL_BLEED requires IMAGE (or COLOR/GRADIENT with no imageUrl)
   if (data.layout === 'FULL_BLEED') {
     if (data.bgType === 'IMAGE' && !data.imageUrl) {
@@ -91,7 +91,7 @@ const heroInputSchema = z.object({
   startsAt: z.string().datetime().nullable().optional(),
   endsAt: z.string().datetime().nullable().optional(),
   slides: z.array(heroSlideSchema).min(1).max(6),
-}).strict().superRefine((hero, ctx) => {
+}).superRefine((hero, ctx) => {
   if (hero.startsAt && hero.endsAt && new Date(hero.endsAt) <= new Date(hero.startsAt)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'End time must be after start time', path: ['endsAt'] });
   }
