@@ -50,9 +50,7 @@ export class AuthService {
   } {
     const isProduction = this.configService.get('NODE_ENV') === 'production';
     const accessDuration =
-      this.configService.get('JWT_ACCESS_EXPIRES_IN') ||
-      this.configService.get('JWT_EXPIRES_IN') ||
-      '15m';
+      this.configService.get('JWT_ACCESS_EXPIRES_IN') || '15m';
     const refreshDuration =
       this.configService.get('JWT_REFRESH_EXPIRES_IN') || '7d';
 
@@ -75,9 +73,7 @@ export class AuthService {
 
   private async generateTokens(user: AdminUser): Promise<{ accessToken: string; refreshToken: string }> {
     const accessExpiresIn =
-      this.configService.get('JWT_ACCESS_EXPIRES_IN') ||
-      this.configService.get('JWT_EXPIRES_IN') ||
-      '15m';
+      this.configService.get('JWT_ACCESS_EXPIRES_IN') || '15m';
     const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN') || '7d';
 
     const accessPayload = {

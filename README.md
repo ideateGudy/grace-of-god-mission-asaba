@@ -124,7 +124,8 @@ PORT=5000
 DATABASE_URL="postgresql://user:pass@ep-xyz-pooler.neon.tech/neondb?sslmode=require"
 DIRECT_URL="postgresql://user:pass@ep-xyz.neon.tech/neondb?sslmode=require"
 JWT_SECRET="replace-with-a-random-secret-key-at-least-32-chars-long"
-JWT_EXPIRES_IN=10h
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
 CORS_ORIGIN="http://localhost:3000"
 SUPER_ADMIN_SEED_EMAIL="admin@graceofgodasaba.org"
 SUPER_ADMIN_SEED_PASSWORD="TemporaryPassword123!"
@@ -227,7 +228,8 @@ flowchart LR
 | `DATABASE_URL` | `postgresql://user:pass@ep-xyz-pooler.neon.tech/neondb?sslmode=require` | Neon Pooled string |
 | `DIRECT_URL` | `postgresql://user:pass@ep-xyz.neon.tech/neondb?sslmode=require` | Neon Direct string for Prisma migrations |
 | `JWT_SECRET` | *(Random 64-char string)* | E.g. generate via `openssl rand -hex 32` |
-| `JWT_EXPIRES_IN` | `10h` | Standard admin session lifetime |
+| `JWT_ACCESS_EXPIRES_IN` | `15m` | Short-lived access token lifetime |
+| `JWT_REFRESH_EXPIRES_IN` | `7d` | Long-lived refresh token lifetime |
 | `CORS_ORIGIN` | `https://your-frontend.vercel.app` | Your Vercel frontend URL (no trailing slash) |
 | `SUPER_ADMIN_SEED_EMAIL` | `admin@graceofgodasaba.org` | Initial Super Admin login email |
 | `SUPER_ADMIN_SEED_PASSWORD` | *(Strong initial password)* | Seeded on initial deployment |
