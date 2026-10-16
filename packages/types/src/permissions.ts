@@ -6,6 +6,8 @@ export enum Permission {
   HERO_MANAGE = 'HERO_MANAGE',
   CONTACT_INBOX = 'CONTACT_INBOX',
   PRAYER_INBOX = 'PRAYER_INBOX',
+  PROJECTS_MANAGE = 'PROJECTS_MANAGE',
+  GIVING_MANAGE = 'GIVING_MANAGE',
 }
 
 export const PERMISSION_PRESETS = {
@@ -15,6 +17,8 @@ export const PERMISSION_PRESETS = {
     Permission.ANNOUNCEMENTS_MANAGE,
     Permission.GALLERY_MANAGE,
     Permission.HERO_MANAGE,
+    Permission.PROJECTS_MANAGE,
+    Permission.GIVING_MANAGE,
   ],
   INBOX_ONLY: [
     Permission.CONTACT_INBOX,

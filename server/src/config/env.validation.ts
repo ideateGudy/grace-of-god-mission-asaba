@@ -72,6 +72,14 @@ class EnvironmentVariables {
   @IsOptional()
   CLOUDINARY_API_SECRET?: string;
 
+  @IsString()
+  @IsOptional()
+  PAYSTACK_SECRET_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  PAYSTACK_PUBLIC_KEY?: string;
+
   @IsNumber()
   @IsOptional()
   THROTTLE_LIMIT?: number = 2000;

@@ -19,6 +19,8 @@ enum Permission {
   HERO_MANAGE
   CONTACT_INBOX
   PRAYER_INBOX
+  PROJECTS_MANAGE
+  GIVING_MANAGE
 }
 
 enum MessageStatus {
@@ -211,4 +213,56 @@ model AuditLog {
   createdAt  DateTime @default(now())
   @@index([createdAt])
   @@index([entity, entityId])
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+}
+
+enum ContributionSource {
+  ONLINE
+  OFFLINE
+}
+
+enum ContributionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Project {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  title         String
+  description   String
+  imageUrl      String?
+  goalKobo      BigInt
+  status        ProjectStatus  @default(DRAFT)
+  deadline      DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  contributions Contribution[]
+  @@index([status, createdAt])
+}
+
+model Contribution {
+  id           String             @id @default(cuid())
+  projectId    String?
+  project      Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  amountKobo   BigInt
+  donorName    String?
+  donorEmail   String?
+  donorPhone   String?
+  displayName  String?
+  isAnonymous  Boolean            @default(true)
+  message      String?
+  source       ContributionSource
+  status       ContributionStatus @default(PENDING)
+  paystackRef  String?            @unique
+  recordedById String?
+  createdAt    DateTime           @default(now())
+  @@index([projectId, status])
+  @@index([status, createdAt])
 }

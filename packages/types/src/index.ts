@@ -5,3 +5,5 @@ export * from './content.schemas.js';
 export * from './messages.schemas.js';
 export * from './users.schemas.js';
 export * from './auth.schemas.js';
+export * from './projects.schemas.js';
+export * from './giving.schemas.js';

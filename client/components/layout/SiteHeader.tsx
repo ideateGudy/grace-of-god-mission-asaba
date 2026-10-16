@@ -155,6 +155,25 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
           >
             Events
           </Link>
+          <Link
+            href="/projects"
+            className={cn(
+              "transition-colors",
+              condensed
+                ? "hover:text-primary"
+                : isLightHero
+                  ? "hover:text-primary"
+                  : "hover:text-gold",
+              pathname.startsWith("/projects") &&
+                (condensed
+                  ? "text-primary font-bold"
+                  : isLightHero
+                    ? "text-primary font-bold"
+                    : "text-gold font-bold")
+            )}
+          >
+            Projects
+          </Link>
 
           <div
             className={cn(

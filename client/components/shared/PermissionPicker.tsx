@@ -9,6 +9,8 @@ const CONTENT_PERMISSIONS = [
   { id: "ANNOUNCEMENTS_MANAGE", label: "Manage Announcements" },
   { id: "GALLERY_MANAGE", label: "Manage Gallery" },
   { id: "HERO_MANAGE", label: "Manage Hero" },
+  { id: "PROJECTS_MANAGE", label: "Manage Projects" },
+  { id: "GIVING_MANAGE", label: "Manage Giving & Contributions" },
 ];
 
 const INBOX_PERMISSIONS = [

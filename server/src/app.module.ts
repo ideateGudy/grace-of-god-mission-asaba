@@ -19,6 +19,8 @@ import { HeroModule } from './hero/hero.module.js';
 import { MessagesModule } from './messages/messages.module.js';
 import { HealthModule } from './health/health.module.js';
 import { UploadsModule } from './uploads/uploads.module.js';
+import { ProjectsModule } from './projects/projects.module.js';
+import { GivingModule } from './giving/giving.module.js';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 @Module({
@@ -52,6 +54,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
     MessagesModule,
     HealthModule,
     UploadsModule,
+    ProjectsModule,
+    GivingModule,
   ],
   controllers: [],
   providers: [

@@ -6,7 +6,7 @@ import { Logo } from "@/components/shared/Logo";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { usePermissions } from "@/components/shared/Can";
 import { useSessionStore } from "@/store/useSessionStore";
-import { LogOut, Menu, LayoutDashboard, Video, Calendar, Megaphone, Image as ImageIcon, LayoutTemplate, Inbox, Users, Activity, UserCircle } from "lucide-react";
+import { LogOut, Menu, LayoutDashboard, Video, Calendar, Megaphone, Image as ImageIcon, LayoutTemplate, Inbox, Users, Activity, UserCircle, FolderKanban, HeartHandshake } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -19,6 +19,8 @@ const NAV_ITEMS = [
   { href: "/admin/events", label: "Events", icon: Calendar, permission: "EVENTS_MANAGE" },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone, permission: "ANNOUNCEMENTS_MANAGE" },
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon, permission: "GALLERY_MANAGE" },
+  { href: "/admin/projects", label: "Projects", icon: FolderKanban, permission: "PROJECTS_MANAGE" },
+  { href: "/admin/contributions", label: "Contributions", icon: HeartHandshake, permission: "GIVING_MANAGE" },
   { href: "/admin/hero", label: "Hero", icon: LayoutTemplate, permission: "HERO_MANAGE" },
   { href: "/admin/messages", label: "Messages", icon: Inbox, requiresOneOf: ["CONTACT_INBOX", "PRAYER_INBOX"] },
   { href: "/admin/users", label: "Users", icon: Users, superAdminOnly: true },

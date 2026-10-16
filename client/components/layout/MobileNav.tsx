@@ -29,6 +29,7 @@ export function MobileNav() {
           <Link href="/visit" onClick={() => setOpen(false)}>Visit us</Link>
           <Link href="/sermons" onClick={() => setOpen(false)}>Sermons</Link>
           <Link href="/events" onClick={() => setOpen(false)}>Events</Link>
+          <Link href="/projects" onClick={() => setOpen(false)}>Projects</Link>
           <Link href="/contact" onClick={() => setOpen(false)}>Contact</Link>
           <Link href="/give" onClick={() => setOpen(false)}>Give</Link>
         </div>

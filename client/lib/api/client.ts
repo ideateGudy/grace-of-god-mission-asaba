@@ -133,6 +133,9 @@ export const api = {
     event: (slug: string) => fetcher<{ data: Record<string, unknown> }>(`/events/${encodeURIComponent(slug)}`, { tags: ["events"] }),
     announcements: () => fetcher<{ data: Record<string, unknown>[] }>("/announcements", { tags: ["announcements"] }),
     gallery: (query = "") => fetcher<{ data: Record<string, unknown>[]; meta: { page: number; limit: number; total: number } }>(`/gallery${query}`, { tags: ["gallery"] }),
+    projects: (query = "") => fetcher<{ data: any[]; meta: { page: number; limit: number; total: number } }>(`/projects${query}`, { tags: ["projects"] }),
+    project: (slug: string) => fetcher<{ data: any }>(`/projects/${encodeURIComponent(slug)}`, { tags: ["projects"] }),
+    projectContributions: (slug: string, query = "") => fetcher<{ data: any[]; meta: { page: number; limit: number; total: number } }>(`/projects/${encodeURIComponent(slug)}/contributions${query}`, { tags: ["projects"] }),
   },
   admin: {
     list: <T>(resource: string, query = "") => fetcher<{ data: T[]; meta?: { page: number; limit: number; total: number } }>(`/admin/${resource}${query}`, { cache: "no-store" }),
