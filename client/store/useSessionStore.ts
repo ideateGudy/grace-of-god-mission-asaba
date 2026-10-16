@@ -4,6 +4,7 @@ interface SessionUser {
   id: string; email: string; name: string; role: "SUPER_ADMIN" | "ADMIN";
   permissions: string[];
   mustChangePassword: boolean;
+  twoFactorEnabled?: boolean;
   status?: string;
 }
 

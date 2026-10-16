@@ -243,4 +243,32 @@ export class UsersService {
       meta: { page, limit, total },
     };
   }
+
+  async exportAuditCsv(actorId?: string, entity?: string): Promise<string> {
+    const where: Prisma.AuditLogWhereInput = {};
+    if (actorId) where.actorId = actorId;
+    if (entity) where.entity = entity;
+
+    const logs = await this.prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 1000,
+    });
+
+    const header = ['Timestamp (UTC)', 'Actor ID', 'Actor Name', 'Action', 'Entity', 'Entity ID', 'Metadata'].join(',');
+    const rows = logs.map((log) => {
+      const escape = (val: string | null | undefined) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+      return [
+        escape(log.createdAt.toISOString()),
+        escape(log.actorId),
+        escape(log.actorName),
+        escape(log.action),
+        escape(log.entity),
+        escape(log.entityId),
+        escape(log.meta ? JSON.stringify(log.meta) : ''),
+      ].join(',');
+    });
+
+    return [header, ...rows].join('\r\n');
+  }
 }

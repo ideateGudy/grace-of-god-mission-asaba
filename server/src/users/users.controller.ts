@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, Res, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import type { Response } from 'express';
 import { UsersService } from './users.service.js';
 import { SuperAdminOnly } from '../auth/decorators/super-admin-only.decorator.js';
 import { createAdminUserSchema, updateAdminUserSchema, type CreateAdminUserDto, type UpdateAdminUserDto } from '@ggm/types';
@@ -51,6 +52,19 @@ export class UsersController {
   async resetPassword(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const data = await this.usersService.resetPassword(req.activeUser, id);
     return { data };
+  }
+
+  @Get('audit/export')
+  async exportAuditCsv(
+    @Res() res: Response,
+    @Query('actorId') actorId?: string,
+    @Query('entity') entity?: string,
+  ) {
+    const csvData = await this.usersService.exportAuditCsv(actorId, entity);
+    const filename = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send(csvData);
   }
 
   @Get('audit')

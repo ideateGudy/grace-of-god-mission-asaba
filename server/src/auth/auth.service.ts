@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import type { AuthenticatedActor } from '../common/types.js';
 import * as bcrypt from 'bcrypt';
+import { generateBase32Secret, verifyTotp, getOtpAuthUrl } from './totp.util.js';
 
 export interface AuthResult {
   token: string;
@@ -18,6 +19,13 @@ export interface AuthResult {
   accessCookieOptions: CookieOptions;
   refreshCookieOptions: CookieOptions;
 }
+
+export type AuthLoginResult =
+  | {
+      requires2FA: true;
+      user: { id: string; email: string; name: string };
+    }
+  | (AuthResult & { requires2FA?: false });
 
 function parseDurationToMs(durationStr: string | undefined, defaultMs: number): number {
   if (!durationStr) return defaultMs;
@@ -97,7 +105,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async login(dto: LoginDto): Promise<AuthResult> {
+  async login(dto: LoginDto): Promise<AuthLoginResult> {
     const user = await this.prisma.adminUser.findUnique({
       where: { email: dto.email.toLowerCase() },
     });
@@ -109,6 +117,19 @@ export class AuthService {
 
     if (!user || !user.isActive || !isMatch) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (user.twoFactorEnabled) {
+      if (!dto.twoFactorCode) {
+        return {
+          requires2FA: true,
+          user: { id: user.id, email: user.email, name: user.name },
+        };
+      }
+
+      if (!user.twoFactorSecret || !verifyTotp(user.twoFactorSecret, dto.twoFactorCode)) {
+        throw new UnauthorizedException('Invalid two-factor authentication code');
+      }
     }
 
     // Update lastLoginAt
@@ -136,6 +157,7 @@ export class AuthService {
       cookieOptions: accessCookieOptions,
       accessCookieOptions,
       refreshCookieOptions,
+      requires2FA: false,
     };
   }
 
@@ -196,6 +218,11 @@ export class AuthService {
   }
 
   async me(user: AuthenticatedActor): Promise<SessionUser> {
+    const dbUser = await this.prisma.adminUser.findUnique({
+      where: { id: user.id },
+      select: { twoFactorEnabled: true },
+    });
+
     return {
       id: user.id,
       email: user.email ?? '',
@@ -203,7 +230,77 @@ export class AuthService {
       role: (user.role ?? 'ADMIN') as SessionUser['role'],
       permissions: (user.permissions ?? []) as unknown as SessionUser['permissions'],
       mustChangePassword: user.mustChangePassword ?? false,
+      twoFactorEnabled: dbUser?.twoFactorEnabled ?? false,
     };
+  }
+
+  async setup2fa(actor: AuthenticatedActor) {
+    const user = await this.prisma.adminUser.findUnique({ where: { id: actor.id } });
+    if (!user) throw new UnauthorizedException('User not found');
+
+    const secret = generateBase32Secret(20);
+    const otpAuthUrl = getOtpAuthUrl(user.email, secret);
+
+    await this.prisma.adminUser.update({
+      where: { id: user.id },
+      data: { twoFactorSecret: secret },
+    });
+
+    return { secret, otpAuthUrl };
+  }
+
+  async enable2fa(actor: AuthenticatedActor, code: string) {
+    const user = await this.prisma.adminUser.findUnique({ where: { id: actor.id } });
+    if (!user || !user.twoFactorSecret) {
+      throw new BadRequestException('Two-factor setup has not been initiated');
+    }
+
+    const isValid = verifyTotp(user.twoFactorSecret, code);
+    if (!isValid) {
+      throw new BadRequestException('Invalid authentication code. Please check your authenticator app and try again.');
+    }
+
+    await this.prisma.adminUser.update({
+      where: { id: user.id },
+      data: { twoFactorEnabled: true },
+    });
+
+    void this.audit.log({
+      actorId: user.id,
+      actorName: user.name,
+      action: 'auth.2fa_enable',
+      entity: 'AdminUser',
+      entityId: user.id,
+    });
+
+    return { enabled: true };
+  }
+
+  async disable2fa(actor: AuthenticatedActor, code: string) {
+    const user = await this.prisma.adminUser.findUnique({ where: { id: actor.id } });
+    if (!user || !user.twoFactorSecret || !user.twoFactorEnabled) {
+      throw new BadRequestException('Two-factor authentication is not currently enabled');
+    }
+
+    const isValid = verifyTotp(user.twoFactorSecret, code);
+    if (!isValid) {
+      throw new BadRequestException('Invalid authentication code. Unable to disable 2FA.');
+    }
+
+    await this.prisma.adminUser.update({
+      where: { id: user.id },
+      data: { twoFactorEnabled: false, twoFactorSecret: null },
+    });
+
+    void this.audit.log({
+      actorId: user.id,
+      actorName: user.name,
+      action: 'auth.2fa_disable',
+      entity: 'AdminUser',
+      entityId: user.id,
+    });
+
+    return { enabled: false };
   }
 
   async changePassword(user: AdminUser, dto: ChangePasswordDto): Promise<AuthResult> {

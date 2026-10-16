@@ -6,7 +6,7 @@ import { Logo } from "@/components/shared/Logo";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { usePermissions } from "@/components/shared/Can";
 import { useSessionStore } from "@/store/useSessionStore";
-import { LogOut, Menu, LayoutDashboard, Video, Calendar, Megaphone, Image as ImageIcon, LayoutTemplate, Inbox, Users, Activity, UserCircle, FolderKanban, HeartHandshake } from "lucide-react";
+import { LogOut, Menu, LayoutDashboard, Video, Calendar, Megaphone, Image as ImageIcon, LayoutTemplate, Inbox, Users, Activity, UserCircle, FolderKanban, HeartHandshake, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -25,6 +25,7 @@ const NAV_ITEMS = [
   { href: "/admin/messages", label: "Messages", icon: Inbox, requiresOneOf: ["CONTACT_INBOX", "PRAYER_INBOX"] },
   { href: "/admin/users", label: "Users", icon: Users, superAdminOnly: true },
   { href: "/admin/audit", label: "Audit Log", icon: Activity, superAdminOnly: true },
+  { href: "/admin/settings", label: "Site Settings", icon: Settings, superAdminOnly: true },
   { href: "/admin/account", label: "Account", icon: UserCircle },
 ];
 

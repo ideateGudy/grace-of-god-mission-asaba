@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { TurnstileService } from '../common/services/turnstile.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { MessageStatus, type ContactMessage, type PrayerRequest, type AuditLog } from '@prisma/client';
 import type { AuthenticatedActor } from '../common/types.js';
 import type { CreateContactDto, CreatePrayerDto } from '@ggm/types';
@@ -23,13 +25,17 @@ export class MessagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly turnstile: TurnstileService,
+    private readonly notifications: NotificationsService,
   ) {}
 
-  async createContact(dto: CreateContactInput): Promise<{ success: boolean }> {
+  async createContact(dto: CreateContactInput, remoteIp?: string): Promise<{ success: boolean }> {
     if ('honeypot' in dto && dto.honeypot) {
       return { success: true };
     }
     const data = dto as CreateContactDto;
+    await this.turnstile.verifyToken(data.turnstileToken, remoteIp);
+
     await this.prisma.contactMessage.create({
       data: {
         name: data.name,
@@ -38,14 +44,24 @@ export class MessagesService {
         message: data.message,
       },
     });
+
+    void this.notifications.sendContactAlert({
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      message: data.message,
+    });
+
     return { success: true };
   }
 
-  async createPrayer(dto: CreatePrayerInput): Promise<{ success: boolean }> {
+  async createPrayer(dto: CreatePrayerInput, remoteIp?: string): Promise<{ success: boolean }> {
     if ('honeypot' in dto && dto.honeypot) {
       return { success: true };
     }
     const data = dto as CreatePrayerDto;
+    await this.turnstile.verifyToken(data.turnstileToken, remoteIp);
+
     await this.prisma.prayerRequest.create({
       data: {
         name: data.name,
@@ -54,6 +70,14 @@ export class MessagesService {
         request: data.request,
       },
     });
+
+    void this.notifications.sendPrayerAlert({
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      request: data.request,
+    });
+
     return { success: true };
   }
 

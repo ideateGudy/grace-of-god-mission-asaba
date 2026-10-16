@@ -21,6 +21,7 @@ import {
   Sparkles,
   Phone,
 } from "lucide-react";
+import { TurnstileWidget } from "@/components/shared/TurnstileWidget";
 
 const prayerSchema = z.object({
   name: z.string().optional(),
@@ -36,6 +37,7 @@ const prayerSchema = z.object({
 export default function PrayerPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string>("");
 
   const form = useForm<z.infer<typeof prayerSchema>>({
     resolver: zodResolver(prayerSchema),
@@ -64,6 +66,7 @@ export default function PrayerPage() {
           request: data.request,
           consent: data.consent,
           honeypot: data._honeypot,
+          turnstileToken: turnstileToken || undefined,
         }),
       });
 
@@ -252,6 +255,8 @@ export default function PrayerPage() {
                       {form.formState.errors.consent.message}
                     </p>
                   )}
+
+                  <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
 
                   <Button
                     type="submit"

@@ -9,9 +9,11 @@ import {
   changePasswordSchema,
   loginSchema,
   refreshTokenSchema,
+  verify2faSchema,
   type ChangePasswordDto,
   type LoginDto,
   type RefreshTokenDto,
+  type Verify2faDto,
 } from '@ggm/types';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
 import type { AuthenticatedRequest } from '../common/types.js';
@@ -31,8 +33,18 @@ export class AuthController {
     @Body(new ZodValidationPipe(loginSchema)) dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { accessToken, refreshToken, user, accessCookieOptions, refreshCookieOptions } =
-      await this.authService.login(dto);
+    const result = await this.authService.login(dto);
+
+    if ('requires2FA' in result && result.requires2FA) {
+      return {
+        data: {
+          requires2FA: true,
+          user: result.user,
+        },
+      };
+    }
+
+    const { accessToken, refreshToken, user, accessCookieOptions, refreshCookieOptions } = result;
 
     res.cookie('gom_session', accessToken, accessCookieOptions);
     res.cookie('gom_refresh_token', refreshToken, refreshCookieOptions);
@@ -45,6 +57,7 @@ export class AuthController {
         role: user.role,
         permissions: user.permissions,
         mustChangePassword: user.mustChangePassword,
+        twoFactorEnabled: user.twoFactorEnabled,
       },
     };
   }
@@ -138,5 +151,32 @@ export class AuthController {
         mustChangePassword: user.mustChangePassword,
       },
     };
+  }
+
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('2fa/setup')
+  async setup2fa(@Req() req: AuthenticatedRequest) {
+    const data = await this.authService.setup2fa(req.activeUser);
+    return { data };
+  }
+
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('2fa/enable')
+  async enable2fa(
+    @Req() req: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(verify2faSchema)) dto: Verify2faDto,
+  ) {
+    const data = await this.authService.enable2fa(req.activeUser, dto.code);
+    return { data };
+  }
+
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('2fa/disable')
+  async disable2fa(
+    @Req() req: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(verify2faSchema)) dto: Verify2faDto,
+  ) {
+    const data = await this.authService.disable2fa(req.activeUser, dto.code);
+    return { data };
   }
 }

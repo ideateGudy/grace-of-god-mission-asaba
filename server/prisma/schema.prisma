@@ -39,6 +39,8 @@ model AdminUser {
   isActive           Boolean      @default(true)
   mustChangePassword Boolean      @default(true)
   tokenVersion       Int          @default(0)           // bump to invalidate every session
+  twoFactorEnabled   Boolean      @default(false)
+  twoFactorSecret    String?
   createdById        String?
   lastLoginAt        DateTime?
   createdAt          DateTime     @default(now())
@@ -265,4 +267,21 @@ model Contribution {
   createdAt    DateTime           @default(now())
   @@index([projectId, status])
   @@index([status, createdAt])
+}
+
+model SiteSetting {
+  id            String   @id @default("default")
+  churchName    String   @default("Grace of God Mission Asaba")
+  phone         String   @default("+234 803 000 0000")
+  email         String   @default("info@ggmasaba.org")
+  address       String   @default("No. 33 Arthur Richard Street, Akwuebulu (Cable Point), Asaba, Delta State")
+  whatsapp      String   @default("+2348030000000")
+  bankName      String   @default("Zenith Bank")
+  accountName   String   @default("Grace of God Mission Asaba")
+  accountNumber String   @default("1010101010")
+  googleMapsUrl String?
+  facebookUrl   String?
+  youtubeUrl    String?
+  instagramUrl  String?
+  updatedAt     DateTime @updatedAt
 }

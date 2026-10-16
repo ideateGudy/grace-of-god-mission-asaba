@@ -1,4 +1,4 @@
-import type { PublicHero } from "@ggm/types";
+import type { PublicHero, SiteSettingsDto, UpdateSiteSettingsDto } from "@ggm/types";
 
 const IS_SERVER = typeof window === "undefined";
 const MOCK_API = process.env.USE_MOCK_API === "true";
@@ -117,11 +117,18 @@ async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: str
 
 export const api = {
   auth: {
-    login: (data: { email: string; password: string }) => fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean } }>("/auth/login", { method: "POST", body: JSON.stringify(data), cache: "no-store" }),
-    refresh: () => fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean } }>("/auth/refresh", { method: "POST", cache: "no-store" }),
-    me: () => fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean } }>("/auth/me", { cache: "no-store" }),
+    login: (data: { email: string; password: string; twoFactorCode?: string }) => fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean; twoFactorEnabled?: boolean; requires2FA?: boolean } }>("/auth/login", { method: "POST", body: JSON.stringify(data), cache: "no-store" }),
+    refresh: () => fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean; twoFactorEnabled?: boolean } }>("/auth/refresh", { method: "POST", cache: "no-store" }),
+    me: () => fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean; twoFactorEnabled?: boolean } }>("/auth/me", { cache: "no-store" }),
     logout: () => fetcher<{ data: null }>("/auth/logout", { method: "POST", cache: "no-store" }),
-    changePassword: (data: { currentPassword: string; newPassword: string; confirmPassword: string }) => fetcher<{ data: { mustChangePassword: boolean } }>("/auth/change-password", { method: "POST", body: JSON.stringify(data), cache: "no-store" }),
+    changePassword: (data: { currentPassword: string; newPassword: string; confirmPassword?: string }) => fetcher<{ data: { mustChangePassword: boolean } }>("/auth/change-password", { method: "POST", body: JSON.stringify(data), cache: "no-store" }),
+    setup2fa: () => fetcher<{ data: { secret: string; otpauthUrl: string; qrCodeDataUrl: string } }>("/auth/2fa/setup", { method: "POST", cache: "no-store" }),
+    enable2fa: (code: string) => fetcher<{ data: { success: boolean; twoFactorEnabled: boolean } }>("/auth/2fa/enable", { method: "POST", body: JSON.stringify({ code }), cache: "no-store" }),
+    disable2fa: (code: string) => fetcher<{ data: { success: boolean; twoFactorEnabled: boolean } }>("/auth/2fa/disable", { method: "POST", body: JSON.stringify({ code }), cache: "no-store" }),
+  },
+  settings: {
+    get: () => fetcher<{ data: SiteSettingsDto }>("/settings", { tags: ["settings"] }),
+    update: (data: UpdateSiteSettingsDto) => fetcher<{ data: SiteSettingsDto }>("/admin/settings", { method: "PATCH", body: JSON.stringify(data), cache: "no-store" }),
   },
   hero: {
     getPublic: () => fetcher<{ data: PublicHero | null }>("/hero", { tags: ["hero"] }),

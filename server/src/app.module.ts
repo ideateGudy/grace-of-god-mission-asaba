@@ -21,6 +21,8 @@ import { HealthModule } from './health/health.module.js';
 import { UploadsModule } from './uploads/uploads.module.js';
 import { ProjectsModule } from './projects/projects.module.js';
 import { GivingModule } from './giving/giving.module.js';
+import { SettingsModule } from './settings/settings.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 @Module({
@@ -56,6 +58,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
     UploadsModule,
     ProjectsModule,
     GivingModule,
+    SettingsModule,
+    NotificationsModule,
   ],
   controllers: [],
   providers: [

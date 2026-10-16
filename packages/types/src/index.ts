@@ -7,3 +7,4 @@ export * from './users.schemas.js';
 export * from './auth.schemas.js';
 export * from './projects.schemas.js';
 export * from './giving.schemas.js';
+export * from './settings.schemas.js';
