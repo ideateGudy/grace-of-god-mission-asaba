@@ -17,6 +17,7 @@ import { OptionCardGroup } from "@/components/shared/OptionCardGroup"
 import { ImageUploadField } from "@/components/shared/ImageUploadField"
 import { cn } from "@/lib/utils"
 import { resolveHeroSlideTextTone } from "@/lib/hero-tone"
+import { authFetch } from "@/lib/api/client"
 
 const newSlide = (sortOrder: number): HeroSlideDto => ({
   sortOrder,
@@ -120,7 +121,7 @@ export function HeroEditor({ id }: { id: string }) {
   useEffect(() => {
     if (isNew) return
     let cancelled = false
-    fetch(`/api/v1/admin/hero/${encodeURIComponent(id)}`, { cache: "no-store" })
+    authFetch(`/api/v1/admin/hero/${encodeURIComponent(id)}`, { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) throw new Error("Unable to load the hero.")
         return response.json()
@@ -170,7 +171,7 @@ export function HeroEditor({ id }: { id: string }) {
     }
     setSaving(true)
     try {
-      const response = await fetch(
+      const response = await authFetch(
         isNew
           ? "/api/v1/admin/hero"
           : `/api/v1/admin/hero/${encodeURIComponent(id)}`,

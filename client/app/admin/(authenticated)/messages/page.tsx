@@ -10,11 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { usePermissions } from "@/components/shared/Can";
 
+import { authFetch } from "@/lib/api/client";
+
 type InboxMessage = { id: string; name: string | null; email: string | null; phone: string | null; message?: string; request?: string; status: "NEW" | "READ" | "ARCHIVED"; createdAt: string };
 type InboxKind = "contact" | "prayer-requests";
 async function inboxRequest(kind: InboxKind, id?: string, status?: string, method = "GET") {
   const url = `/api/v1/admin/${kind}${id ? `/${encodeURIComponent(id)}` : ""}`;
-  const response = await fetch(url, { method, headers: status ? { "Content-Type": "application/json" } : undefined, body: status ? JSON.stringify({ status }) : undefined, cache: "no-store" });
+  const response = await authFetch(url, { method, headers: status ? { "Content-Type": "application/json" } : undefined, body: status ? JSON.stringify({ status }) : undefined, cache: "no-store" });
   if (!response.ok) throw new Error("This inbox request could not be completed.");
   return response.status === 204 ? null : response.json();
 }

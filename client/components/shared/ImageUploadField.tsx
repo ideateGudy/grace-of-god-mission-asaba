@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { UploadCloud, Loader2, Image as ImageIcon, X } from "lucide-react";
+import { authFetch } from "@/lib/api/client";
 
 type Scope = "sermons" | "events" | "gallery" | "hero";
 
@@ -51,7 +52,7 @@ export function ImageUploadField({
 
     try {
       // 1. Request signed upload credentials from server
-      const sigResponse = await fetch("/api/v1/admin/uploads/signature", {
+      const sigResponse = await authFetch("/api/v1/admin/uploads/signature", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ scope }),

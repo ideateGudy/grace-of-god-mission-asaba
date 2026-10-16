@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { authFetch } from "@/lib/api/client";
 import {
   Select,
   SelectContent,
@@ -115,7 +116,7 @@ export default function AdminContributionsPage() {
       }
       const url = `/api/v1/admin/contributions/export${params.toString() ? `?${params.toString()}` : ""}`;
       
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
       });

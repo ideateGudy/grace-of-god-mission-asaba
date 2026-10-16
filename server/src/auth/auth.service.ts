@@ -58,7 +58,7 @@ export class AuthService {
   } {
     const isProduction = this.configService.get('NODE_ENV') === 'production';
     const accessDuration =
-      this.configService.get('JWT_ACCESS_EXPIRES_IN') || '15m';
+      this.configService.get('JWT_ACCESS_EXPIRES_IN') || '4h';
     const refreshDuration =
       this.configService.get('JWT_REFRESH_EXPIRES_IN') || '7d';
 
@@ -67,7 +67,7 @@ export class AuthService {
       secure: isProduction,
       sameSite: 'lax',
       path: '/',
-      maxAge: parseDurationToMs(accessDuration, 15 * 60 * 1000),
+      maxAge: parseDurationToMs(accessDuration, 4 * 60 * 60 * 1000),
     };
     const refreshCookieOptions: CookieOptions = {
       httpOnly: true,
@@ -81,7 +81,7 @@ export class AuthService {
 
   private async generateTokens(user: AdminUser): Promise<{ accessToken: string; refreshToken: string }> {
     const accessExpiresIn =
-      this.configService.get('JWT_ACCESS_EXPIRES_IN') || '15m';
+      this.configService.get('JWT_ACCESS_EXPIRES_IN') || '4h';
     const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN') || '7d';
 
     const accessPayload = {

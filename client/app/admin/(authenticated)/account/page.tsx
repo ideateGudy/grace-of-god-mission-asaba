@@ -55,17 +55,8 @@ export default function AccountPage() {
     }
     setSavingPassword(true);
     try {
-      const response = await fetch("/api/v1/auth/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-      if (!response.ok)
-        throw new Error(
-          "Could not change the password. Check your current password and try again."
-        );
-      const { data } = await response.json();
-      setUser(data);
+      const response = await api.auth.changePassword({ currentPassword, newPassword });
+      setUser({ ...user!, mustChangePassword: response.data.mustChangePassword });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");

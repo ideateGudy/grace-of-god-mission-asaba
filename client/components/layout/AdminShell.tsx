@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api/client";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -44,8 +45,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const handleSignOut = async () => {
     try {
-      await fetch("/api/v1/auth/logout", { method: "POST" });
+      await api.auth.logout();
     } catch {}
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("gom_access_token");
+      localStorage.removeItem("gom_refresh_token");
+    }
     setUser(null);
     router.push("/admin/login");
   };

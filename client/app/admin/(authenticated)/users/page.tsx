@@ -20,9 +20,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { authFetch } from "@/lib/api/client";
+
 type AdminUser = { id: string; name: string; email: string; role: "SUPER_ADMIN" | "ADMIN"; permissions: string[]; isActive: boolean; status: string; lastLoginAt: string | null };
 async function usersRequest(path = "", init?: RequestInit) {
-  const response = await fetch(`/api/v1/admin/users${path}`, { ...init, headers: { "Content-Type": "application/json", ...init?.headers }, cache: "no-store" });
+  const response = await authFetch(`/api/v1/admin/users${path}`, { ...init, headers: { "Content-Type": "application/json", ...init?.headers }, cache: "no-store" });
   if (!response.ok) { const payload = await response.json().catch(() => null); throw new Error(payload?.message ?? "The user request could not be completed."); }
   return response.status === 204 ? null : response.json();
 }

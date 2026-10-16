@@ -58,6 +58,8 @@ export class AuthController {
         permissions: user.permissions,
         mustChangePassword: user.mustChangePassword,
         twoFactorEnabled: user.twoFactorEnabled,
+        accessToken,
+        refreshToken,
       },
     };
   }
@@ -101,6 +103,8 @@ export class AuthController {
         role: user.role,
         permissions: user.permissions,
         mustChangePassword: user.mustChangePassword,
+        accessToken,
+        refreshToken: newRefreshToken,
       },
     };
   }
@@ -149,6 +153,8 @@ export class AuthController {
         role: user.role,
         permissions: user.permissions,
         mustChangePassword: user.mustChangePassword,
+        accessToken,
+        refreshToken,
       },
     };
   }

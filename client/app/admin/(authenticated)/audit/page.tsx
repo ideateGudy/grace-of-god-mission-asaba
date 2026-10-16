@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Download, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api/client";
+import { api, authFetch } from "@/lib/api/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type AuditEntry = {
@@ -44,7 +44,7 @@ export default function AuditPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await fetch("/api/v1/admin/audit/export");
+      const res = await authFetch("/api/v1/admin/audit/export");
       if (!res.ok) throw new Error("Failed to export audit logs");
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);

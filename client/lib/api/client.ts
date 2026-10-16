@@ -12,16 +12,30 @@ export class ApiError extends Error {
 
 let refreshPromise: Promise<boolean> | null = null;
 
-async function silentRefresh(): Promise<boolean> {
+export async function silentRefresh(): Promise<boolean> {
   if (refreshPromise) return refreshPromise;
   refreshPromise = (async () => {
     try {
+      const refreshToken = typeof window !== "undefined" ? localStorage.getItem("gom_refresh_token") : null;
       const res = await fetch("/api/v1/auth/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(refreshToken ? { refreshToken } : {}),
         cache: "no-store",
       });
-      return res.ok;
+      if (res.ok) {
+        const body = await res.json();
+        if (typeof window !== "undefined") {
+          if (body?.data?.accessToken) {
+            localStorage.setItem("gom_access_token", body.data.accessToken);
+          }
+          if (body?.data?.refreshToken) {
+            localStorage.setItem("gom_refresh_token", body.data.refreshToken);
+          }
+        }
+        return true;
+      }
+      return false;
     } catch {
       return false;
     } finally {
@@ -29,6 +43,35 @@ async function silentRefresh(): Promise<boolean> {
     }
   })();
   return refreshPromise;
+}
+
+export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const getHeaders = (token: string | null) => {
+    const headers = new Headers(init?.headers);
+    if (!headers.has("Content-Type") && init?.method && init.method !== "GET" && init.method !== "HEAD") {
+      headers.set("Content-Type", "application/json");
+    }
+    if (token && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    return headers;
+  };
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("gom_access_token") : null;
+  let res = await fetch(input, { ...init, headers: getHeaders(token) });
+
+  if (res.status === 401 && typeof window !== "undefined") {
+    const urlStr = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    if (!urlStr.includes("/auth/login") && !urlStr.includes("/auth/refresh")) {
+      const refreshed = await silentRefresh();
+      if (refreshed) {
+        const newToken = localStorage.getItem("gom_access_token");
+        res = await fetch(input, { ...init, headers: getHeaders(newToken) });
+      }
+    }
+  }
+
+  return res;
 }
 
 async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: string[], revalidate?: number; timeoutMs?: number }): Promise<T> {
@@ -53,52 +96,44 @@ async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: str
 
   let res: Response;
   try {
-    res = await fetch(url, {
-      ...rest,
-      signal: getSignal(),
-      headers: {
-        "Content-Type": "application/json",
-        ...rest.headers,
-      },
-      ...(IS_SERVER && rest.cache !== "no-store" ? { next: { tags, revalidate } } : {})
-    });
+    if (IS_SERVER) {
+      res = await fetch(url, {
+        ...rest,
+        signal: getSignal(),
+        headers: {
+          "Content-Type": "application/json",
+          ...rest.headers,
+        },
+        ...(rest.cache !== "no-store" ? { next: { tags, revalidate } } : {})
+      });
+    } else {
+      res = await authFetch(url, {
+        ...rest,
+        signal: getSignal(),
+      });
+    }
   } catch {
     if (!rest.method && rest.cache !== "no-store") {
       await new Promise((resolve) => setTimeout(resolve, 500));
       try {
-        res = await fetch(url, {
-          ...rest,
-          signal: getSignal(),
-          headers: { "Content-Type": "application/json", ...rest.headers },
-          ...(IS_SERVER ? { next: { tags, revalidate } } : {})
-        });
+        if (IS_SERVER) {
+          res = await fetch(url, {
+            ...rest,
+            signal: getSignal(),
+            headers: { "Content-Type": "application/json", ...rest.headers },
+            next: { tags, revalidate }
+          });
+        } else {
+          res = await authFetch(url, {
+            ...rest,
+            signal: getSignal(),
+          });
+        }
       } catch {
         throw new ApiError(503, "The church website is waking up. Please try again shortly.");
       }
     } else {
       throw new ApiError(503, "The church website is temporarily unavailable.");
-    }
-  }
-
-  // Seamless silent token refresh for long-lived login sessions
-  if (res.status === 401 && !IS_SERVER && endpoint !== "/auth/login" && endpoint !== "/auth/refresh") {
-    const refreshed = await silentRefresh();
-    if (refreshed) {
-      try {
-        const retryRes = await fetch(url, {
-          ...rest,
-          signal: getSignal(),
-          headers: {
-            "Content-Type": "application/json",
-            ...rest.headers,
-          },
-        });
-        if (retryRes.ok) {
-          if (retryRes.status === 204) return {} as T;
-          return retryRes.json();
-        }
-        res = retryRes;
-      } catch {}
     }
   }
 
@@ -117,11 +152,42 @@ async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: str
 
 export const api = {
   auth: {
-    login: (data: { email: string; password: string; twoFactorCode?: string }) => fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean; twoFactorEnabled?: boolean; requires2FA?: boolean } }>("/auth/login", { method: "POST", body: JSON.stringify(data), cache: "no-store" }),
-    refresh: () => fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean; twoFactorEnabled?: boolean } }>("/auth/refresh", { method: "POST", cache: "no-store" }),
+    login: async (data: { email: string; password: string; twoFactorCode?: string }) => {
+      const result = await fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean; twoFactorEnabled?: boolean; requires2FA?: boolean; accessToken?: string; refreshToken?: string } }>("/auth/login", { method: "POST", body: JSON.stringify(data), cache: "no-store" });
+      if (!IS_SERVER) {
+        if (result?.data?.accessToken) localStorage.setItem("gom_access_token", result.data.accessToken);
+        if (result?.data?.refreshToken) localStorage.setItem("gom_refresh_token", result.data.refreshToken);
+      }
+      return result;
+    },
+    refresh: async () => {
+      const result = await fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean; twoFactorEnabled?: boolean; accessToken?: string; refreshToken?: string } }>("/auth/refresh", { method: "POST", cache: "no-store" });
+      if (!IS_SERVER) {
+        if (result?.data?.accessToken) localStorage.setItem("gom_access_token", result.data.accessToken);
+        if (result?.data?.refreshToken) localStorage.setItem("gom_refresh_token", result.data.refreshToken);
+      }
+      return result;
+    },
     me: () => fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean; twoFactorEnabled?: boolean } }>("/auth/me", { cache: "no-store" }),
-    logout: () => fetcher<{ data: null }>("/auth/logout", { method: "POST", cache: "no-store" }),
-    changePassword: (data: { currentPassword: string; newPassword: string; confirmPassword?: string }) => fetcher<{ data: { mustChangePassword: boolean } }>("/auth/change-password", { method: "POST", body: JSON.stringify(data), cache: "no-store" }),
+    logout: async () => {
+      try {
+        await fetcher<{ data: null }>("/auth/logout", { method: "POST", cache: "no-store" });
+      } finally {
+        if (!IS_SERVER) {
+          localStorage.removeItem("gom_access_token");
+          localStorage.removeItem("gom_refresh_token");
+        }
+      }
+      return { data: null };
+    },
+    changePassword: async (data: { currentPassword: string; newPassword: string; confirmPassword?: string }) => {
+      const result = await fetcher<{ data: { mustChangePassword: boolean; accessToken?: string; refreshToken?: string } }>("/auth/change-password", { method: "POST", body: JSON.stringify(data), cache: "no-store" });
+      if (!IS_SERVER) {
+        if (result?.data?.accessToken) localStorage.setItem("gom_access_token", result.data.accessToken);
+        if (result?.data?.refreshToken) localStorage.setItem("gom_refresh_token", result.data.refreshToken);
+      }
+      return result;
+    },
     setup2fa: () => fetcher<{ data: { secret: string; otpauthUrl: string; qrCodeDataUrl: string } }>("/auth/2fa/setup", { method: "POST", cache: "no-store" }),
     enable2fa: (code: string) => fetcher<{ data: { success: boolean; twoFactorEnabled: boolean } }>("/auth/2fa/enable", { method: "POST", body: JSON.stringify({ code }), cache: "no-store" }),
     disable2fa: (code: string) => fetcher<{ data: { success: boolean; twoFactorEnabled: boolean } }>("/auth/2fa/disable", { method: "POST", body: JSON.stringify({ code }), cache: "no-store" }),

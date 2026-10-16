@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { authFetch } from "@/lib/api/client";
 import {
   Dialog,
   DialogContent,
@@ -189,7 +190,7 @@ export default function AdminProjectsPage() {
       }
       const amountKobo = Math.round(nairaNum * 100);
 
-      const res = await fetch(`/api/v1/admin/projects/${giftProject.id}/contributions`, {
+      const res = await authFetch(`/api/v1/admin/projects/${giftProject.id}/contributions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

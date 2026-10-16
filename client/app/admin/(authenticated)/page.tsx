@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { Button } from "@/components/ui/button";
 import { useSessionStore } from "@/store/useSessionStore";
+import { authFetch } from "@/lib/api/client";
 
 type DashboardStats = {
   publishedSermons?: number;
@@ -23,7 +24,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     let active = true;
-    fetch("/api/v1/admin/stats", { cache: "no-store" })
+    authFetch("/api/v1/admin/stats", { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) throw new Error("Unable to load dashboard statistics.");
         return response.json() as Promise<{ data: DashboardStats }>;

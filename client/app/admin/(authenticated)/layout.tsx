@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { useSessionStore } from "@/store/useSessionStore";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api/client";
 
 export default function AdminAuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, setUser } = useSessionStore();
@@ -13,16 +14,15 @@ export default function AdminAuthenticatedLayout({ children }: { children: React
   useEffect(() => {
     async function fetchSession() {
       try {
-        const res = await fetch("/api/v1/auth/me");
-        if (res.ok) {
-          const { data } = await res.json();
-          setUser(data);
-        } else {
-          setUser(null);
-          router.push("/admin/login");
+        const { data } = await api.auth.me();
+        setUser(data as Parameters<typeof setUser>[0]);
+      } catch {
+        setUser(null);
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("gom_access_token");
+          localStorage.removeItem("gom_refresh_token");
         }
-      } catch (e) {
-        console.error("Session check failed", e);
+        router.push("/admin/login");
       } finally {
         setLoading(false);
       }
