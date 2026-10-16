@@ -19,6 +19,22 @@ export interface AuthResult {
   refreshCookieOptions: CookieOptions;
 }
 
+function parseDurationToMs(durationStr: string | undefined, defaultMs: number): number {
+  if (!durationStr) return defaultMs;
+  const match = durationStr.trim().match(/^(\d+)\s*(s|m|h|d|w)?$/i);
+  if (!match) return defaultMs;
+  const value = parseInt(match[1], 10);
+  const unit = (match[2] || 's').toLowerCase();
+  switch (unit) {
+    case 's': return value * 1000;
+    case 'm': return value * 60 * 1000;
+    case 'h': return value * 60 * 60 * 1000;
+    case 'd': return value * 24 * 60 * 60 * 1000;
+    case 'w': return value * 7 * 24 * 60 * 60 * 1000;
+    default: return defaultMs;
+  }
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -33,27 +49,35 @@ export class AuthService {
     refreshCookieOptions: CookieOptions;
   } {
     const isProduction = this.configService.get('NODE_ENV') === 'production';
+    const accessDuration =
+      this.configService.get('JWT_ACCESS_EXPIRES_IN') ||
+      this.configService.get('JWT_EXPIRES_IN') ||
+      '15m';
+    const refreshDuration =
+      this.configService.get('JWT_REFRESH_EXPIRES_IN') || '7d';
+
     const accessCookieOptions: CookieOptions = {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',
       path: '/',
-      maxAge: 15 * 60 * 1000, // 15 minutes short-lived access
+      maxAge: parseDurationToMs(accessDuration, 15 * 60 * 1000),
     };
     const refreshCookieOptions: CookieOptions = {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',
       path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days long-lived refresh
+      maxAge: parseDurationToMs(refreshDuration, 7 * 24 * 60 * 60 * 1000),
     };
     return { accessCookieOptions, refreshCookieOptions };
   }
 
   private async generateTokens(user: AdminUser): Promise<{ accessToken: string; refreshToken: string }> {
-    const accessExpiresIn = user.role === 'SUPER_ADMIN'
-      ? '1h'
-      : (this.configService.get('JWT_ACCESS_EXPIRES_IN') || '15m');
+    const accessExpiresIn =
+      this.configService.get('JWT_ACCESS_EXPIRES_IN') ||
+      this.configService.get('JWT_EXPIRES_IN') ||
+      '15m';
     const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN') || '7d';
 
     const accessPayload = {
