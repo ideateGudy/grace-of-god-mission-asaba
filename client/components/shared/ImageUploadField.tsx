@@ -14,15 +14,21 @@ export function ImageUploadField({
   onChange,
   scope = "gallery",
   required = false,
+  id,
+  name,
 }: {
   label: string;
   value: string;
   onChange: (url: string) => void;
   scope?: Scope;
   required?: boolean;
+  id?: string;
+  name?: string;
 }) {
-  const inputId = useId();
-  const fileInputId = useId();
+  const generatedId = useId();
+  const inputId = id || generatedId;
+  const fileInputId = `${inputId}-file`;
+  const inputName = name || inputId;
   const [uploading, setUploading] = useState(false);
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -116,6 +122,7 @@ export function ImageUploadField({
         {/* Hidden native file input accessible via label and Playwright */}
         <input
           id={fileInputId}
+          name={`${inputName}_file`}
           type="file"
           accept="image/jpeg,image/png,image/webp,image/avif"
           onChange={handleFileChange}
@@ -146,6 +153,7 @@ export function ImageUploadField({
         <div className="flex-1 w-full">
           <Input
             id={inputId}
+            name={inputName}
             type="url"
             required={required}
             value={value}

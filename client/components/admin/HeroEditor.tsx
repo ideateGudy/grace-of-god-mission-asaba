@@ -72,6 +72,30 @@ const dateValue = (value: string | null | undefined) =>
   toLagosDateTimeInput(value)
 const nullable = (value: string) => (value.trim() ? value : null)
 
+const sanitizeSlide = (slide: HeroSlideDto, index: number): HeroSlideDto => ({
+  id: slide.id,
+  sortOrder: index,
+  layout: slide.layout,
+  align: slide.align,
+  title: slide.title,
+  subtitle: slide.subtitle ?? null,
+  primaryLabel: slide.primaryLabel ?? null,
+  primaryUrl: slide.primaryUrl ?? null,
+  secondaryLabel: slide.secondaryLabel ?? null,
+  secondaryUrl: slide.secondaryUrl ?? null,
+  bgType: slide.bgType,
+  bgColor: slide.bgColor ?? null,
+  bgGradient: slide.bgGradient ?? null,
+  imageUrl: slide.imageUrl ?? null,
+  mobileImageUrl: slide.mobileImageUrl ?? null,
+  imageAlt: slide.imageAlt ?? null,
+  imageDecorative: Boolean(slide.imageDecorative),
+  focalX: slide.focalX ?? 50,
+  focalY: slide.focalY ?? 50,
+  overlay: slide.overlay ?? 40,
+  textTone: slide.textTone ?? "LIGHT",
+})
+
 export function HeroEditor({ id }: { id: string }) {
   const router = useRouter()
   const isNew = id === "new"
@@ -112,14 +136,15 @@ export function HeroEditor({ id }: { id: string }) {
     }))
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const payload = {
-      ...hero,
+    const payload: CreateHeroDto = {
+      name: hero.name,
+      mode: hero.mode,
+      autoplay: hero.autoplay,
+      intervalSeconds: hero.intervalSeconds,
+      published: hero.published,
       startsAt: fromLagosDateTimeInput(hero.startsAt ?? ""),
       endsAt: fromLagosDateTimeInput(hero.endsAt ?? ""),
-      slides: hero.slides.map((slide, index) => ({
-        ...slide,
-        sortOrder: index,
-      })),
+      slides: hero.slides.map(sanitizeSlide),
     }
     const parsed = createHeroSchema.safeParse(payload)
     if (!parsed.success) {
@@ -171,6 +196,7 @@ export function HeroEditor({ id }: { id: string }) {
             <Label htmlFor="hero-name">Hero name</Label>
             <Input
               id="hero-name"
+              name="name"
               required
               maxLength={120}
               value={hero.name}
@@ -181,9 +207,11 @@ export function HeroEditor({ id }: { id: string }) {
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="hero-mode">Mode</Label>
+              <span id="hero-mode-label" className="text-sm font-medium">Mode</span>
               <OptionCardGroup
-                aria-label="Hero mode"
+                aria-labelledby="hero-mode-label"
+                name="hero_mode"
+                idPrefix="hero-mode"
                 value={hero.mode}
                 onValueChange={(mode) => setHero({ ...hero, mode: mode as CreateHeroDto["mode"] })}
                 className="grid-cols-1"
@@ -197,6 +225,7 @@ export function HeroEditor({ id }: { id: string }) {
               <Label htmlFor="hero-interval">Carousel interval (seconds)</Label>
               <Input
                 id="hero-interval"
+                name="intervalSeconds"
                 type="number"
                 min={5}
                 max={15}
@@ -209,8 +238,10 @@ export function HeroEditor({ id }: { id: string }) {
                 }
               />
             </div>
-            <label className="flex min-h-11 items-center gap-3">
+            <label htmlFor="hero-autoplay" className="flex min-h-11 items-center gap-3">
               <input
+                id="hero-autoplay"
+                name="autoplay"
                 type="checkbox"
                 className="size-5 accent-primary"
                 checked={hero.autoplay}
@@ -221,31 +252,38 @@ export function HeroEditor({ id }: { id: string }) {
               Autoplay (respects reduced motion)
             </label>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="hero-start">
-                Start time (Africa/Lagos local)
-              </Label>
-              <Input
-                id="hero-start"
-                type="datetime-local"
-                value={dateValue(hero.startsAt)}
-                onChange={(event) =>
-                  setHero({ ...hero, startsAt: nullable(event.target.value) })
-                }
-              />
+          <div className="space-y-2">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="hero-start">
+                  Start time (Africa/Lagos local)
+                </Label>
+                <Input
+                  id="hero-start"
+                  name="startsAt"
+                  type="datetime-local"
+                  value={dateValue(hero.startsAt)}
+                  onChange={(event) =>
+                    setHero({ ...hero, startsAt: nullable(event.target.value) })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hero-end">End time (Africa/Lagos local)</Label>
+                <Input
+                  id="hero-end"
+                  name="endsAt"
+                  type="datetime-local"
+                  value={dateValue(hero.endsAt)}
+                  onChange={(event) =>
+                    setHero({ ...hero, endsAt: nullable(event.target.value) })
+                  }
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="hero-end">End time (Africa/Lagos local)</Label>
-              <Input
-                id="hero-end"
-                type="datetime-local"
-                value={dateValue(hero.endsAt)}
-                onChange={(event) =>
-                  setHero({ ...hero, endsAt: nullable(event.target.value) })
-                }
-              />
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Optional schedule: Leave both empty to display immediately upon publishing and remain active indefinitely.
+            </p>
           </div>
         </GlassCard>
         {hero.slides.map((slide, index) => (
@@ -347,6 +385,7 @@ export function HeroEditor({ id }: { id: string }) {
                 <Label htmlFor={`slide-title-${index}`}>Title</Label>
                 <Input
                   id={`slide-title-${index}`}
+                  name={`slide_${index}_title`}
                   required
                   maxLength={80}
                   value={slide.title}
@@ -359,6 +398,7 @@ export function HeroEditor({ id }: { id: string }) {
                 <Label htmlFor={`slide-subtitle-${index}`}>Subtitle</Label>
                 <Input
                   id={`slide-subtitle-${index}`}
+                  name={`slide_${index}_subtitle`}
                   maxLength={200}
                   value={slide.subtitle ?? ""}
                   onChange={(event) =>
@@ -367,9 +407,11 @@ export function HeroEditor({ id }: { id: string }) {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Layout</Label>
+                <span id={`slide-layout-label-${index}`} className="text-sm font-medium">Layout</span>
                 <OptionCardGroup
-                  aria-label={`Slide ${index + 1} layout`}
+                  aria-labelledby={`slide-layout-label-${index}`}
+                  name={`slide_${index}_layout`}
+                  idPrefix={`slide-layout-${index}`}
                   value={slide.layout}
                   className="grid-cols-1"
                   onValueChange={(value) => {
@@ -391,8 +433,10 @@ export function HeroEditor({ id }: { id: string }) {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Alignment</Label>
+                <Label htmlFor={`slide-align-${index}`}>Alignment</Label>
                 <select
+                  id={`slide-align-${index}`}
+                  name={`slide_${index}_align`}
                   className="min-h-11 w-full rounded-md border border-input bg-background px-3"
                   value={slide.align}
                   onChange={(event) =>
@@ -407,8 +451,10 @@ export function HeroEditor({ id }: { id: string }) {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>Background</Label>
+                <Label htmlFor={`slide-bg-type-${index}`}>Background</Label>
                 <select
+                  id={`slide-bg-type-${index}`}
+                  name={`slide_${index}_bg_type`}
                   className="min-h-11 w-full rounded-md border border-input bg-background px-3"
                   value={slide.bgType}
                   onChange={(event) =>
@@ -434,7 +480,7 @@ export function HeroEditor({ id }: { id: string }) {
               </div>
               {slide.bgType === "COLOR" ? (
                 <div className="space-y-2">
-                  <Label>Background colour</Label>
+                  <Label htmlFor={`slide-bg-color-${index}`}>Background colour</Label>
                   <div className="flex flex-wrap gap-2" role="group" aria-label="Background colour presets">
                     {colorPresets.map((preset) => (
                       <button
@@ -451,6 +497,8 @@ export function HeroEditor({ id }: { id: string }) {
                   </div>
                   <div className="grid grid-cols-[auto_1fr] gap-3">
                     <Input
+                      id={`slide-bg-color-picker-${index}`}
+                      name={`slide_${index}_bg_color_picker`}
                       type="color"
                       aria-label="Choose background colour"
                       value={/^#[0-9a-f]{6}$/i.test(slide.bgColor ?? "") ? slide.bgColor! : "#141633"}
@@ -458,6 +506,8 @@ export function HeroEditor({ id }: { id: string }) {
                       className="h-11 w-16 p-1"
                     />
                     <Input
+                      id={`slide-bg-color-${index}`}
+                      name={`slide_${index}_bg_color`}
                       aria-label="Background colour hex"
                       value={slide.bgColor ?? "#141633"}
                       maxLength={7}
@@ -474,8 +524,10 @@ export function HeroEditor({ id }: { id: string }) {
                 </div>
               ) : slide.bgType === "GRADIENT" ? (
                 <div className="space-y-2">
-                  <Label>Gradient preset</Label>
+                  <Label htmlFor={`slide-bg-gradient-${index}`}>Gradient preset</Label>
                   <select
+                    id={`slide-bg-gradient-${index}`}
+                    name={`slide_${index}_bg_gradient`}
                     className="min-h-11 w-full rounded-md border border-input bg-background px-3"
                     value={slide.bgGradient ?? "dawn"}
                     onChange={(event) =>
@@ -493,6 +545,8 @@ export function HeroEditor({ id }: { id: string }) {
               ) : null}
               {(slide.bgType === "IMAGE" || slide.layout === "SPLIT") && (
                 <ImageUploadField
+                  id={`slide-image-${index}`}
+                  name={`slide_${index}_image`}
                   label={slide.layout === "SPLIT" ? "Split image" : "Background image"}
                   value={slide.imageUrl ?? ""}
                   scope="hero"
@@ -506,6 +560,7 @@ export function HeroEditor({ id }: { id: string }) {
                     <Label htmlFor={`slide-image-alt-${index}`}>Image description</Label>
                     <Input
                       id={`slide-image-alt-${index}`}
+                      name={`slide_${index}_image_alt`}
                       value={slide.imageAlt ?? ""}
                       onChange={(event) =>
                         setSlide(index, {
@@ -515,8 +570,10 @@ export function HeroEditor({ id }: { id: string }) {
                       }
                     />
                   </div>
-                  <label className="flex min-h-11 items-center gap-3">
+                  <label htmlFor={`slide-image-decorative-${index}`} className="flex min-h-11 items-center gap-3">
                     <input
+                      id={`slide-image-decorative-${index}`}
+                      name={`slide_${index}_image_decorative`}
                       type="checkbox"
                       checked={slide.imageDecorative}
                       onChange={(event) =>
@@ -529,6 +586,8 @@ export function HeroEditor({ id }: { id: string }) {
                   </label>
                   {slide.bgType === "IMAGE" && slide.layout === "FULL_BLEED" && (
                     <ImageUploadField
+                      id={`slide-mobile-image-${index}`}
+                      name={`slide_${index}_mobile_image`}
                       label="Mobile image (optional)"
                       value={slide.mobileImageUrl ?? ""}
                       scope="hero"
@@ -538,12 +597,28 @@ export function HeroEditor({ id }: { id: string }) {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor={`focal-x-${index}`}>Image focal point — horizontal</Label>
-                      <Input id={`focal-x-${index}`} type="range" min={0} max={100} value={slide.focalX} onChange={(event) => setSlide(index, { focalX: Number(event.target.value) })} />
+                      <Input
+                        id={`focal-x-${index}`}
+                        name={`slide_${index}_focal_x`}
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={slide.focalX}
+                        onChange={(event) => setSlide(index, { focalX: Number(event.target.value) })}
+                      />
                       <span className="text-xs text-muted-foreground">{slide.focalX}%</span>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor={`focal-y-${index}`}>Image focal point — vertical</Label>
-                      <Input id={`focal-y-${index}`} type="range" min={0} max={100} value={slide.focalY} onChange={(event) => setSlide(index, { focalY: Number(event.target.value) })} />
+                      <Input
+                        id={`focal-y-${index}`}
+                        name={`slide_${index}_focal_y`}
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={slide.focalY}
+                        onChange={(event) => setSlide(index, { focalY: Number(event.target.value) })}
+                      />
                       <span className="text-xs text-muted-foreground">{slide.focalY}%</span>
                     </div>
                   </div>
@@ -552,6 +627,7 @@ export function HeroEditor({ id }: { id: string }) {
                       <Label htmlFor={`slide-overlay-${index}`}>Overlay strength</Label>
                       <Input
                         id={`slide-overlay-${index}`}
+                        name={`slide_${index}_overlay`}
                         type="range"
                         min={0}
                         max={80}
@@ -567,8 +643,10 @@ export function HeroEditor({ id }: { id: string }) {
                 </>
               )}
               <div className="space-y-2">
-                <Label>Text tone</Label>
+                <Label htmlFor={`slide-text-tone-${index}`}>Text tone</Label>
                 <select
+                  id={`slide-text-tone-${index}`}
+                  name={`slide_${index}_text_tone`}
                   className="min-h-11 w-full rounded-md border border-input bg-background px-3"
                   value={slide.textTone}
                   onChange={(event) =>
@@ -583,8 +661,10 @@ export function HeroEditor({ id }: { id: string }) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Primary action</Label>
+                  <Label htmlFor={`slide-primary-label-${index}`}>Primary action</Label>
                   <Input
+                    id={`slide-primary-label-${index}`}
+                    name={`slide_${index}_primary_label`}
                     placeholder="Button label"
                     value={slide.primaryLabel ?? ""}
                     onChange={(event) =>
@@ -594,6 +674,8 @@ export function HeroEditor({ id }: { id: string }) {
                     }
                   />
                   <Input
+                    id={`slide-primary-url-${index}`}
+                    name={`slide_${index}_primary_url`}
                     aria-label="Primary action link"
                     placeholder="/visit or https://…"
                     value={slide.primaryUrl ?? ""}
@@ -605,8 +687,10 @@ export function HeroEditor({ id }: { id: string }) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Secondary action</Label>
+                  <Label htmlFor={`slide-secondary-label-${index}`}>Secondary action</Label>
                   <Input
+                    id={`slide-secondary-label-${index}`}
+                    name={`slide_${index}_secondary_label`}
                     placeholder="Button label"
                     value={slide.secondaryLabel ?? ""}
                     onChange={(event) =>
@@ -616,6 +700,8 @@ export function HeroEditor({ id }: { id: string }) {
                     }
                   />
                   <Input
+                    id={`slide-secondary-url-${index}`}
+                    name={`slide_${index}_secondary_url`}
                     aria-label="Secondary action link"
                     placeholder="/sermons or https://…"
                     value={slide.secondaryUrl ?? ""}
@@ -683,7 +769,7 @@ export function HeroEditor({ id }: { id: string }) {
             />
           </div>
         </GlassCard>
-        <div className="fixed inset-x-0 bottom-0 z-40 flex justify-end gap-3 border-t border-border bg-background/95 p-4 backdrop-blur">
+        <div className="sticky bottom-0 z-30 -mx-4 -mb-4 md:-mx-8 md:-mb-8 mt-8 flex justify-end gap-3 border-t border-border bg-background/95 p-4 md:px-8 backdrop-blur">
           <Button
             type="button"
             variant="outline"
