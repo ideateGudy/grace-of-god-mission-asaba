@@ -59,10 +59,25 @@ async function bootstrap() {
     origin: (requestOrigin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!requestOrigin) return callback(null, true);
       const clean = requestOrigin.replace(/\/$/, '');
-      if (configuredOrigins.includes('*') || configuredOrigins.includes(clean)) {
+
+      const isAllowed =
+        configuredOrigins.includes('*') ||
+        configuredOrigins.includes(clean) ||
+        configuredOrigins.some((pattern) => {
+          if (pattern.startsWith('*.')) {
+            const domain = pattern.slice(2);
+            return clean.endsWith(`.${domain}`) || clean === `https://${domain}` || clean === `http://${domain}`;
+          }
+          return false;
+        }) ||
+        // Production fallback: ensure main frontend & preview deployments remain operational even if host env is unset
+        clean === 'https://ggmasaba.vercel.app' ||
+        clean.endsWith('.vercel.app');
+
+      if (isAllowed) {
         return callback(null, true);
       }
-      return callback(new Error(`Origin ${requestOrigin} not allowed by CORS`));
+      return callback(null, false);
     },
     credentials: true,
   });
