@@ -42,15 +42,33 @@ export function HeroCarousel({ slides, autoplay, intervalSeconds }: { slides: He
         />
       </div>
       {slides.length > 1 && (
-        <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-midnight/80 p-2 text-white">
+        <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 sm:gap-2 rounded-full bg-midnight/80 p-1.5 sm:p-2 text-white backdrop-blur-xs">
           {autoplay && !reduced && (
-            <Button type="button" variant="ghost" size="icon" className="size-11 text-white hover:bg-white/10 hover:text-white" aria-label={userPaused ? "Play slides" : "Pause slides"} onClick={() => setUserPaused((value) => !value)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="hidden sm:inline-flex size-11 text-white hover:bg-white/10 hover:text-white"
+              aria-label={userPaused ? "Play slides" : "Pause slides"}
+              onClick={() => setUserPaused((value) => !value)}
+            >
               {userPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
             </Button>
           )}
           {slides.map((slide, index) => (
-            <button key={slide.id ?? index} type="button" className="size-11 rounded-full" aria-label={`Show slide ${index + 1} of ${slides.length}`} aria-current={active === index} onClick={() => setActive(index)}>
-              <span className={`mx-auto block size-2 rounded-full ${active === index ? "bg-gold" : "bg-white/60"}`} />
+            <button
+              key={slide.id ?? index}
+              type="button"
+              className="size-11 rounded-full flex items-center justify-center"
+              aria-label={`Show slide ${index + 1} of ${slides.length}`}
+              aria-current={active === index}
+              onClick={() => setActive(index)}
+            >
+              <span
+                className={`block size-2 rounded-full transition-all ${
+                  active === index ? "bg-gold scale-125" : "bg-white/60 hover:bg-white/80"
+                }`}
+              />
             </button>
           ))}
         </div>
