@@ -42,3 +42,9 @@ Thumbs.db
 .claude/
 .windsurf/
 skills-lock.json
+
+# Markdown files (only README.md files are tracked)
+*.md
+**/*.md
+!README.md
+!**/README.md
