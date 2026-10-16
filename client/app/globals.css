@@ -33,6 +33,14 @@
   --hero-gradient-majesty: linear-gradient(135deg, #141633 0%, #2B1B3D 45%, #3B2050 70%, #996F28 100%);
   --hero-gradient-celestial: linear-gradient(135deg, #080A1C 0%, #141633 40%, #19385C 75%, #2B5780 100%);
 
+  /* Dark gradients with golden yellow light shining down from the top */
+  --hero-gradient-shekinah: radial-gradient(ellipse 85% 60% at 50% -5%, rgba(217, 164, 65, 0.45) 0%, rgba(217, 164, 65, 0.15) 45%, transparent 75%), radial-gradient(circle at 50% 45%, rgba(46, 49, 146, 0.35) 0%, transparent 65%), linear-gradient(180deg, #090B1E 0%, #141633 55%, #0B0D22 100%);
+  --hero-gradient-golden-dawn: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(245, 192, 74, 0.45) 0%, rgba(217, 164, 65, 0.15) 50%, transparent 75%), linear-gradient(145deg, #141633 0%, #222660 35%, #2E3192 65%, #5964B8 85%, #8B9BE2 100%);
+  --hero-gradient-cathedral-rays: radial-gradient(ellipse 85% 55% at 50% -8%, rgba(230, 175, 60, 0.42) 0%, transparent 70%), radial-gradient(ellipse 75% 50% at 50% 105%, rgba(46, 49, 146, 0.45) 0%, transparent 70%), linear-gradient(180deg, #090A1A 0%, #141633 50%, #090A1A 100%);
+  --hero-gradient-holy-fire: radial-gradient(ellipse 90% 50% at 50% 0%, rgba(225, 160, 50, 0.45) 0%, rgba(190, 85, 30, 0.15) 55%, transparent 80%), linear-gradient(180deg, #101228 0%, #141633 50%, #1D1530 80%, #0C0D1E 100%);
+  --hero-gradient-celestial-amber: radial-gradient(circle at 75% 5%, rgba(217, 164, 65, 0.45) 0%, rgba(217, 164, 65, 0.10) 50%, transparent 75%), radial-gradient(circle at 25% 95%, rgba(46, 49, 146, 0.35) 0%, transparent 60%), linear-gradient(145deg, #090B1C 0%, #141633 50%, #1C2356 100%);
+  --hero-gradient-midnight-sapphire: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(95, 130, 240, 0.40) 0%, transparent 70%), linear-gradient(180deg, #060818 0%, #11153B 50%, #1D235C 100%);
+
   /* Light background gradients: Fresh milk color infused with church brand accents (Gold, Sky, Rose, Olive) */
   --hero-gradient-milk-gold: linear-gradient(135deg, #FFFDF8 0%, #FAF5EA 35%, #F4E8CF 75%, #EADBBA 100%);
   --hero-gradient-radiance: linear-gradient(135deg, #FFFDF8 0%, #FAF5EA 35%, #F4E8CF 75%, #EADBBA 100%);
@@ -66,6 +74,14 @@
   --hero-gradient-glow: linear-gradient(135deg, #05060E 0%, #0E1026 50%, #22256E 100%);
   --hero-gradient-majesty: linear-gradient(135deg, #0B0D22 0%, #20132E 45%, #2F1A42 70%, #8C6524 100%);
   --hero-gradient-celestial: linear-gradient(135deg, #050714 0%, #0E132B 45%, #152E4D 75%, #264C70 100%);
+
+  /* Dark gradients with golden yellow light shining down from the top */
+  --hero-gradient-shekinah: radial-gradient(ellipse 85% 60% at 50% -5%, rgba(217, 164, 65, 0.45) 0%, rgba(217, 164, 65, 0.15) 45%, transparent 75%), radial-gradient(circle at 50% 45%, rgba(46, 49, 146, 0.35) 0%, transparent 65%), linear-gradient(180deg, #090B1E 0%, #141633 55%, #0B0D22 100%);
+  --hero-gradient-golden-dawn: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(245, 192, 74, 0.45) 0%, rgba(217, 164, 65, 0.15) 50%, transparent 75%), linear-gradient(145deg, #141633 0%, #222660 35%, #2E3192 65%, #5964B8 85%, #8B9BE2 100%);
+  --hero-gradient-cathedral-rays: radial-gradient(ellipse 85% 55% at 50% -8%, rgba(230, 175, 60, 0.42) 0%, transparent 70%), radial-gradient(ellipse 75% 50% at 50% 105%, rgba(46, 49, 146, 0.45) 0%, transparent 70%), linear-gradient(180deg, #090A1A 0%, #141633 50%, #090A1A 100%);
+  --hero-gradient-holy-fire: radial-gradient(ellipse 90% 50% at 50% 0%, rgba(225, 160, 50, 0.45) 0%, rgba(190, 85, 30, 0.15) 55%, transparent 80%), linear-gradient(180deg, #101228 0%, #141633 50%, #1D1530 80%, #0C0D1E 100%);
+  --hero-gradient-celestial-amber: radial-gradient(circle at 75% 5%, rgba(217, 164, 65, 0.45) 0%, rgba(217, 164, 65, 0.10) 50%, transparent 75%), radial-gradient(circle at 25% 95%, rgba(46, 49, 146, 0.35) 0%, transparent 60%), linear-gradient(145deg, #090B1C 0%, #141633 50%, #1C2356 100%);
+  --hero-gradient-midnight-sapphire: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(95, 130, 240, 0.40) 0%, transparent 70%), linear-gradient(180deg, #060818 0%, #11153B 50%, #1D235C 100%);
 
   /* Light background gradients remain luminous in dark mode so dark text always retains high contrast */
   --hero-gradient-milk-gold: linear-gradient(135deg, #FFFDF8 0%, #FAF5EA 35%, #F4E8CF 75%, #EADBBA 100%);

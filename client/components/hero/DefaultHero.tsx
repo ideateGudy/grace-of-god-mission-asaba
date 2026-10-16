@@ -25,7 +25,7 @@ export function DefaultHero() {
         {/* Welcome Pill */}
         <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-gold backdrop-blur-sm">
           <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-          <span>Welcome to Grace of God Mission · Asaba Division</span>
+          <span>Welcome to Grace of God Mission · Asaba Divisional Hq.</span>
         </div>
 
         {/* Single Orchestrated Title Moment */}

@@ -674,7 +674,13 @@ export function HeroEditor({ id }: { id: string }) {
                       <option value="radiance">Radiance (Ivory + Morning Gold — Dark text)</option>
                       <option value="serenity">Serenity (Pure White + Sky — Dark text)</option>
                     </optgroup>
-                    <optgroup label="Dark Background Gradients (Deep Midnight, Indigo &amp; Celestial — Light Text)">
+                    <optgroup label="Dark Background Gradients (Deep Midnight, Golden Beams & Celestial — Light Text)">
+                      <option value="shekinah">Shekinah Glory (Golden Yellow beam shining down from top) 🌟 — Light text</option>
+                      <option value="golden-dawn">Golden Dawn (Sacred Gold halo &amp; Royal Indigo) — Light text</option>
+                      <option value="cathedral-rays">Cathedral Sanctuary Rays (Golden crown beam from top) — Light text</option>
+                      <option value="holy-fire">Holy Flame (Amber gold warmth from top) — Light text</option>
+                      <option value="celestial-amber">Celestial Gold &amp; Sapphire (Sunbeam ray from top) — Light text</option>
+                      <option value="midnight-sapphire">Midnight Sapphire Glow (Celestial blue beam from top) — Light text</option>
                       <option value="dawn">Dawn (Sacred Midnight, Royal Indigo &amp; Sky) ⭐ — Light text</option>
                       <option value="daybreak">Daybreak (Royal Indigo &amp; Sky Blue — Light text)</option>
                       <option value="majesty">Majesty (Midnight, Royal Violet &amp; Gold — Light text)</option>
