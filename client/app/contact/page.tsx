@@ -96,7 +96,8 @@ export default function ContactPage() {
       description="Have questions about service times, membership, or pastoral guidance? Our team in Asaba is here to assist you."
       eyebrow="Connect With Us · Support & Inquiries"
     >
-      <div className="grid gap-10 lg:grid-cols-12 max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto space-y-12 md:space-y-16">
+        <div className="grid gap-10 lg:grid-cols-12 items-start">
         {/* Left Column: Direct Info */}
         <div className="lg:col-span-5 space-y-6">
           <GlassCard surface="strong" padding="lg" className="border border-border shadow-lg space-y-6">
@@ -290,10 +291,13 @@ export default function ContactPage() {
             )}
           </GlassCard>
         </div>
-
-        {/* Embedded Interactive Map */}
-        <ChurchMap showCardHeader className="mt-14" />
       </div>
-    </PublicPageLayout>
+
+      {/* Embedded Interactive Map */}
+      <div className="w-full">
+        <ChurchMap showCardHeader className="w-full" />
+      </div>
+    </div>
+  </PublicPageLayout>
   );
 }

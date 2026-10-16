@@ -10,17 +10,18 @@ interface ChurchMapProps {
 
 export function ChurchMap({
   className,
+  height,
   showCardHeader = false,
 }: ChurchMapProps) {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-border bg-card shadow-lg",
+        "relative w-full col-span-full overflow-hidden rounded-2xl border border-border bg-card shadow-lg",
         className
       )}
     >
       {showCardHeader && (
-        <div className="flex items-center justify-between border-b border-border/80 bg-muted/30 px-5 py-3 text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-border/80 bg-muted/30 px-5 py-3.5 text-xs">
           <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 font-semibold text-foreground">
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-gold shrink-0" />
@@ -33,14 +34,20 @@ export function ChurchMap({
             href={siteConfig.googleMapsUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+            className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline self-start sm:self-auto"
           >
             <span>Open in Google Maps</span>
             <ExternalLink className="h-3 w-3" />
           </a>
         </div>
       )}
-      <div className="relative w-full h-[320px] sm:h-[400px] md:h-[450px]">
+      <div
+        className={cn(
+          "relative w-full",
+          !height && "h-[340px] sm:h-[420px] md:h-[480px]"
+        )}
+        style={height ? { height } : undefined}
+      >
         <iframe
           src={siteConfig.googleMapsEmbedUrl}
           width="100%"
