@@ -9,9 +9,11 @@ NestJS backend REST API for Grace of God Mission Asaba. All endpoints are versio
 - **Database & ORM**: PostgreSQL via Neon, using Prisma 7 with pooled connection strings (`DATABASE_URL`) for runtime traffic and direct connection strings (`DIRECT_URL`) for schema migrations.
 - **Default-Deny Authorization**: Strict role-based access control with granular permission checks (`@RequirePermissions(...)`, `@SuperAdminOnly()`).
 - **Authentication**: JWT tokens stored in `httpOnly`, `sameSite=lax`, `secure` cookies (`gom_session`) with `tokenVersion` revocation support.
+- **Church Projects & Online Giving**: Public projects showcase (`/api/v1/projects`), Paystack payment initialization & verification (`/api/v1/giving`), HMAC SHA-512 webhook handler (`/api/v1/webhooks/paystack`), offline gift recording, and financial ledger CSV export (`/api/v1/admin/contributions/export`).
+- **Append-Only Financial Ledger**: Immutable `Contribution` transaction journal with database-level `@unique` reference constraints, deriving campaign totals on-demand via SQL aggregations with zero ledger drift.
 - **Media Uploads**: Secure Cloudinary signed upload generation (`/api/v1/admin/uploads/signature`) ensuring binary payloads never block backend worker threads.
 - **Cache Invalidation**: On-demand ISR revalidation requests to the Next.js frontend with shared HMAC secrets.
-- **Security & Logging**: Helmet headers, CORS with credentials, Pino structured access logging with sensitive header redaction (`cookie`, `authorization`).
+- **Security & Logging**: Helmet headers, multi-origin CORS with credentials, Pino structured access logging with sensitive header redaction (`cookie`, `authorization`).
 
 ---
 
@@ -30,13 +32,16 @@ cp .env.example .env
 | `DATABASE_URL` | **Yes** | Pooled PostgreSQL URL (`-pooler`) for query execution |
 | `DIRECT_URL` | **Yes** | Direct non-pooled PostgreSQL URL for Prisma migrations |
 | `JWT_SECRET` | **Yes** | High-entropy random signing key |
-| `JWT_EXPIRES_IN` | **Yes** | Standard admin token lifetime (e.g. `10h`, `1d`) |
-| `CORS_ORIGIN` | **Yes** | Frontend origin (e.g. `http://localhost:3000`) |
+| `JWT_ACCESS_EXPIRES_IN` | **Yes** | Short-lived access token lifetime (e.g. `15m`) |
+| `JWT_REFRESH_EXPIRES_IN` | **Yes** | Long-lived refresh token lifetime (e.g. `7d`) |
+| `CORS_ORIGIN` | **Yes** | Allowed frontend origins (e.g. `http://localhost:3000,https://ggmasaba.vercel.app`) |
 | `SUPER_ADMIN_SEED_EMAIL` | **Yes** | Email for the initial seed super admin |
 | `SUPER_ADMIN_SEED_PASSWORD` | **Yes** | Temporary password for the initial seed super admin |
 | `REVALIDATE_SECRET` | **Yes** | Secret sent in `x-revalidate-secret` to trigger frontend ISR cache purging |
 | `WEB_REVALIDATE_URL` | **Yes** | Full URL to frontend revalidation route (e.g. `http://localhost:3000/api/revalidate`) |
 | `IMAGE_ALLOWED_HOSTS` | **Yes** | Comma-separated list of allowed image hosts |
+| `PAYSTACK_SECRET_KEY` | Optional* | Paystack Secret API Key (*required for live payment verification & webhooks) |
+| `PAYSTACK_PUBLIC_KEY` | Optional | Paystack Public API Key |
 | `CLOUDINARY_CLOUD_NAME` | Optional* | Cloudinary cloud identifier (*required for image uploads) |
 | `CLOUDINARY_API_KEY` | Optional* | Cloudinary API key (*required for image uploads) |
 | `CLOUDINARY_API_SECRET` | Optional* | Cloudinary API secret (*required for image uploads) |
