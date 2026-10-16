@@ -59,16 +59,10 @@ async function bootstrap() {
     origin: (requestOrigin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!requestOrigin) return callback(null, true);
       const clean = requestOrigin.replace(/\/$/, '');
-      if (
-        configuredOrigins.includes(clean) ||
-        configuredOrigins.includes('*') ||
-        clean === 'http://localhost:3000' ||
-        clean === 'https://ggmasaba.vercel.app' ||
-        clean.endsWith('.vercel.app')
-      ) {
+      if (configuredOrigins.includes('*') || configuredOrigins.includes(clean)) {
         return callback(null, true);
       }
-      return callback(null, true);
+      return callback(new Error(`Origin ${requestOrigin} not allowed by CORS`));
     },
     credentials: true,
   });
