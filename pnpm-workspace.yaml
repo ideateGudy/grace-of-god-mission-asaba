@@ -11,3 +11,7 @@ minimumReleaseAgeExclude:
   - '@prisma/orm-framework@8.0.0-rc.16'
   - '@prisma/orm-toolchain@8.0.0-rc.16'
   - prisma@8.0.0-rc.21
+overrides:
+  pg-cloudflare: '-'
+ignoredOptionalDependencies:
+  - pg-cloudflare
