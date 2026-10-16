@@ -116,4 +116,19 @@ describe('AuthController (e2e)', () => {
       .set('Cookie', cookie)
       .expect(401);
   });
+
+  it('should enforce rate limit on login attempts (429 Too Many Requests)', async () => {
+    let gotThrottled = false;
+    for (let i = 0; i < 8; i++) {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: 'test@example.com', password: 'wrongpassword' });
+      if (res.status === 429) {
+        gotThrottled = true;
+        expect(res.body.statusCode).toBe(429);
+        break;
+      }
+    }
+    expect(gotThrottled).toBe(true);
+  });
 });

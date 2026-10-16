@@ -14,7 +14,11 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @PublicRoute()
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({
+    default: { limit: 5, ttl: 60000 },
+    short: { limit: 5, ttl: 60000 },
+    long: { limit: 15, ttl: 900000 },
+  })
   @Post('login')
   async login(@Body(new ZodValidationPipe(loginSchema)) dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const { token, user, cookieOptions } = await this.authService.login(dto);
@@ -45,6 +49,10 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Throttle({
+    default: { limit: 5, ttl: 60000 },
+    short: { limit: 5, ttl: 60000 },
+  })
   @Post('change-password')
   async changePassword(@Req() req: AuthenticatedRequest, @Body(new ZodValidationPipe(changePasswordSchema)) dto: ChangePasswordDto, @Res({ passthrough: true }) res: Response) {
     const { token, user, cookieOptions } = await this.authService.changePassword(req.activeUser, dto);

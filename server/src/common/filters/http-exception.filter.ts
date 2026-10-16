@@ -38,6 +38,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
           error = exceptionResponse.error;
         }
       }
+      if (status === HttpStatus.TOO_MANY_REQUESTS) {
+        error = 'Too Many Requests';
+        message = ['Too many requests. Please wait a moment before trying again.'];
+      }
     } else if (typeof exception === 'object' && exception !== null && 'code' in exception) {
       // Prisma known request error mapping
       const prismaError = exception as { code: string; meta?: Record<string, unknown> };

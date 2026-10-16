@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/store/useSessionStore";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ import { TextField } from "@/components/shared/FormFields";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { Logo } from "@/components/shared/Logo";
-import { api } from "@/lib/api/client";
+import { api, ApiError } from "@/lib/api/client";
 
 const loginSchema = z.object({
   email: z.string().trim().email("Please enter a valid email address."),
@@ -21,8 +21,17 @@ const loginSchema = z.object({
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const router = useRouter();
   const setUser = useSessionStore((s) => s.setUser);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const interval = setInterval(() => {
+      setCooldown((prev) => (prev > 1 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldown]);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -30,6 +39,10 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: z.infer<typeof loginSchema>) => {
+    if (cooldown > 0) {
+      toast.error(`Please wait ${cooldown} seconds before attempting to sign in.`);
+      return;
+    }
     setLoading(true);
     try {
       const response = await api.auth.login(data);
@@ -41,8 +54,13 @@ export default function LoginPage() {
       } else {
         router.push("/admin");
       }
-    } catch {
-      toast.error("Invalid email or password.");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 429) {
+        setCooldown(60);
+        toast.error("Too many login attempts. Please wait 60 seconds before trying again.");
+      } else {
+        toast.error("Invalid email or password.");
+      }
     } finally {
       setLoading(false);
     }
@@ -61,8 +79,16 @@ export default function LoginPage() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <TextField form={form} name="email" label="Email Address" type="email" placeholder="admin@example.com" />
             <TextField form={form} name="password" label="Password" type="password" />
-            <Button type="submit" className="w-full min-h-11 font-medium" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+
+            {cooldown > 0 && (
+              <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive space-y-1">
+                <p className="font-semibold">Too many failed login attempts</p>
+                <p>For security, sign in is temporarily locked. Please retry in {cooldown} seconds.</p>
+              </div>
+            )}
+
+            <Button type="submit" className="w-full min-h-11 font-medium" disabled={loading || cooldown > 0}>
+              {loading ? "Signing in..." : cooldown > 0 ? `Rate limited (${cooldown}s)` : "Sign In"}
             </Button>
           </form>
         </Form>
