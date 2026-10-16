@@ -76,7 +76,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="fixed inset-0 w-full bg-background flex flex-col md:flex-row overflow-hidden">
+    <div 
+      className="fixed inset-0 w-full bg-background flex flex-col md:flex-row overflow-clip"
+      onScroll={(e) => {
+        e.currentTarget.scrollTop = 0;
+        e.currentTarget.scrollLeft = 0;
+      }}
+    >
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card shrink-0">
         <Logo className="text-xl" />
@@ -104,7 +110,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Desktop Sidebar with independent vertical scroll */}
-      <aside className="hidden md:flex flex-col w-64 h-full border-r border-border bg-card shrink-0 select-none overflow-hidden">
+      <aside className="relative hidden md:flex flex-col w-64 h-full border-r border-border bg-card shrink-0 select-none overflow-hidden">
         <div className="p-6 border-b border-border shrink-0">
           <Link href="/"><Logo className="text-xl" /></Link>
         </div>
@@ -120,7 +126,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content Area with independent vertical scroll */}
-      <main className="flex-1 min-h-0 min-w-0 h-full overflow-y-auto p-4 md:p-8 custom-scrollbar">
+      <main className="relative flex-1 min-h-0 min-w-0 h-full overflow-y-auto p-4 md:p-8 custom-scrollbar">
         <div className="max-w-5xl mx-auto">
           {children}
         </div>
