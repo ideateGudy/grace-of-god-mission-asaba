@@ -24,6 +24,8 @@ export function SiteFooter() {
             <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
             <li><Link href="/visit" className="hover:text-white transition-colors">Visit</Link></li>
             <li><Link href="/sermons" className="hover:text-white transition-colors">Sermons</Link></li>
+            <li><Link href="/events" className="hover:text-white transition-colors">Events</Link></li>
+            <li><Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link></li>
             <li><Link href="/projects" className="hover:text-white transition-colors">Projects</Link></li>
             <li><Link href="/give" className="hover:text-white transition-colors">Give</Link></li>
           </ul>

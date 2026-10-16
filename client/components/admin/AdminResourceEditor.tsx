@@ -11,7 +11,8 @@ import { fromLagosDateTimeInput, toLagosDateTimeInput } from "@/lib/date";
 import { ImageUploadField } from "@/components/shared/ImageUploadField";
 
 type RecordValue = Record<string, unknown>;
-const emptyRecord = (fields: ResourceField[]) => Object.fromEntries(fields.map(({ key, type }) => [key, type === "checkbox" ? false : ""]));
+const emptyRecord = (fields: ResourceField[]) =>
+  Object.fromEntries(fields.map(({ key, type }) => [key, type === "checkbox" ? key === "published" : ""]));
 const toInputValue = (value: unknown, type?: ResourceField["type"]) => {
   if (value == null) return "";
   if (type === "datetime-local" && typeof value === "string") return toLagosDateTimeInput(value);

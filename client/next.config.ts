@@ -16,12 +16,16 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
-    remotePatterns: (process.env.IMAGE_ALLOWED_HOSTS || "images.unsplash.com")
-      .split(",")
-      .map((host) => ({
-        protocol: "https" as const,
-        hostname: host.trim(),
-      })),
+    remotePatterns: Array.from(
+      new Set([
+        "images.unsplash.com",
+        "res.cloudinary.com",
+        ...(process.env.IMAGE_ALLOWED_HOSTS?.split(",") || []),
+      ].map((h) => h.trim()).filter(Boolean))
+    ).map((hostname) => ({
+      protocol: "https" as const,
+      hostname,
+    })),
   },
 };
 

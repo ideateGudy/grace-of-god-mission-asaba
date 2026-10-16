@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import {
   CalendarDays,
@@ -16,6 +17,7 @@ import {
   MessageCircle,
   CheckCircle2,
   ChevronRight,
+  Camera,
 } from "lucide-react";
 import { api } from "@/lib/api/client";
 import { siteConfig } from "@/config/site";
@@ -64,6 +66,13 @@ type AnnouncementItem = {
   excerpt?: string | null;
 };
 
+type GalleryPreviewItem = {
+  id: string;
+  imageUrl: string;
+  caption?: string | null;
+  album?: string | null;
+};
+
 async function safe<T>(load: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await load();
@@ -73,7 +82,7 @@ async function safe<T>(load: () => Promise<T>, fallback: T): Promise<T> {
 }
 
 export default async function HomePage() {
-  const [heroResult, sermonResult, eventResult, announcementResult] = await Promise.all([
+  const [heroResult, sermonResult, eventResult, announcementResult, galleryResult] = await Promise.all([
     safe(() => api.hero.getPublic(), { data: null }),
     safe(() => api.public.sermons("?page=1&limit=4"), {
       data: [],
@@ -84,11 +93,16 @@ export default async function HomePage() {
       meta: { page: 1, limit: 3, total: 0 },
     }),
     safe(() => api.public.announcements(), { data: [] }),
+    safe(() => api.public.gallery("?page=1&limit=6"), {
+      data: [],
+      meta: { page: 1, limit: 6, total: 0 },
+    }),
   ]);
 
   const sermons = sermonResult.data as ContentItem[];
   const events = eventResult.data as ContentItem[];
   const announcements = announcementResult.data as AnnouncementItem[];
+  const galleryItems = (galleryResult.data as unknown as GalleryPreviewItem[]) ?? [];
   const pinnedAnnouncement = announcements.find((a: AnnouncementItem) => a.pinned) ?? announcements[0];
 
   const hasRealBankDetails =
@@ -511,6 +525,56 @@ export default async function HomePage() {
             </GlassCard>
           )}
         </Section>
+
+        {/* Moments & Church Life Photo Gallery */}
+        {galleryItems.length > 0 && (
+          <Section className="py-16 md:py-24 border-t border-border/60">
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-primary">
+                  <Camera className="h-3.5 w-3.5" />
+                  <span>Moments & Memories</span>
+                </span>
+                <h2 className="mt-2 font-display text-3xl sm:text-4xl font-bold text-foreground">
+                  Life at Grace of God Mission
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Capturing moments of joyful worship, conferences, fellowships, and ministry impact in Asaba.
+                </p>
+              </div>
+              <Link
+                href="/gallery"
+                className="inline-flex min-h-10 items-center gap-1.5 font-semibold text-primary hover:underline underline-offset-4 text-sm"
+              >
+                <span>View all photos</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+              {galleryItems.slice(0, 6).map((item) => (
+                <Link
+                  key={item.id}
+                  href="/gallery"
+                  className="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-muted shadow-sm hover:shadow-md transition-all"
+                >
+                  <Image
+                    src={item.imageUrl}
+                    alt={item.caption || "Church life photo"}
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 50vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                    <p className="text-white text-xs sm:text-sm font-medium line-clamp-2">
+                      {item.caption || item.album || "Grace of God Mission Asaba"}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </Section>
+        )}
 
         {/* 7. Dual Sanctuary: Prayer & Kingdom Giving */}
         <Section className="py-16 md:py-24 bg-card/60 border-t border-border/60">
