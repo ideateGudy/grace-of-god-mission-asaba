@@ -73,4 +73,22 @@ describe('UsersService', () => {
       action: 'user.update', meta: { fields: ['isActive'], deactivated: true },
     }));
   });
+
+  it('updates permissions for an existing admin without bumping tokenVersion', async () => {
+    adminUser.findUnique.mockResolvedValue({
+      id: 'admin-1', role: AdminRole.ADMIN, isActive: true, tokenVersion: 4, permissions: [Permission.SERMONS_MANAGE],
+    });
+    adminUser.update.mockResolvedValue({ id: 'admin-1', permissions: [Permission.SERMONS_MANAGE, Permission.GALLERY_MANAGE] });
+
+    await service.updateUser(actor, 'admin-1', { permissions: [Permission.SERMONS_MANAGE, Permission.GALLERY_MANAGE] });
+
+    expect(adminUser.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'admin-1' },
+      data: { permissions: [Permission.SERMONS_MANAGE, Permission.GALLERY_MANAGE] },
+    }));
+    expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'user.update', meta: { fields: ['permissions'], deactivated: false },
+    }));
+  });
 });
+

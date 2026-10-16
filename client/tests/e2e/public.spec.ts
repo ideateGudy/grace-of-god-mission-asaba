@@ -228,6 +228,71 @@ test('a super-admin can create an admin with selected permissions only', async (
   expect(submittedUser?.permissions).not.toContain('PRAYER_INBOX');
 });
 
+test('a super-admin can edit an existing admin’s permissions', async ({ page }) => {
+  let patchedData: Record<string, unknown> | null = null;
+  let userList = [
+    {
+      id: 'super-1',
+      name: 'Super Admin',
+      email: 'super@example.test',
+      role: 'SUPER_ADMIN',
+      permissions: [],
+      isActive: true,
+      status: 'Active',
+      lastLoginAt: null,
+    },
+    {
+      id: 'admin-1',
+      name: 'Staff Editor',
+      email: 'staff@example.test',
+      role: 'ADMIN',
+      permissions: ['SERMONS_MANAGE'],
+      isActive: true,
+      status: 'Active',
+      lastLoginAt: null,
+    },
+  ];
+
+  await page.route('**/api/v1/auth/login', (route) => route.fulfill({
+    status: 201,
+    contentType: 'application/json',
+    headers: { 'set-cookie': 'gom_session=e2e-session; Path=/; HttpOnly; SameSite=Lax' },
+    body: JSON.stringify({ data: userList[0] }),
+  }));
+  await page.route('**/api/v1/admin/stats', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: {} }) }));
+  await page.route('**/api/v1/admin/users/**', async (route) => {
+    if (route.request().method() === 'PATCH') {
+      patchedData = route.request().postDataJSON() as Record<string, unknown>;
+      userList = userList.map((u) => (u.id === 'admin-1' ? { ...u, permissions: (patchedData?.permissions as string[]) ?? u.permissions } : u));
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: userList[1] }) });
+      return;
+    }
+    await route.fallback();
+  });
+  await page.route('**/api/v1/admin/users', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: userList }) });
+  });
+
+  await page.goto('/admin/login');
+  await page.getByLabel('Email Address').fill('super@example.test');
+  await page.getByLabel('Password').fill('temporary-password');
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  await page.goto('/admin/users');
+
+  await expect(page.getByText('Staff Editor')).toBeVisible();
+  await page.getByRole('button', { name: 'Edit permissions' }).click();
+  await expect(page.getByRole('heading', { name: 'Edit user permissions' })).toBeVisible();
+
+  await page.getByText('Manage Gallery').click();
+  await page.getByRole('button', { name: 'Save permissions' }).click();
+
+  await expect.poll(() => patchedData).toBeTruthy();
+  const submittedUpdate = patchedData as Record<string, unknown> | null;
+  expect(submittedUpdate?.permissions).toContain('SERMONS_MANAGE');
+  expect(submittedUpdate?.permissions).toContain('GALLERY_MANAGE');
+});
+
 test('gallery editor uploads an image and saves its Cloudinary URL', async ({ page }) => {
   let savedImage: Record<string, unknown> | null = null;
   await page.route('**/api/v1/auth/login', (route) => route.fulfill({
