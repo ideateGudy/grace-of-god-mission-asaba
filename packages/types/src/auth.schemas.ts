@@ -10,5 +10,10 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(10).max(256),
 }).strict();
 
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string().optional(),
+}).strict();
+
 export type LoginDto = z.infer<typeof loginSchema>;
 export type ChangePasswordDto = z.infer<typeof changePasswordSchema>;
+export type RefreshTokenDto = z.infer<typeof refreshTokenSchema>;

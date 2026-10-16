@@ -10,6 +10,27 @@ export class ApiError extends Error {
   }
 }
 
+let refreshPromise: Promise<boolean> | null = null;
+
+async function silentRefresh(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch("/api/v1/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
+}
+
 async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: string[], revalidate?: number; timeoutMs?: number }): Promise<T> {
   const url = IS_SERVER 
     ? `${process.env.API_INTERNAL_URL || 'http://127.0.0.1:5000'}/api/v1${endpoint}`
@@ -59,6 +80,28 @@ async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: str
     }
   }
 
+  // Seamless silent token refresh for long-lived login sessions
+  if (res.status === 401 && !IS_SERVER && endpoint !== "/auth/login" && endpoint !== "/auth/refresh") {
+    const refreshed = await silentRefresh();
+    if (refreshed) {
+      try {
+        const retryRes = await fetch(url, {
+          ...rest,
+          signal: getSignal(),
+          headers: {
+            "Content-Type": "application/json",
+            ...rest.headers,
+          },
+        });
+        if (retryRes.ok) {
+          if (retryRes.status === 204) return {} as T;
+          return retryRes.json();
+        }
+        res = retryRes;
+      } catch {}
+    }
+  }
+
   if (!res.ok) {
     let msg = res.statusText;
     try {
@@ -75,6 +118,7 @@ async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: str
 export const api = {
   auth: {
     login: (data: { email: string; password: string }) => fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean } }>("/auth/login", { method: "POST", body: JSON.stringify(data), cache: "no-store" }),
+    refresh: () => fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean } }>("/auth/refresh", { method: "POST", cache: "no-store" }),
     me: () => fetcher<{ data: { id: string; email: string; name: string; role: string; permissions: string[]; mustChangePassword: boolean } }>("/auth/me", { cache: "no-store" }),
     logout: () => fetcher<{ data: null }>("/auth/logout", { method: "POST", cache: "no-store" }),
     changePassword: (data: { currentPassword: string; newPassword: string; confirmPassword: string }) => fetcher<{ data: { mustChangePassword: boolean } }>("/auth/change-password", { method: "POST", body: JSON.stringify(data), cache: "no-store" }),

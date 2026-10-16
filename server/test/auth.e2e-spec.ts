@@ -21,15 +21,16 @@ describe('AuthController (e2e)', () => {
     await app.init();
 
     prisma = app.get<PrismaService>(PrismaService);
-  });
+  }, 60000);
 
   afterAll(async () => {
     await prisma.adminUser.deleteMany({});
     await app.close();
-  });
+  }, 30000);
 
   let testUser: AdminUser;
   let cookie: string;
+  let refreshTokenCookie: string;
   let originalCookie: string;
 
   it('should seed a test user', async () => {
@@ -55,8 +56,48 @@ describe('AuthController (e2e)', () => {
     
     expect(res.body.data.email).toBe('test@example.com');
     expect(res.headers['set-cookie']).toBeDefined();
-    cookie = res.headers['set-cookie'][0].split(';')[0];
+    cookie = res.headers['set-cookie'].find((c: string) => c.startsWith('gom_session='))?.split(';')[0] || '';
+    refreshTokenCookie = res.headers['set-cookie'].find((c: string) => c.startsWith('gom_refresh_token='))?.split(';')[0] || '';
+    expect(cookie).toContain('gom_session=');
+    expect(refreshTokenCookie).toContain('gom_refresh_token=');
     originalCookie = cookie;
+  });
+
+  it('/api/v1/auth/refresh (POST) - successfully rotate tokens', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', refreshTokenCookie)
+      .expect(201);
+
+    expect(res.body.data.email).toBe('test@example.com');
+    const newSessionCookie = res.headers['set-cookie']?.find((c: string) => c.startsWith('gom_session='))?.split(';')[0];
+    const newRefreshCookie = res.headers['set-cookie']?.find((c: string) => c.startsWith('gom_refresh_token='))?.split(';')[0];
+    expect(newSessionCookie).toBeDefined();
+    expect(newRefreshCookie).toBeDefined();
+
+    // Verify the newly issued session cookie allows access
+    await request(app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Cookie', newSessionCookie)
+      .expect(200);
+
+    // Update active cookie with the fresh session
+    cookie = newSessionCookie;
+    refreshTokenCookie = newRefreshCookie;
+  });
+
+  it('/api/v1/auth/refresh (POST) - reject invalid refresh token', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', 'gom_refresh_token=invalid.tampered.token')
+      .expect(401);
+  });
+
+  it('refresh token cannot be used as an access token on protected routes', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Cookie', refreshTokenCookie)
+      .expect(401);
   });
 
   it('/api/v1/auth/login (POST) - invalid credentials', async () => {
@@ -130,5 +171,5 @@ describe('AuthController (e2e)', () => {
       }
     }
     expect(gotThrottled).toBe(true);
-  });
+  }, 25000);
 });

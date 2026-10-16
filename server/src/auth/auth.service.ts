@@ -11,8 +11,12 @@ import * as bcrypt from 'bcrypt';
 
 export interface AuthResult {
   token: string;
+  accessToken: string;
+  refreshToken: string;
   user: AdminUser;
   cookieOptions: CookieOptions;
+  accessCookieOptions: CookieOptions;
+  refreshCookieOptions: CookieOptions;
 }
 
 @Injectable()
@@ -23,6 +27,55 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly audit: AuditService,
   ) {}
+
+  private getCookieOptions(): {
+    accessCookieOptions: CookieOptions;
+    refreshCookieOptions: CookieOptions;
+  } {
+    const isProduction = this.configService.get('NODE_ENV') === 'production';
+    const accessCookieOptions: CookieOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 15 * 60 * 1000, // 15 minutes short-lived access
+    };
+    const refreshCookieOptions: CookieOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days long-lived refresh
+    };
+    return { accessCookieOptions, refreshCookieOptions };
+  }
+
+  private async generateTokens(user: AdminUser): Promise<{ accessToken: string; refreshToken: string }> {
+    const accessExpiresIn = user.role === 'SUPER_ADMIN'
+      ? '1h'
+      : (this.configService.get('JWT_ACCESS_EXPIRES_IN') || '15m');
+    const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN') || '7d';
+
+    const accessPayload = {
+      sub: user.id,
+      role: user.role,
+      tv: user.tokenVersion,
+      type: 'access',
+    };
+
+    const refreshPayload = {
+      sub: user.id,
+      tv: user.tokenVersion,
+      type: 'refresh',
+    };
+
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(accessPayload, { expiresIn: accessExpiresIn }),
+      this.jwtService.signAsync(refreshPayload, { expiresIn: refreshExpiresIn }),
+    ]);
+
+    return { accessToken, refreshToken };
+  }
 
   async login(dto: LoginDto): Promise<AuthResult> {
     const user = await this.prisma.adminUser.findUnique({
@@ -44,12 +97,8 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
-    const expiresIn = user.role === 'SUPER_ADMIN'
-      ? '4h'
-      : this.configService.get('JWT_EXPIRES_IN');
-
-    const payload = { sub: user.id, role: user.role, tv: user.tokenVersion };
-    const token = await this.jwtService.signAsync(payload, { expiresIn });
+    const { accessToken, refreshToken } = await this.generateTokens(user);
+    const { accessCookieOptions, refreshCookieOptions } = this.getCookieOptions();
 
     void this.audit.log({
       actorId: user.id,
@@ -59,15 +108,61 @@ export class AuthService {
       entityId: user.id,
     });
 
-    const isProduction = this.configService.get('NODE_ENV') === 'production';
-    const cookieOptions: CookieOptions = {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      path: '/',
+    return {
+      token: accessToken,
+      accessToken,
+      refreshToken,
+      user,
+      cookieOptions: accessCookieOptions,
+      accessCookieOptions,
+      refreshCookieOptions,
     };
+  }
 
-    return { token, user, cookieOptions };
+  async refresh(refreshToken: string): Promise<AuthResult> {
+    let payload: { sub: string; tv: number; type?: string };
+    try {
+      payload = await this.jwtService.verifyAsync(refreshToken);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    if (payload.type !== 'refresh') {
+      throw new UnauthorizedException('Invalid token type for refresh');
+    }
+
+    const user = await this.prisma.adminUser.findUnique({
+      where: { id: payload.sub },
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Account is inactive or not found');
+    }
+
+    if (user.tokenVersion !== payload.tv) {
+      throw new UnauthorizedException('Session expired');
+    }
+
+    const { accessToken, refreshToken: newRefreshToken } = await this.generateTokens(user);
+    const { accessCookieOptions, refreshCookieOptions } = this.getCookieOptions();
+
+    void this.audit.log({
+      actorId: user.id,
+      actorName: user.name,
+      action: 'auth.refresh',
+      entity: 'AdminUser',
+      entityId: user.id,
+    });
+
+    return {
+      token: accessToken,
+      accessToken,
+      refreshToken: newRefreshToken,
+      user,
+      cookieOptions: accessCookieOptions,
+      accessCookieOptions,
+      refreshCookieOptions,
+    };
   }
 
   async logout(user: AuthenticatedActor): Promise<void> {
@@ -122,21 +217,17 @@ export class AuthService {
       entityId: user.id,
     });
 
-    const expiresIn = user.role === 'SUPER_ADMIN'
-      ? '4h'
-      : this.configService.get('JWT_EXPIRES_IN');
+    const { accessToken, refreshToken } = await this.generateTokens(updatedUser);
+    const { accessCookieOptions, refreshCookieOptions } = this.getCookieOptions();
 
-    const payload = { sub: updatedUser.id, role: updatedUser.role, tv: updatedUser.tokenVersion };
-    const token = await this.jwtService.signAsync(payload, { expiresIn });
-
-    const isProduction = this.configService.get('NODE_ENV') === 'production';
-    const cookieOptions = {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax' as const,
-      path: '/',
+    return {
+      token: accessToken,
+      accessToken,
+      refreshToken,
+      user: updatedUser,
+      cookieOptions: accessCookieOptions,
+      accessCookieOptions,
+      refreshCookieOptions,
     };
-
-    return { token, user: updatedUser, cookieOptions };
   }
 }

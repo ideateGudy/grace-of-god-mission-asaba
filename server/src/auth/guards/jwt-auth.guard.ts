@@ -20,20 +20,31 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const cookieHeader = request.headers.cookie;
-    if (!cookieHeader) {
-      throw new UnauthorizedException('No session cookie found');
+    let token: string | undefined;
+
+    // 1. Support Authorization: Bearer <token>
+    const authHeader = request.headers.authorization;
+    if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7).trim();
     }
 
-    const match = cookieHeader.match(/gom_session=([^;]+)/);
-    if (!match) {
-      throw new UnauthorizedException('Session cookie invalid');
+    // 2. Support gom_session cookie
+    if (!token && request.headers.cookie) {
+      const match = request.headers.cookie.match(/gom_session=([^;]+)/);
+      if (match) {
+        token = match[1];
+      }
     }
 
-    const token = match[1];
+    if (!token) {
+      throw new UnauthorizedException('No session token found');
+    }
 
     try {
       const payload = await this.jwtService.verifyAsync(token);
+      if (payload.type === 'refresh') {
+        throw new UnauthorizedException('Invalid token type for access session');
+      }
       request.user = payload;
       return true;
     } catch {
