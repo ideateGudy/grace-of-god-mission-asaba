@@ -498,7 +498,7 @@ export default async function HomePage() {
               </h3>
               <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
                 No special events scheduled at this moment. You are always welcome at our Sunday
-                Worship (8:00 AM & 10:30 AM) and Wednesday Midweek (6:00 PM).
+                Worship ({siteConfig.sundayServiceTime}) and Wednesday Midweek ({siteConfig.midweekServiceTime}).
               </p>
               <Link
                 href="/visit"

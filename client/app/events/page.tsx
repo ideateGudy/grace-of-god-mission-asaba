@@ -4,6 +4,7 @@ import { CalendarDays, MapPin, Clock, ArrowRight, Sparkles } from "lucide-react"
 import { api } from "@/lib/api/client";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { siteConfig } from "@/config/site";
 
 export const revalidate = 60;
 
@@ -150,7 +151,7 @@ export default async function EventsPage({
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
               {scope === "past"
                 ? "Past events will be archived here as they conclude."
-                : "Join us for our weekly gatherings: Sunday Services (7:00 AM) and Wednesday Midweek Encounter (5:00 PM)."}
+                : `Join us for our weekly gatherings: Sunday Services (${siteConfig.sundayServiceTime}) and Wednesday Midweek Encounter (${siteConfig.midweekServiceTime}).`}
             </p>
             {scope !== "past" && (
               <div className="mt-6">
