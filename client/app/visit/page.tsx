@@ -68,7 +68,7 @@ export default function PlanaVisitPage() {
                       Sunday Services
                     </span>
                     <span className="rounded-full bg-gold/10 px-2.5 py-0.5 text-xs font-bold text-gold">
-                      Starts at 7:00 AM
+                      Starts at {siteConfig.sundayServiceTime}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -82,7 +82,7 @@ export default function PlanaVisitPage() {
                       Wednesday Midweek Service
                     </span>
                     <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
-                      5:00 PM
+                      {siteConfig.midweekServiceTime}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">

@@ -125,14 +125,14 @@ export default async function HomePage() {
                       <span className="font-semibold text-foreground">Sunday Services</span>
                       <p className="text-[11px] text-muted-foreground">Regular, Celebrations & African Praise</p>
                     </div>
-                    <span className="text-primary font-bold font-mono text-sm">7:00 AM</span>
+                    <span className="text-primary font-bold font-mono text-sm">{siteConfig.sundayServiceTime}</span>
                   </div>
                   <div className="flex items-center justify-between border-b border-border/60 pb-1.5">
                     <div>
                       <span className="font-semibold text-foreground">Wednesday Midweek</span>
                       <p className="text-[11px] text-muted-foreground">Prayer & Word Encounter</p>
                     </div>
-                    <span className="text-primary font-bold font-mono text-sm">5:00 PM</span>
+                    <span className="text-primary font-bold font-mono text-sm">{siteConfig.midweekServiceTime}</span>
                   </div>
                   <p className="text-xs text-muted-foreground pt-0.5">
                     Fellowships for children, youth, women & men.

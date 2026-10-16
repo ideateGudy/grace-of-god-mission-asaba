@@ -196,7 +196,7 @@ export function HeroSlideView({
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
-              <span>Sunday Services: 7:00 AM · Wednesday: 5:00 PM · No. 33 Arthur Richard St, Akwuebulu, Asaba</span>
+              <span>{siteConfig.serviceTimes} · {siteConfig.address}</span>
               <ExternalLink className="h-3.5 w-3.5 text-gold shrink-0 transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>
