@@ -15,6 +15,7 @@ import { GlassCard } from "@/components/shared/GlassCard"
 import { fromLagosDateTimeInput, toLagosDateTimeInput } from "@/lib/date"
 import { OptionCardGroup } from "@/components/shared/OptionCardGroup"
 import { ImageUploadField } from "@/components/shared/ImageUploadField"
+import { cn } from "@/lib/utils"
 
 const newSlide = (sortOrder: number): HeroSlideDto => ({
   sortOrder,
@@ -103,6 +104,8 @@ export function HeroEditor({ id }: { id: string }) {
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [previewMobile, setPreviewMobile] = useState(false)
+  const [previewSlideIndex, setPreviewSlideIndex] = useState(0)
+  const [previewViewMode, setPreviewViewMode] = useState<"slide" | "carousel">("slide")
   useEffect(() => {
     if (isNew) return
     let cancelled = false
@@ -127,13 +130,16 @@ export function HeroEditor({ id }: { id: string }) {
       cancelled = true
     }
   }, [id, isNew])
-  const setSlide = (index: number, updates: Partial<HeroSlideDto>) =>
+  const setSlide = (index: number, updates: Partial<HeroSlideDto>) => {
+    setPreviewSlideIndex(index)
+    setPreviewViewMode("slide")
     setHero((current) => ({
       ...current,
       slides: current.slides.map((slide, i) =>
         i === index ? { ...slide, ...updates } : slide
       ),
     }))
+  }
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const payload: CreateHeroDto = {
@@ -291,10 +297,26 @@ export function HeroEditor({ id }: { id: string }) {
             key={index}
             surface="solid"
             padding="lg"
-            className="space-y-5"
+            className={cn(
+              "space-y-5 transition-all duration-200",
+              previewSlideIndex === index && "ring-2 ring-primary/40 shadow-md"
+            )}
+            onFocusCapture={() => {
+              if (previewSlideIndex !== index) {
+                setPreviewSlideIndex(index)
+                setPreviewViewMode("slide")
+              }
+            }}
           >
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-display text-2xl">Slide {index + 1}</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="font-display text-2xl">Slide {index + 1}</h2>
+                {previewSlideIndex === index && (
+                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                    Previewing
+                  </span>
+                )}
+              </div>
               <div className="flex gap-1">
                 <Button
                   type="button"
@@ -302,7 +324,7 @@ export function HeroEditor({ id }: { id: string }) {
                   size="icon"
                   aria-label="Move slide up"
                   disabled={index === 0}
-                  onClick={() =>
+                  onClick={() => {
                     setHero({
                       ...hero,
                       slides: hero.slides
@@ -315,7 +337,9 @@ export function HeroEditor({ id }: { id: string }) {
                         )
                         .map((item, i) => ({ ...item, sortOrder: i })),
                     })
-                  }
+                    setPreviewSlideIndex(index - 1)
+                    setPreviewViewMode("slide")
+                  }}
                 >
                   <ChevronUp />
                 </Button>
@@ -325,7 +349,7 @@ export function HeroEditor({ id }: { id: string }) {
                   size="icon"
                   aria-label="Move slide down"
                   disabled={index === hero.slides.length - 1}
-                  onClick={() =>
+                  onClick={() => {
                     setHero({
                       ...hero,
                       slides: hero.slides
@@ -338,7 +362,9 @@ export function HeroEditor({ id }: { id: string }) {
                         )
                         .map((item, i) => ({ ...item, sortOrder: i })),
                     })
-                  }
+                    setPreviewSlideIndex(index + 1)
+                    setPreviewViewMode("slide")
+                  }}
                 >
                   <ChevronDown />
                 </Button>
@@ -348,16 +374,19 @@ export function HeroEditor({ id }: { id: string }) {
                   size="icon"
                   aria-label="Duplicate slide"
                   disabled={hero.slides.length >= 6}
-                  onClick={() =>
+                  onClick={() => {
+                    const nextIndex = index + 1
                     setHero({
                       ...hero,
                       slides: [
                         ...hero.slides.slice(0, index + 1),
-                        { ...slide, id: undefined, sortOrder: index + 1 },
+                        { ...slide, id: undefined, sortOrder: nextIndex },
                         ...hero.slides.slice(index + 1),
                       ].map((item, i) => ({ ...item, sortOrder: i })),
                     })
-                  }
+                    setPreviewSlideIndex(nextIndex)
+                    setPreviewViewMode("slide")
+                  }}
                 >
                   <Copy />
                 </Button>
@@ -367,14 +396,17 @@ export function HeroEditor({ id }: { id: string }) {
                   size="icon"
                   aria-label="Delete slide"
                   disabled={hero.slides.length <= 1}
-                  onClick={() =>
+                  onClick={() => {
+                    const nextSlides = hero.slides
+                      .filter((_, i) => i !== index)
+                      .map((item, i) => ({ ...item, sortOrder: i }))
                     setHero({
                       ...hero,
-                      slides: hero.slides
-                        .filter((_, i) => i !== index)
-                        .map((item, i) => ({ ...item, sortOrder: i })),
+                      slides: nextSlides,
                     })
-                  }
+                    setPreviewSlideIndex((curr) => Math.min(curr, nextSlides.length - 1))
+                    setPreviewViewMode("slide")
+                  }}
                 >
                   <Trash2 />
                 </Button>
@@ -457,19 +489,20 @@ export function HeroEditor({ id }: { id: string }) {
                   name={`slide_${index}_bg_type`}
                   className="min-h-11 w-full rounded-md border border-input bg-background px-3"
                   value={slide.bgType}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const nextType = event.target.value as HeroSlideDto["bgType"]
                     setSlide(index, {
-                      bgType: event.target.value as HeroSlideDto["bgType"],
+                      bgType: nextType,
                       imageUrl:
-                        event.target.value === "IMAGE"
+                        nextType === "IMAGE"
                           ? slide.imageUrl
                           : slide.layout === "SPLIT"
                             ? slide.imageUrl
                             : null,
-                      bgColor: "#141633",
-                      bgGradient: null,
+                      bgColor: slide.bgColor ?? "#141633",
+                      bgGradient: slide.bgGradient ?? "dawn",
                     })
-                  }
+                  }}
                 >
                   <option value="COLOR">Solid colour</option>
                   <option value="GRADIENT">Gradient</option>
@@ -490,7 +523,10 @@ export function HeroEditor({ id }: { id: string }) {
                         aria-pressed={slide.bgColor?.toUpperCase() === preset.value}
                         title={preset.label}
                         onClick={() => setSlide(index, { bgColor: preset.value })}
-                        className="size-11 rounded-full border-2 border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                        className={cn(
+                          "size-11 rounded-full border-2 border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-transform hover:scale-105 active:scale-95",
+                          slide.bgColor?.toUpperCase() === preset.value.toUpperCase() && "ring-2 ring-primary ring-offset-2 border-primary"
+                        )}
                         style={{ backgroundColor: preset.value }}
                       />
                     ))}
@@ -720,52 +756,99 @@ export function HeroEditor({ id }: { id: string }) {
           <Button
             type="button"
             variant="outline"
-            onClick={() =>
+            onClick={() => {
+              const nextIndex = hero.slides.length
               setHero({
                 ...hero,
-                slides: [...hero.slides, newSlide(hero.slides.length)],
+                slides: [...hero.slides, newSlide(nextIndex)],
               })
-            }
+              setPreviewSlideIndex(nextIndex)
+              setPreviewViewMode("slide")
+            }}
           >
             <Plus className="mr-2 size-4" />
             Add slide
           </Button>
         )}
         <GlassCard surface="solid" padding="none" className="overflow-hidden">
-          <div className="flex items-center justify-between p-4">
-            <h2 className="font-display text-2xl">Live preview</h2>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={previewMobile ? "outline" : "default"}
-                onClick={() => setPreviewMobile(false)}
-              >
-                Desktop
-              </Button>
-              <Button
-                type="button"
-                variant={previewMobile ? "default" : "outline"}
-                onClick={() => setPreviewMobile(true)}
-              >
-                Mobile
-              </Button>
+          <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-border bg-muted/20">
+            <div className="flex items-center gap-3">
+              <h2 className="font-display text-2xl">Live preview</h2>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Live sync active
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {hero.slides.length > 1 && (
+                <div className="flex items-center gap-1 rounded-lg border border-border p-1 bg-background/50">
+                  {hero.slides.map((_, i) => (
+                    <Button
+                      key={i}
+                      type="button"
+                      size="sm"
+                      variant={previewViewMode === "slide" && previewSlideIndex === i ? "default" : "ghost"}
+                      className="h-8 px-2.5 text-xs"
+                      onClick={() => {
+                        setPreviewViewMode("slide")
+                        setPreviewSlideIndex(i)
+                      }}
+                    >
+                      Slide {i + 1}
+                    </Button>
+                  ))}
+                  {hero.mode === "CAROUSEL" && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={previewViewMode === "carousel" ? "default" : "ghost"}
+                      className="h-8 px-2.5 text-xs"
+                      onClick={() => setPreviewViewMode("carousel")}
+                    >
+                      Carousel
+                    </Button>
+                  )}
+                </div>
+              )}
+              <div className="flex gap-1 rounded-lg border border-border p-1 bg-background/50">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={!previewMobile ? "default" : "ghost"}
+                  className="h-8 px-2.5 text-xs"
+                  onClick={() => setPreviewMobile(false)}
+                >
+                  Desktop
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={previewMobile ? "default" : "ghost"}
+                  className="h-8 px-2.5 text-xs"
+                  onClick={() => setPreviewMobile(true)}
+                >
+                  Mobile
+                </Button>
+              </div>
             </div>
           </div>
           <div
             className={
               previewMobile
-                ? "mx-auto max-w-sm overflow-hidden border-x border-border"
-                : ""
+                ? "mx-auto max-w-sm overflow-hidden border-x border-border shadow-inner"
+                : "overflow-hidden"
             }
           >
             <HeroRenderer
               hero={{
                 id,
                 mode: hero.mode,
-                autoplay: false,
+                autoplay: previewViewMode === "carousel" ? (hero.autoplay ?? true) : false,
                 intervalSeconds: hero.intervalSeconds,
                 slides: hero.slides,
               }}
+              activeSlideIndex={previewViewMode === "slide" ? previewSlideIndex : undefined}
+              animate={false}
             />
           </div>
         </GlassCard>
