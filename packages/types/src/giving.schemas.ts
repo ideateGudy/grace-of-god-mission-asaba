@@ -15,6 +15,7 @@ export const initializeGivingSchema = z.object({
   displayName: z.string().max(80).optional().nullable(),
   isAnonymous: z.boolean().default(true),
   message: z.string().max(500, 'Prayer note/message cannot exceed 500 characters').optional().nullable(),
+  callbackUrl: z.string().url().optional().nullable(),
 });
 
 export type InitializeGivingDto = z.infer<typeof initializeGivingSchema>;

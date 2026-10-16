@@ -49,8 +49,27 @@ async function bootstrap() {
     },
   }));
   
+  const rawCors = configService.get<string>('CORS_ORIGIN') || '';
+  const configuredOrigins = rawCors
+    .split(',')
+    .map((o) => o.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
   app.enableCors({
-    origin: configService.get('CORS_ORIGIN'),
+    origin: (requestOrigin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      if (!requestOrigin) return callback(null, true);
+      const clean = requestOrigin.replace(/\/$/, '');
+      if (
+        configuredOrigins.includes(clean) ||
+        configuredOrigins.includes('*') ||
+        clean === 'http://localhost:3000' ||
+        clean === 'https://ggmasaba.vercel.app' ||
+        clean.endsWith('.vercel.app')
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   });
 

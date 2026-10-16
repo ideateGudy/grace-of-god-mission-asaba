@@ -29,7 +29,8 @@ export class GivingController {
     @Body(new ZodValidationPipe(initializeGivingSchema)) dto: InitializeGivingDto,
   ) {
     const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress;
-    const data = await this.givingService.initialize(dto, ip);
+    const origin = (req.headers['origin'] as string) || (req.headers['referer'] as string);
+    const data = await this.givingService.initialize(dto, ip, origin);
     return { data };
   }
 

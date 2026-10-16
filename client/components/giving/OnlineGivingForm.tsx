@@ -90,6 +90,7 @@ export function OnlineGivingForm({
           displayName: values.displayName || null,
           isAnonymous: values.isAnonymous,
           message: values.message || null,
+          callbackUrl: typeof window !== "undefined" ? `${window.location.origin}/give/thanks` : undefined,
         }),
       });
 

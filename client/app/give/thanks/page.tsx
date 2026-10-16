@@ -4,6 +4,7 @@ import { GlassCard } from "@/components/shared/GlassCard";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, AlertCircle, Heart, ArrowRight, Home } from "lucide-react";
 import Link from "next/link";
+import { GiveThanksVerifier } from "@/components/giving/GiveThanksVerifier";
 
 export const metadata: Metadata = {
   title: "Thank You for Giving | Grace of God Mission Asaba",
@@ -90,6 +91,7 @@ export default async function GiveThanksPage({
                 ? "We are verifying your transaction with Paystack. Your receipt will be confirmed momentarily."
                 : "We could not automatically verify this payment reference. If your account was debited, our church administration team will reconcile your receipt."}
             </p>
+            <GiveThanksVerifier reference={ref} initialStatus={result?.status} />
           </div>
 
           {/* Receipt Summary Details */}

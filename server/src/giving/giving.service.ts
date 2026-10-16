@@ -27,11 +27,27 @@ export class GivingService {
     return this.configService.get<string>('PAYSTACK_SECRET_KEY')?.trim();
   }
 
-  private getSiteUrl(): string {
-    return this.configService.get<string>('CORS_ORIGIN') || 'http://localhost:3000';
+  private getSiteUrl(explicitCallbackUrl?: string | null, requestOrigin?: string): string {
+    if (explicitCallbackUrl) {
+      try {
+        const u = new URL(explicitCallbackUrl);
+        return u.origin;
+      } catch {}
+    }
+    if (requestOrigin) {
+      try {
+        const u = new URL(requestOrigin);
+        return u.origin;
+      } catch {}
+    }
+    const configured = this.configService.get<string>('FRONTEND_URL') || this.configService.get<string>('CORS_ORIGIN');
+    if (configured && configured.startsWith('http')) {
+      return configured.split(',')[0].trim().replace(/\/$/, '');
+    }
+    return 'https://ggmasaba.vercel.app';
   }
 
-  async initialize(dto: InitializeGivingDto, clientIp?: string) {
+  async initialize(dto: InitializeGivingDto, clientIp?: string, requestOrigin?: string) {
     let projectTitle: string | null = null;
     if (dto.projectId) {
       const project = await this.prisma.project.findUnique({
@@ -63,13 +79,14 @@ export class GivingService {
     });
 
     const secretKey = this.getPaystackSecretKey();
+    const siteUrl = this.getSiteUrl(dto.callbackUrl, requestOrigin);
+    const callbackUrl = `${siteUrl}/give/thanks?reference=${reference}`;
 
     // If no live Paystack secret key is configured yet, provide a mock authorization url for local development
     if (!secretKey) {
       this.logger.warn('PAYSTACK_SECRET_KEY is not set. Using local development fallback redirect.');
-      const callbackUrl = `${this.getSiteUrl()}/give/thanks?reference=${reference}&mock=true`;
       return {
-        authorization_url: callbackUrl,
+        authorization_url: `${callbackUrl}&mock=true`,
         access_code: `mock_access_${reference}`,
         reference,
       };
@@ -77,7 +94,6 @@ export class GivingService {
 
     // Call Paystack Initialize API
     try {
-      const callbackUrl = `${this.getSiteUrl()}/give/thanks?reference=${reference}`;
       const res = await fetch('https://api.paystack.co/transaction/initialize', {
         method: 'POST',
         headers: {
