@@ -22,7 +22,7 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
   useMotionValueEvent(scrollY, "change", (y: number) => setCondensed(y > 24));
 
   const isTransparent = !condensed;
-  // If on home page over light hero/white background, use dark text with subtle glass background
+  // If on home page over light hero/white background, use dark text with transparent background
   const isLightHero = pathname === "/" && isTransparent && heroTextTone === "DARK";
   const isLuminousWhite = isTransparent && !isLightHero;
 
@@ -33,27 +33,48 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
         condensed
           ? "glass-strong py-2.5 border-border shadow-sm text-foreground"
           : isLightHero
-            ? "bg-background/85 backdrop-blur-md py-3.5 md:py-5 border-border/50 text-foreground shadow-sm"
+            ? "bg-transparent py-4 md:py-6 border-transparent text-slate-900"
             : "bg-transparent py-4 md:py-6 border-transparent text-white"
       )}
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5">
         <Link href="/" className="transition-opacity hover:opacity-90">
-          <Logo textClassName={isLuminousWhite ? "text-white" : "text-foreground"} />
+          <Logo
+            textClassName={
+              condensed
+                ? "text-foreground"
+                : isLightHero
+                  ? "text-slate-900"
+                  : "text-white"
+            }
+          />
         </Link>
 
         <nav
           className={cn(
             "hidden items-center gap-6 md:flex font-medium text-sm transition-colors",
-            isLuminousWhite ? "text-white/90" : "text-foreground/90"
+            condensed
+              ? "text-foreground/90"
+              : isLightHero
+                ? "text-slate-900/90 font-semibold"
+                : "text-white/90"
           )}
         >
           <Link
             href="/"
             className={cn(
               "transition-colors",
-              isLuminousWhite ? "hover:text-gold" : "hover:text-primary",
-              pathname === "/" && (isLuminousWhite ? "text-gold font-bold" : "text-primary font-bold")
+              condensed
+                ? "hover:text-primary"
+                : isLightHero
+                  ? "hover:text-primary"
+                  : "hover:text-gold",
+              pathname === "/" &&
+                (condensed
+                  ? "text-primary font-bold"
+                  : isLightHero
+                    ? "text-primary font-bold"
+                    : "text-gold font-bold")
             )}
           >
             Home
@@ -62,8 +83,17 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
             href="/about"
             className={cn(
               "transition-colors",
-              isLuminousWhite ? "hover:text-gold" : "hover:text-primary",
-              pathname.startsWith("/about") && (isLuminousWhite ? "text-gold font-bold" : "text-primary font-bold")
+              condensed
+                ? "hover:text-primary"
+                : isLightHero
+                  ? "hover:text-primary"
+                  : "hover:text-gold",
+              pathname.startsWith("/about") &&
+                (condensed
+                  ? "text-primary font-bold"
+                  : isLightHero
+                    ? "text-primary font-bold"
+                    : "text-gold font-bold")
             )}
           >
             About
@@ -72,8 +102,17 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
             href="/visit"
             className={cn(
               "transition-colors",
-              isLuminousWhite ? "hover:text-gold" : "hover:text-primary",
-              pathname.startsWith("/visit") && (isLuminousWhite ? "text-gold font-bold" : "text-primary font-bold")
+              condensed
+                ? "hover:text-primary"
+                : isLightHero
+                  ? "hover:text-primary"
+                  : "hover:text-gold",
+              pathname.startsWith("/visit") &&
+                (condensed
+                  ? "text-primary font-bold"
+                  : isLightHero
+                    ? "text-primary font-bold"
+                    : "text-gold font-bold")
             )}
           >
             Visit
@@ -82,8 +121,17 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
             href="/sermons"
             className={cn(
               "transition-colors",
-              isLuminousWhite ? "hover:text-gold" : "hover:text-primary",
-              pathname.startsWith("/sermons") && (isLuminousWhite ? "text-gold font-bold" : "text-primary font-bold")
+              condensed
+                ? "hover:text-primary"
+                : isLightHero
+                  ? "hover:text-primary"
+                  : "hover:text-gold",
+              pathname.startsWith("/sermons") &&
+                (condensed
+                  ? "text-primary font-bold"
+                  : isLightHero
+                    ? "text-primary font-bold"
+                    : "text-gold font-bold")
             )}
           >
             Sermons
@@ -92,8 +140,17 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
             href="/events"
             className={cn(
               "transition-colors",
-              isLuminousWhite ? "hover:text-gold" : "hover:text-primary",
-              pathname.startsWith("/events") && (isLuminousWhite ? "text-gold font-bold" : "text-primary font-bold")
+              condensed
+                ? "hover:text-primary"
+                : isLightHero
+                  ? "hover:text-primary"
+                  : "hover:text-gold",
+              pathname.startsWith("/events") &&
+                (condensed
+                  ? "text-primary font-bold"
+                  : isLightHero
+                    ? "text-primary font-bold"
+                    : "text-gold font-bold")
             )}
           >
             Events
@@ -102,7 +159,11 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
           <div
             className={cn(
               "w-px h-4 mx-1 transition-colors",
-              isLuminousWhite ? "bg-white/20" : "bg-border"
+              condensed
+                ? "bg-border"
+                : isLightHero
+                  ? "bg-slate-900/20"
+                  : "bg-white/20"
             )}
           />
 
@@ -110,8 +171,17 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
             href="/contact"
             className={cn(
               "transition-colors",
-              isLuminousWhite ? "hover:text-gold" : "hover:text-primary",
-              pathname.startsWith("/contact") && (isLuminousWhite ? "text-gold font-bold" : "text-primary font-bold")
+              condensed
+                ? "hover:text-primary"
+                : isLightHero
+                  ? "hover:text-primary"
+                  : "hover:text-gold",
+              pathname.startsWith("/contact") &&
+                (condensed
+                  ? "text-primary font-bold"
+                  : isLightHero
+                    ? "text-primary font-bold"
+                    : "text-gold font-bold")
             )}
           >
             Contact
@@ -119,10 +189,12 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
           <Link
             href="/give"
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all",
-              isLuminousWhite
-                ? "bg-gold text-midnight hover:brightness-110 shadow-sm"
-                : "bg-primary text-primary-foreground hover:brightness-110 shadow-sm"
+              "inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all shadow-sm hover:brightness-110",
+              condensed
+                ? "bg-primary text-primary-foreground"
+                : isLightHero
+                  ? "bg-primary text-white"
+                  : "bg-gold text-midnight"
             )}
           >
             Give
@@ -131,7 +203,11 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
           <ThemeToggle
             className={cn(
               "transition-colors",
-              isLuminousWhite ? "text-white hover:bg-white/10" : "text-foreground hover:bg-muted"
+              condensed
+                ? "text-foreground hover:bg-muted"
+                : isLightHero
+                  ? "text-slate-900 hover:bg-black/5"
+                  : "text-white hover:bg-white/10"
             )}
           />
         </nav>
@@ -140,7 +216,11 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
           <ThemeToggle
             className={cn(
               "transition-colors",
-              isLuminousWhite ? "text-white hover:bg-white/10" : "text-foreground hover:bg-muted"
+              condensed
+                ? "text-foreground hover:bg-muted"
+                : isLightHero
+                  ? "text-slate-900 hover:bg-black/5"
+                  : "text-white hover:bg-white/10"
             )}
           />
           <Button
@@ -150,7 +230,11 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
             onClick={() => setMobileNavOpen(true)}
             className={cn(
               "transition-colors",
-              isLuminousWhite ? "text-white hover:bg-white/10" : "text-foreground hover:bg-muted"
+              condensed
+                ? "text-foreground hover:bg-muted"
+                : isLightHero
+                  ? "text-slate-900 hover:bg-black/5"
+                  : "text-white hover:bg-white/10"
             )}
           >
             <Menu className="w-6 h-6" />

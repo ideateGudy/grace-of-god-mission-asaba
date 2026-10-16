@@ -16,6 +16,7 @@ import { fromLagosDateTimeInput, toLagosDateTimeInput } from "@/lib/date"
 import { OptionCardGroup } from "@/components/shared/OptionCardGroup"
 import { ImageUploadField } from "@/components/shared/ImageUploadField"
 import { cn } from "@/lib/utils"
+import { resolveHeroSlideTextTone } from "@/lib/hero-tone"
 
 const newSlide = (sortOrder: number): HeroSlideDto => ({
   sortOrder,
@@ -115,16 +116,7 @@ export function HeroEditor({ id }: { id: string }) {
   const [previewViewMode, setPreviewViewMode] = useState<"slide" | "carousel">("slide")
 
   const currentPreviewSlide = hero.slides[previewSlideIndex] ?? hero.slides[0]
-  const isLightHeroBg =
-    currentPreviewSlide?.textTone === "DARK" ||
-    (currentPreviewSlide?.bgType === "GRADIENT" &&
-      (currentPreviewSlide.bgGradient === "radiance" ||
-        currentPreviewSlide.bgGradient === "serenity" ||
-        currentPreviewSlide.bgGradient === "parchment" ||
-        currentPreviewSlide.bgGradient === "milk-gold" ||
-        currentPreviewSlide.bgGradient === "milk-sky" ||
-        currentPreviewSlide.bgGradient === "milk-rose" ||
-        currentPreviewSlide.bgGradient === "milk-olive"))
+  const isLightHeroBg = resolveHeroSlideTextTone(currentPreviewSlide) === "DARK"
   useEffect(() => {
     if (isNew) return
     let cancelled = false
@@ -955,47 +947,44 @@ export function HeroEditor({ id }: { id: string }) {
                 : "relative overflow-hidden"
             }
           >
-            {/* Live Navigation Bar Preview: shows how nav text dynamically adapts to the hero background */}
+            {/* Live Navigation Bar Preview: transparently overlays and blends directly with the hero background */}
             <div
               className={cn(
-                "w-full px-4 sm:px-6 py-2.5 transition-colors flex items-center justify-between border-b z-20",
-                isLightHeroBg
-                  ? "bg-background/90 text-foreground border-border/60 shadow-xs"
-                  : "bg-black/40 text-white border-white/10 backdrop-blur-xs"
+                "absolute top-0 inset-x-0 w-full px-4 sm:px-6 py-3 transition-colors flex items-center justify-between z-30 pointer-events-none bg-transparent border-b border-transparent",
+                isLightHeroBg ? "text-slate-900" : "text-white"
               )}
             >
               <div className="flex items-center gap-2">
-                <span className="font-display font-bold tracking-tight text-xs sm:text-sm">
+                <span className={cn("font-display font-bold tracking-tight text-xs sm:text-sm", isLightHeroBg ? "text-slate-900" : "text-white")}>
                   Grace of God Mission
                 </span>
                 <span
                   className={cn(
-                    "hidden sm:inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+                    "hidden sm:inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full border backdrop-blur-xs transition-colors",
                     isLightHeroBg
-                      ? "border-primary/30 bg-primary/10 text-primary"
+                      ? "border-slate-900/25 bg-slate-900/10 text-slate-900"
                       : "border-white/30 bg-white/10 text-white"
                   )}
                 >
                   {isLightHeroBg ? "Nav: Dark text (Light Hero)" : "Nav: White text (Dark Hero)"}
                 </span>
               </div>
-              <div className="hidden md:flex items-center gap-4 text-xs font-medium opacity-90">
-                <span className={isLightHeroBg ? "text-foreground/80" : "text-white/80"}>About</span>
-                <span className={isLightHeroBg ? "text-foreground/80" : "text-white/80"}>Sermons</span>
-                <span className={isLightHeroBg ? "text-foreground/80" : "text-white/80"}>Events</span>
-                <span className={isLightHeroBg ? "text-foreground/80" : "text-white/80"}>Ministries</span>
-                <span className="font-semibold text-primary">Give</span>
+              <div className="hidden md:flex items-center gap-4 text-xs font-medium">
+                <span className={isLightHeroBg ? "text-slate-900/90" : "text-white/90"}>About</span>
+                <span className={isLightHeroBg ? "text-slate-900/90" : "text-white/90"}>Visit</span>
+                <span className={isLightHeroBg ? "text-slate-900/90" : "text-white/90"}>Sermons</span>
+                <span className={isLightHeroBg ? "text-slate-900/90" : "text-white/90"}>Events</span>
               </div>
               <div className="flex items-center gap-2">
                 <span
                   className={cn(
-                    "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors",
+                    "px-3 py-1 rounded-md text-[11px] font-bold shadow-sm transition-colors",
                     isLightHeroBg
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "bg-white/20 text-white border border-white/30"
+                      ? "bg-primary text-white"
+                      : "bg-gold text-midnight"
                   )}
                 >
-                  Plan a visit
+                  Give
                 </span>
               </div>
             </div>

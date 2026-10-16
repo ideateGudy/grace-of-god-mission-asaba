@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { HeroSequence } from "@/components/motion/HeroSequence";
 import { siteConfig } from "@/config/site";
 import { useUiStore } from "@/store/useUiStore";
+import { resolveHeroSlideTextTone } from "@/lib/hero-tone";
 
 const gradients: Record<string, string> = {
   dawn: "--hero-gradient-dawn",
@@ -54,15 +55,13 @@ export function HeroSlideView({
 }) {
   const isSplit = slide.layout === "SPLIT";
   const isImageBg = slide.bgType === "IMAGE" && !isSplit && Boolean(slide.imageUrl);
-  const isLightGradient = slide.bgType === "GRADIENT" && lightGradients.has(slide.bgGradient ?? "");
-  const isDarkTone = slide.textTone ? slide.textTone === "DARK" : isLightGradient;
+  const resolvedTone = resolveHeroSlideTextTone(slide);
+  const isDarkTone = resolvedTone === "DARK";
   const textTone = isDarkTone ? "text-midnight" : "text-white";
 
   useEffect(() => {
-    if (isFirst) {
-      useUiStore.getState().setHeroTextTone(isDarkTone ? "DARK" : "LIGHT");
-    }
-  }, [isFirst, isDarkTone]);
+    useUiStore.getState().setHeroTextTone(resolvedTone);
+  }, [resolvedTone]);
 
   const isDefaultMidnight =
     !isImageBg &&
@@ -165,14 +164,15 @@ export function HeroSlideView({
           {/* Welcome Pill Chip */}
           <div
             className={cn(
-              "mb-4 sm:mb-5 inline-flex max-w-full items-center gap-1.5 sm:gap-2 rounded-full border px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold uppercase tracking-wider backdrop-blur-sm text-center",
+              "mb-4 sm:mb-5 inline-flex max-w-full items-center gap-1.5 sm:gap-2 rounded-full border px-3.5 sm:px-4 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold uppercase tracking-wider backdrop-blur-sm text-center",
               isDarkTone
                 ? "border-gold/50 bg-gold/15 text-midnight"
                 : "border-gold/30 bg-gold/10 text-gold"
             )}
           >
             <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 text-gold" aria-hidden="true" />
-            <span className="truncate">Welcome to Grace of God Mission · Asaba Division</span>
+            <span className="sm:hidden">Grace of God Mission · Asaba</span>
+            <span className="hidden sm:inline">Welcome to Grace of God Mission · Asaba Divisional Hq.</span>
           </div>
 
           {/* Single Orchestrated Title Moment */}

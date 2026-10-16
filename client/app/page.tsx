@@ -25,6 +25,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { QuickActionBar } from "@/components/layout/QuickActionBar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { resolveHeroSlideTextTone } from "@/lib/hero-tone";
 import { Section, SectionHeading } from "@/components/shared/Section";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { CopyButton } from "@/components/shared/CopyButton";
@@ -98,7 +99,7 @@ export default async function HomePage() {
   return (
     <div className="relative flex min-h-screen flex-col bg-background text-foreground">
       <SunriseBackdrop />
-      <SiteHeader initialHeroTextTone={heroResult.data?.slides?.[0]?.textTone ?? "LIGHT"} />
+      <SiteHeader initialHeroTextTone={resolveHeroSlideTextTone(heroResult.data?.slides?.[0])} />
       <MobileNav />
 
       <main id="main-content" className="flex-1">
