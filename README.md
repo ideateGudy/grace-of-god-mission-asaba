@@ -192,7 +192,7 @@ USE_MOCK_API=false
 ### 3. Initialize Database & Compile Types
 ```bash
 # 1. Compile shared types
-pnpm --filter @ggm/types build
+pnpm build:types
 
 # 2. Generate Prisma Client and apply migrations
 pnpm --filter @ggm/server generate
@@ -200,6 +200,9 @@ pnpm --filter @ggm/server migrate:dev
 
 # 3. Seed initial Super Admin account
 pnpm --filter @ggm/server seed
+
+# 4. (Optional) Compile all workspaces for production
+pnpm build
 ```
 
 ### 4. Start Development Servers
@@ -302,19 +305,36 @@ flowchart LR
 
 1. Log in to [vercel.com](https://vercel.com) and click **Add New...** → **Project**.
 2. Import the `grace-of-god-mission-asaba` GitHub repository.
-3. Configure the project settings:
-   - **Framework Preset**: `Next.js`
-   - **Root Directory**: Click **Edit**, choose **`client`**, and ensure the checkbox **"Include source files outside of the Root Directory in the Build Step"** is checked (this allows Vercel to access `packages/types`).
-4. **Build and Output Settings**:
-   - **Build Command**:
-     ```bash
-     pnpm --filter @ggm/types build && next build
-     ```
-   - **Install Command**:
-     ```bash
-     pnpm install
-     ```
-5. Add the **Environment Variables** in the Vercel Dashboard:
+3. Configure the project settings using either of the two standard deployment approaches:
+
+#### Option A: Deploy from Monorepo Root (Recommended)
+- **Framework Preset**: `Next.js`
+- **Root Directory**: `./` (leave default at repository root)
+- **Build and Output Settings**:
+  - **Build Command**: Turn toggle **ON** and set to:
+    ```bash
+    pnpm build:client
+    ```
+    *(or `pnpm --filter @ggm/client build` — automatically compiles `@ggm/types` first, then runs `next build`)*
+  - **Output Directory**: Turn toggle **ON** and set to:
+    ```text
+    client/.next
+    ```
+  - **Install Command**: Leave default (`pnpm install`)
+
+#### Option B: Deploy with Root Directory set to `client`
+- **Framework Preset**: `Next.js`
+- **Root Directory**: Click **Edit** and select **`client`**
+- ⚠️ **CRITICAL**: Ensure **"Include source files outside of the Root Directory in the Build Step"** is **CHECKED** (required so Vercel can access `@ggm/types` in `packages/types` and `pnpm-workspace.yaml`).
+- **Build and Output Settings**:
+  - **Build Command**: Leave toggle **OFF** (Vercel automatically executes `pnpm run build`), OR set to:
+    ```bash
+    pnpm run build
+    ```
+    > ⚠️ **Warning**: Do NOT enter `next build` or `pnpm --filter @ggm/types build && next build` directly into the override box. Running bare `next build` bypasses the pnpm executable environment and causes `command not found: next`.
+  - **Install Command**: Leave default (`pnpm install`)
+
+4. Add the **Environment Variables** in the Vercel Dashboard:
 
 | Variable | Example / Value | Description |
 | :--- | :--- | :--- |

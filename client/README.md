@@ -90,8 +90,36 @@ The client proxies all browser calls from `/api/v1/:path*` directly to the backe
 
 ## 🚢 Deployment to Vercel
 
-When deploying to Vercel:
-1. **Root Directory**: Set to `client`.
-2. **Framework Preset**: Automatically detected as `Next.js`.
-3. **Build Command**: `pnpm --filter @ggm/types build && next build`
-4. **Environment Variables**: Add `NEXT_PUBLIC_SITE_URL`, `API_INTERNAL_URL`, `REVALIDATE_SECRET`, `IMAGE_ALLOWED_HOSTS`, and `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`.
+When deploying this monorepo frontend to Vercel, configure using either of the two standard setups:
+
+### Method 1: Deploy from Monorepo Root (Recommended)
+1. **Framework Preset**: `Next.js`
+2. **Root Directory**: `./` (leave default at repository root)
+3. **Build Command**: Turn override **ON** and set to:
+   ```bash
+   pnpm build:client
+   ```
+   *(or `pnpm --filter @ggm/client build` — automatically compiles `@ggm/types` first, then runs `next build`)*
+4. **Output Directory**: Turn override **ON** and set to:
+   ```text
+   client/.next
+   ```
+5. **Install Command**: Leave default (`pnpm install`).
+
+### Method 2: Deploy with Root Directory set to `client`
+1. **Framework Preset**: `Next.js`
+2. **Root Directory**: Click **Edit** and choose `client`.
+3. ⚠️ **CRITICAL**: Ensure **"Include source files outside of the Root Directory in the Build Step"** is **CHECKED** (required to access `@ggm/types` in `packages/types`).
+4. **Build Command**: Keep the toggle **OFF** (Vercel will execute `pnpm run build`), or set to `pnpm run build`.
+   > **Note**: Do NOT enter `next build` or `pnpm --filter @ggm/types build && next build` directly into the override box. Bare `next build` bypasses the pnpm executable context and causes `command not found: next`.
+5. **Install Command**: Leave default (`pnpm install`).
+
+### Required Environment Variables
+Configure these in your Vercel Project Settings:
+- `NEXT_PUBLIC_SITE_URL`: `https://your-frontend.vercel.app`
+- `API_INTERNAL_URL`: `https://your-backend.onrender.com` (no trailing slash)
+- `REVALIDATE_SECRET`: Shared secret string matching backend
+- `IMAGE_ALLOWED_HOSTS`: `images.unsplash.com,res.cloudinary.com`
+- `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`: `pk_live_...` or `pk_test_...`
+- `USE_MOCK_API`: `false`
+

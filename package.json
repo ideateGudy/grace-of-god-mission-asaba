@@ -1,0 +1,18 @@
+{
+  "name": "grace-of-god-mission-asaba",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.5.2",
+  "scripts": {
+    "build": "pnpm --filter @ggm/types build && pnpm --filter @ggm/server build && pnpm --filter @ggm/client build",
+    "build:client": "pnpm --filter @ggm/client build",
+    "build:server": "pnpm --filter @ggm/server build",
+    "build:types": "pnpm --filter @ggm/types build",
+    "dev": "pnpm --filter @ggm/client dev",
+    "dev:client": "pnpm --filter @ggm/client dev",
+    "dev:server": "pnpm --filter @ggm/server dev",
+    "test": "pnpm --filter @ggm/server test",
+    "test:client": "pnpm --filter @ggm/client test:e2e",
+    "typecheck": "pnpm -r typecheck"
+  }
+}
