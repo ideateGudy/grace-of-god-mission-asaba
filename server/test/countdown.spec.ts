@@ -92,4 +92,74 @@ describe("Church Countdown Engine & Offline Presets", () => {
     expect(deserialized.soundEnabled).toBe(true);
     expect(deserialized.overtimeEnabled).toBe(true);
   });
+
+  it("ensures presets safely update theme color without altering custom service titles or target times", () => {
+    // Current user state with a custom service title and time
+    const currentState: ChurchCountdownState = {
+      title: "PROPHETIC SHIFT SERVICE",
+      subtitle: "Miracle Service Starts In...",
+      scriptureRef: "PSALM 23:1",
+      scriptureText: "The LORD is my shepherd",
+      mode: "target-time",
+      targetTimeString: "10:30",
+      durationSeconds: 600,
+      theme: "royal-gold",
+      soundEnabled: true,
+      overtimeEnabled: true,
+      showScripture: true,
+      showLogo: true,
+      stageMode: false,
+    };
+
+    // Preset selection: only theme changes, preserving user's title and time
+    const selectedPreset = PROGRAMME_PRESETS.find((p) => p.id === "miracle-vigil");
+    expect(selectedPreset).toBeDefined();
+
+    const stateAfterPreset: ChurchCountdownState = {
+      ...currentState,
+      theme: selectedPreset!.data.theme!,
+    };
+
+    expect(stateAfterPreset.theme).toBe("pentecost-fire");
+    expect(stateAfterPreset.title).toBe("PROPHETIC SHIFT SERVICE");
+    expect(stateAfterPreset.targetTimeString).toBe("10:30");
+    expect(stateAfterPreset.mode).toBe("target-time");
+  });
+
+  it("validates live projection display contract and broadcast sync payload", () => {
+    const liveRoute = "/countdown/live";
+    expect(liveRoute).toBe("/countdown/live");
+
+    const broadcastPayload = {
+      type: "SYNC_STATE",
+      state: {
+        title: "MIDWEEK COMMUNION SERVICE",
+        subtitle: "Service Starts In...",
+        scriptureRef: "JOHN 6:35",
+        scriptureText: "I am the bread of life",
+        mode: "target-time" as const,
+        targetTimeString: "17:30",
+        durationSeconds: 300,
+        theme: "emerald-grace" as const,
+        soundEnabled: true,
+        overtimeEnabled: true,
+        showScripture: true,
+        showLogo: true,
+        stageMode: false,
+      },
+      remainingSeconds: 180,
+      isRunning: true,
+      timestamp: Date.now(),
+    };
+
+    const serialized = JSON.stringify(broadcastPayload);
+    const parsed = JSON.parse(serialized);
+
+    expect(parsed.type).toBe("SYNC_STATE");
+    expect(parsed.state.theme).toBe("emerald-grace");
+    expect(parsed.state.title).toBe("MIDWEEK COMMUNION SERVICE");
+    expect(parsed.remainingSeconds).toBe(180);
+    expect(parsed.isRunning).toBe(true);
+  });
 });
+

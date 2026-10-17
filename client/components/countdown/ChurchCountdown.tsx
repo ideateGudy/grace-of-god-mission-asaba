@@ -28,6 +28,7 @@ import {
   WifiOff,
   Tv,
   Share2,
+  ExternalLink,
 } from "lucide-react";
 import {
   type CountdownMode,
@@ -36,11 +37,16 @@ import {
   COUNTDOWN_THEMES,
   PROGRAMME_PRESETS,
 } from "@/lib/countdown/countdown-types";
+import {
+  COUNTDOWN_STORAGE_KEY,
+  COUNTDOWN_SYNC_CHANNEL,
+  broadcastCountdownState,
+} from "@/lib/countdown/countdown-sync";
 import { audioSynth } from "@/lib/countdown/audio-synth";
 import { CHURCH_LOGO_PATH } from "@/lib/flyer/church-logo";
 import { toast } from "sonner";
 
-const STORAGE_KEY = "ggm_church_countdown_v1";
+const STORAGE_KEY = COUNTDOWN_STORAGE_KEY;
 
 const DEFAULT_STATE: ChurchCountdownState = {
   title: "SUNDAY CELEBRATION SERVICE",
@@ -110,6 +116,30 @@ export function ChurchCountdown() {
   const lastSecondRef = useRef<number>(-1);
 
   const currentTheme = COUNTDOWN_THEMES[config.theme] || COUNTDOWN_THEMES["royal-gold"];
+  const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
+
+  // Initialize broadcast channel for live projection synchronization
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      broadcastChannelRef.current = new BroadcastChannel(COUNTDOWN_SYNC_CHANNEL);
+    } catch {
+      // Ignored
+    }
+    return () => {
+      broadcastChannelRef.current?.close();
+    };
+  }, []);
+
+  // Broadcast state updates to live projection displays
+  useEffect(() => {
+    broadcastCountdownState(broadcastChannelRef.current, {
+      type: "SYNC_STATE",
+      state: config,
+      remainingSeconds,
+      isRunning,
+    });
+  }, [config, remainingSeconds, isRunning]);
 
   // Save config to localStorage for 100% offline persistence
   useEffect(() => {
@@ -293,11 +323,13 @@ export function ChurchCountdown() {
   };
 
   const handleApplyPreset = (preset: (typeof PROGRAMME_PRESETS)[0]) => {
+    if (!preset.data.theme) return;
+    const nextTheme = preset.data.theme;
     setConfig((prev) => ({
       ...prev,
-      ...preset.data,
+      theme: nextTheme, // Only change page color / theme, preserve title and time!
     }));
-    toast.success(`Preset Applied: ${preset.name}`);
+    toast.success(`Color Theme Applied: ${preset.name}`);
   };
 
   // Compute breakdown: hours, minutes, seconds, overtime
@@ -446,6 +478,39 @@ export function ChurchCountdown() {
             <span className="hidden sm:inline">{isFullscreen ? "Exit Full" : "Fullscreen"}</span>
           </button>
 
+          {/* Live Fullscreen Projection Route Link */}
+          <a
+            href="/countdown/live"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open clean, read-only live projection display in a new window/tab"
+            className="p-2 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 transition flex items-center gap-1.5 text-xs font-bold shadow-sm"
+          >
+            <Tv className="w-4 h-4 text-emerald-400" />
+            <span className="hidden sm:inline">Live Projection</span>
+            <ExternalLink className="w-3 h-3 text-emerald-400/80" />
+          </a>
+
+          {/* Copy Live Projection Link */}
+          <button
+            type="button"
+            onClick={() => {
+              const url =
+                typeof window !== "undefined"
+                  ? `${window.location.origin}/countdown/live`
+                  : "https://ggmasaba.vercel.app/countdown/live";
+              if (navigator.clipboard) {
+                void navigator.clipboard.writeText(url);
+                toast.success("Live Projection link copied! Open on projector or OBS display.");
+              }
+            }}
+            title="Copy clean projection link to clipboard"
+            className="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-white/[0.06] border border-white/10 text-white hover:bg-white/15 transition flex items-center gap-1 text-xs font-semibold"
+          >
+            <Share2 className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden lg:inline">Share Link</span>
+          </button>
+
           {/* Settings Drawer Toggle */}
           <button
             type="button"
@@ -460,34 +525,36 @@ export function ChurchCountdown() {
       </header>
 
       {/* ============================================================== */}
-      {/* 2. PROGRAMME PRESETS QUICK BAR (Visible when not in Stage Mode) */}
+      {/* 2. PROGRAMME COLOR PRESETS QUICK BAR (Visible when not in Stage Mode) */}
       {/* ============================================================== */}
       {!config.stageMode && (
         <div className="relative z-10 max-w-6xl mx-auto w-full pt-4 pb-2">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider shrink-0 flex items-center gap-1 pr-1">
               <Sliders className="w-3.5 h-3.5" />
-              <span>Presets:</span>
+              <span>Color Presets:</span>
             </span>
             {PROGRAMME_PRESETS.map((p) => {
-              const isSelected = config.title === p.data.title;
+              const themeId = p.data.theme;
+              if (!themeId) return null;
+              const isSelected = config.theme === themeId;
+              const themeAccent = COUNTDOWN_THEMES[themeId]?.primaryAccent || "#D9A441";
               return (
                 <button
                   key={p.id}
                   type="button"
                   onClick={() => handleApplyPreset(p)}
+                  title={`Apply ${p.name} theme colors (keeps time and title)`}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 border transition flex items-center gap-1.5 ${
                     isSelected
-                      ? "bg-amber-400/20 border-amber-400 text-amber-300 shadow-sm"
+                      ? "bg-amber-400/20 border-amber-400 text-amber-300 shadow-sm ring-1 ring-amber-400/30"
                       : "bg-white/[0.04] border-white/10 text-white/80 hover:bg-white/10 hover:text-white"
                   }`}
                 >
-                  {p.id === "sunday-service" && <Church className="w-3 h-3 text-amber-400" />}
-                  {p.id === "midweek-service" && <BookOpen className="w-3 h-3 text-emerald-400" />}
-                  {p.id === "miracle-vigil" && <Flame className="w-3 h-3 text-orange-400" />}
-                  {p.id === "youth-awakening" && <Sparkles className="w-3 h-3 text-sky-400" />}
-                  {p.id === "word-of-the-month" && <Crown className="w-3 h-3 text-purple-400" />}
-                  {p.category === "Quick Timer" && <Clock className="w-3 h-3 text-muted-foreground" />}
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: themeAccent }}
+                  />
                   <span>{p.name}</span>
                 </button>
               );
@@ -811,8 +878,20 @@ export function ChurchCountdown() {
               </span>
             </div>
 
-            {/* Stage View & Shortcuts Help */}
+            {/* Stage View & Live Projection Link */}
             <div className="flex items-center gap-2">
+              <a
+                href="/countdown/live"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open clean, read-only live projection screen in a new window/tab"
+                className="px-3.5 py-2 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition flex items-center gap-1.5"
+              >
+                <Tv className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Open Projection Screen</span>
+                <ExternalLink className="w-3 h-3 text-emerald-400/80" />
+              </a>
+
               <button
                 type="button"
                 onClick={() => setConfig((p) => ({ ...p, stageMode: true }))}

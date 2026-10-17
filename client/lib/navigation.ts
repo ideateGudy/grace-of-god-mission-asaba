@@ -11,6 +11,7 @@ import {
   Radio,
   BookOpen,
   Sparkles,
+  Clock,
   type LucideIcon,
 } from "lucide-react";
 
@@ -58,6 +59,12 @@ export const NAV_CATEGORIES: NavCategory[] = [
         href: "/live",
         description: "Stream our sanctuary services in real time",
         icon: Radio,
+      },
+      {
+        title: "Service Countdown",
+        href: "/countdown",
+        description: "Live sanctuary countdown timer & projection display",
+        icon: Clock,
       },
       {
         title: "Sermons",
