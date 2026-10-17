@@ -1,18 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useScroll, useMotionValueEvent } from "motion/react";
-import { useState } from "react";
+import { useScroll, useMotionValueEvent, AnimatePresence, motion } from "motion/react";
+import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/shared/Logo";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { cn } from "@/lib/utils";
-import { Menu } from "lucide-react";
+import { Menu, ChevronDown } from "lucide-react";
 import { useUiStore } from "@/store/useUiStore";
 import { Button } from "@/components/ui/button";
+import { NAV_CATEGORIES, NavCategory } from "@/lib/navigation";
 
 export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextTone?: "LIGHT" | "DARK" }) {
   const [condensed, setCondensed] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
+
   const { scrollY } = useScroll();
   const setMobileNavOpen = useUiStore((s) => s.setMobileNavOpen);
   const storedHeroTextTone = useUiStore((s) => s.heroTextTone);
@@ -24,7 +29,65 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
   const isTransparent = !condensed;
   // If on home page over light hero/white background, use dark text with transparent background
   const isLightHero = pathname === "/" && isTransparent && heroTextTone === "DARK";
-  const isLuminousWhite = isTransparent && !isLightHero;
+
+  // Close dropdown on route change
+  useEffect(() => {
+    setActiveCategory(null);
+  }, [pathname]);
+
+  // Close dropdown on click outside or escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActiveCategory(null);
+    };
+    const handleClickOutside = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setActiveCategory(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleMouseEnter = (title: string) => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    setActiveCategory(title);
+  };
+
+  const handleMouseLeave = () => {
+    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    closeTimeoutRef.current = setTimeout(() => {
+      setActiveCategory(null);
+    }, 160);
+  };
+
+  const isCategoryActive = (cat: NavCategory) => {
+    return cat.items.some(
+      (item) => pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
+    );
+  };
+
+  const getLinkClasses = (isActive: boolean) => {
+    if (isActive) {
+      return condensed
+        ? "text-primary font-bold"
+        : isLightHero
+          ? "text-primary font-bold"
+          : "text-gold font-bold";
+    }
+    return condensed
+      ? "hover:text-primary"
+      : isLightHero
+        ? "hover:text-primary"
+        : "hover:text-gold";
+  };
 
   return (
     <header
@@ -50,7 +113,10 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
           />
         </Link>
 
+        {/* Desktop Categorized Navigation */}
         <nav
+          ref={navRef}
+          aria-label="Main Navigation"
           className={cn(
             "hidden items-center gap-6 md:flex font-medium text-sm transition-colors",
             condensed
@@ -60,140 +126,110 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
                 : "text-white/90"
           )}
         >
+          {/* Direct Home Link */}
           <Link
             href="/"
-            className={cn(
-              "transition-colors",
-              condensed
-                ? "hover:text-primary"
-                : isLightHero
-                  ? "hover:text-primary"
-                  : "hover:text-gold",
-              pathname === "/" &&
-                (condensed
-                  ? "text-primary font-bold"
-                  : isLightHero
-                    ? "text-primary font-bold"
-                    : "text-gold font-bold")
-            )}
+            className={cn("transition-colors py-1.5", getLinkClasses(pathname === "/"))}
           >
             Home
           </Link>
-          <Link
-            href="/about"
-            className={cn(
-              "transition-colors",
-              condensed
-                ? "hover:text-primary"
-                : isLightHero
-                  ? "hover:text-primary"
-                  : "hover:text-gold",
-              pathname.startsWith("/about") &&
-                (condensed
-                  ? "text-primary font-bold"
-                  : isLightHero
-                    ? "text-primary font-bold"
-                    : "text-gold font-bold")
-            )}
-          >
-            About
-          </Link>
-          <Link
-            href="/visit"
-            className={cn(
-              "transition-colors",
-              condensed
-                ? "hover:text-primary"
-                : isLightHero
-                  ? "hover:text-primary"
-                  : "hover:text-gold",
-              pathname.startsWith("/visit") &&
-                (condensed
-                  ? "text-primary font-bold"
-                  : isLightHero
-                    ? "text-primary font-bold"
-                    : "text-gold font-bold")
-            )}
-          >
-            Visit
-          </Link>
-          <Link
-            href="/sermons"
-            className={cn(
-              "transition-colors",
-              condensed
-                ? "hover:text-primary"
-                : isLightHero
-                  ? "hover:text-primary"
-                  : "hover:text-gold",
-              pathname.startsWith("/sermons") &&
-                (condensed
-                  ? "text-primary font-bold"
-                  : isLightHero
-                    ? "text-primary font-bold"
-                    : "text-gold font-bold")
-            )}
-          >
-            Sermons
-          </Link>
-          <Link
-            href="/events"
-            className={cn(
-              "transition-colors",
-              condensed
-                ? "hover:text-primary"
-                : isLightHero
-                  ? "hover:text-primary"
-                  : "hover:text-gold",
-              pathname.startsWith("/events") &&
-                (condensed
-                  ? "text-primary font-bold"
-                  : isLightHero
-                    ? "text-primary font-bold"
-                    : "text-gold font-bold")
-            )}
-          >
-            Events
-          </Link>
-          <Link
-            href="/gallery"
-            className={cn(
-              "transition-colors",
-              condensed
-                ? "hover:text-primary"
-                : isLightHero
-                  ? "hover:text-primary"
-                  : "hover:text-gold",
-              pathname.startsWith("/gallery") &&
-                (condensed
-                  ? "text-primary font-bold"
-                  : isLightHero
-                    ? "text-primary font-bold"
-                    : "text-gold font-bold")
-            )}
-          >
-            Gallery
-          </Link>
-          <Link
-            href="/projects"
-            className={cn(
-              "transition-colors",
-              condensed
-                ? "hover:text-primary"
-                : isLightHero
-                  ? "hover:text-primary"
-                  : "hover:text-gold",
-              pathname.startsWith("/projects") &&
-                (condensed
-                  ? "text-primary font-bold"
-                  : isLightHero
-                    ? "text-primary font-bold"
-                    : "text-gold font-bold")
-            )}
-          >
-            Projects
-          </Link>
 
+          {/* Categorized Dropdowns with Hover & Click */}
+          {NAV_CATEGORIES.map((cat) => {
+            const active = isCategoryActive(cat);
+            const isOpen = activeCategory === cat.title;
+
+            return (
+              <div
+                key={cat.title}
+                className="relative"
+                onMouseEnter={() => handleMouseEnter(cat.title)}
+                onMouseLeave={handleMouseLeave}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveCategory(isOpen ? null : cat.title)}
+                  aria-expanded={isOpen}
+                  aria-haspopup="true"
+                  className={cn(
+                    "flex items-center gap-1.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md cursor-pointer",
+                    getLinkClasses(active)
+                  )}
+                >
+                  <span>{cat.title}</span>
+                  <ChevronDown
+                    className={cn(
+                      "w-3.5 h-3.5 transition-transform duration-200",
+                      isOpen ? "rotate-180" : ""
+                    )}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                      transition={{ duration: 0.16, ease: "easeOut" }}
+                      className="absolute top-full left-1/2 -translate-x-1/2 pt-2.5 z-50 w-72"
+                    >
+                      <div className="rounded-2xl glass-strong border border-border/80 shadow-2xl p-2 bg-background/95 dark:bg-slate-900/95 backdrop-blur-xl text-foreground ring-1 ring-black/5 dark:ring-white/10">
+                        <div className="flex flex-col gap-1">
+                          {cat.items.map((item) => {
+                            const Icon = item.icon;
+                            const isItemActive = pathname === item.href;
+
+                            return (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => setActiveCategory(null)}
+                                className={cn(
+                                  "group flex items-start gap-3 rounded-xl p-2.5 transition-all text-left",
+                                  isItemActive
+                                    ? "bg-primary/10 text-primary dark:bg-primary/20"
+                                    : "hover:bg-muted/80 text-foreground"
+                                )}
+                              >
+                                <div
+                                  className={cn(
+                                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors mt-0.5",
+                                    isItemActive
+                                      ? "bg-primary text-primary-foreground"
+                                      : "bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground"
+                                  )}
+                                >
+                                  <Icon className="w-4 h-4" />
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span
+                                    className={cn(
+                                      "text-xs font-semibold tracking-tight transition-colors",
+                                      isItemActive
+                                        ? "text-primary"
+                                        : "text-foreground group-hover:text-primary"
+                                    )}
+                                  >
+                                    {item.title}
+                                  </span>
+                                  <span className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                                    {item.description}
+                                  </span>
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+
+          {/* Divider */}
           <div
             className={cn(
               "w-px h-4 mx-1 transition-colors",
@@ -205,25 +241,7 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
             )}
           />
 
-          <Link
-            href="/contact"
-            className={cn(
-              "transition-colors",
-              condensed
-                ? "hover:text-primary"
-                : isLightHero
-                  ? "hover:text-primary"
-                  : "hover:text-gold",
-              pathname.startsWith("/contact") &&
-                (condensed
-                  ? "text-primary font-bold"
-                  : isLightHero
-                    ? "text-primary font-bold"
-                    : "text-gold font-bold")
-            )}
-          >
-            Contact
-          </Link>
+          {/* Give CTA */}
           <Link
             href="/give"
             className={cn(
@@ -250,6 +268,7 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
           />
         </nav>
 
+        {/* Mobile Header Buttons */}
         <div className="flex md:hidden items-center gap-2">
           <ThemeToggle
             className={cn(
