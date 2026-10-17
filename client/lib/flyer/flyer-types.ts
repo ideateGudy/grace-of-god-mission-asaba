@@ -35,7 +35,10 @@ export type FlyerTemplateId =
   | "emerald-grace"
   | "holy-minimal"
   | "prophetic-word"
-  | "covenant-glory";
+  | "covenant-glory"
+  | "prophetic-decree"
+  | "mountain-glory"
+  | "doxa-worship";
 
 export interface FlyerTemplateStyle {
   id: FlyerTemplateId;
@@ -60,7 +63,10 @@ export interface FlyerTemplateStyle {
     | "sacred-waves"
     | "fine-mesh"
     | "prophetic-stars"
-    | "crown-rays";
+    | "crown-rays"
+    | "spotlight-koinonia"
+    | "mountain-encounter"
+    | "stage-wash";
 }
 
 export type LayerBlendMode =
@@ -246,6 +252,60 @@ export const FLYER_TEMPLATES: Record<FlyerTemplateId, FlyerTemplateStyle> = {
     badgeText: "#FDE047",
     patternType: "crown-rays",
   },
+  "prophetic-decree": {
+    id: "prophetic-decree",
+    name: "Koinonia Spotlight Encounter",
+    tagline: "Volumetric dual corner spotlights, fiery crimson title accents, and descending Holy Spirit rays",
+    bgDark: "#090205",
+    bgGradient: "linear-gradient(135deg, #090205 0%, #1A050B 50%, #260A0A 100%)",
+    primaryAccent: "#EF4444",
+    secondaryAccent: "#F59E0B",
+    accentGlow: "rgba(239, 68, 68, 0.45)",
+    borderColor: "rgba(239, 68, 68, 0.45)",
+    textColor: "#FFFFFF",
+    mutedColor: "#FECACA",
+    titleFont: "sans-serif",
+    bodyFont: "sans-serif",
+    badgeBg: "rgba(239, 68, 68, 0.2)",
+    badgeText: "#FCA5A5",
+    patternType: "spotlight-koinonia",
+  },
+  "mountain-glory": {
+    id: "mountain-glory",
+    name: "Divine Encounter & Mountain Peak",
+    tagline: "Spiritual mountain ridges, heavenly god rays, and 3D extruded metallic typography",
+    bgDark: "#060A18",
+    bgGradient: "linear-gradient(135deg, #060A18 0%, #0D1B36 50%, #15274A 100%)",
+    primaryAccent: "#EAB308",
+    secondaryAccent: "#38BDF8",
+    accentGlow: "rgba(234, 179, 8, 0.45)",
+    borderColor: "rgba(234, 179, 8, 0.4)",
+    textColor: "#FFFFFF",
+    mutedColor: "#BAE6FD",
+    titleFont: "serif",
+    bodyFont: "sans-serif",
+    badgeBg: "rgba(234, 179, 8, 0.2)",
+    badgeText: "#FDE047",
+    patternType: "mountain-encounter",
+  },
+  "doxa-worship": {
+    id: "doxa-worship",
+    name: "Doxa Worship & Stage Wash",
+    tagline: "Deep emerald sanctuary stage wash, concert light beams, and multi-service time chips",
+    bgDark: "#02170F",
+    bgGradient: "linear-gradient(135deg, #02170F 0%, #06281B 50%, #0B3A28 100%)",
+    primaryAccent: "#10B981",
+    secondaryAccent: "#FBBF24",
+    accentGlow: "rgba(16, 185, 129, 0.45)",
+    borderColor: "rgba(16, 185, 129, 0.4)",
+    textColor: "#FFFFFF",
+    mutedColor: "#A7F3D0",
+    titleFont: "sans-serif",
+    bodyFont: "sans-serif",
+    badgeBg: "rgba(16, 185, 129, 0.2)",
+    badgeText: "#6EE7B7",
+    patternType: "stage-wash",
+  },
 };
 
 export const DEFAULT_PRESETS: FlyerPreset[] = [
@@ -414,6 +474,78 @@ export const DEFAULT_PRESETS: FlyerPreset[] = [
       guestMinister: "",
       badgeText: "PROPHETIC WORD OF THE MONTH",
       broadcastBadge: "SEASON OF SUPERNATURAL REST",
+      showChurchLogo: true,
+    },
+  },
+  {
+    id: "koinonia-encounter",
+    name: "Koinonia Glory (Wonders of His Presence)",
+    iconName: "Flame",
+    description: "Volumetric dual spotlights, Holy Spirit dove, and fiery duotone apostolic title (Inspired by Koinonia)",
+    data: {
+      templateId: "prophetic-decree",
+      aspectRatio: "square",
+      churchName: "GRACE OF GOD MISSION ASABA",
+      category: "KOINONIA APOSTOLIC SERVICE // ABUJA & ASABA",
+      title: "THE WONDERS OF HIS PRESENCE & UNSTOPPABLE POWER",
+      subtitle: "Experience the transformative glory of God's tangible presence, apostolic impartation, and divine wisdom.",
+      scriptureRef: "EXODUS 33:14",
+      scriptureText: "My presence shall go with thee, and I will give thee rest.",
+      date: "SUNDAY, 1ST NOVEMBER 2026",
+      time: "5:00 PM PROMPT (DOORS OPEN 4:00 PM)",
+      venue: "Auditorium of Grace, 12 Jesus Saves Road, Asaba",
+      minister: "HOST: PASTOR CHUKWUDI EZE",
+      guestMinister: "MINISTERING: APOSTLE JOSHUA SELMAN",
+      badgeText: "APOSTOLIC & PROPHETIC IMPARTATION",
+      broadcastBadge: "GLOBAL LIVE BROADCAST · KOINONIA TV",
+      showChurchLogo: true,
+    },
+  },
+  {
+    id: "divine-encounter",
+    name: "Divine Encounter Revival (Mountain of Grace)",
+    iconName: "Sparkles",
+    description: "Mountain peak atmosphere, heavenly god-rays, 3D extruded metallic title, and revival seal",
+    data: {
+      templateId: "mountain-glory",
+      aspectRatio: "story",
+      churchName: "GRACE OF GOD MISSION ASABA",
+      category: "ANNUAL HARVEST OF REVIVAL // 2026",
+      title: "DIVINE ENCOUNTER & SUPERNATURAL VISITATION",
+      subtitle: "Ascend the mountain of prayer and power. A sacred season of answered prayers, signs, and great deliverance.",
+      scriptureRef: "EXODUS 3:2",
+      scriptureText: "And the angel of the LORD appeared unto him in a flame of fire out of the midst of a bush.",
+      date: "18TH - 22ND NOVEMBER 2026",
+      time: "5:30 PM DAILY & 8:00 AM SUNDAY",
+      venue: "Cathedral of Grace, 12 Jesus Saves Road, Asaba",
+      minister: "CHIEF HOST: REV. DR. CHUKWUDI EZE",
+      guestMinister: "GUEST: BISHOP & ANOINTED EVANGELISTS",
+      badgeText: "ANOINTING · SIGNS & WONDERS",
+      broadcastBadge: "LIVESTREAMING ON YOUTUBE & FACEBOOK",
+      showChurchLogo: true,
+    },
+  },
+  {
+    id: "doxa-worship-night",
+    name: "Doxa Worship Night & Holy Communion",
+    iconName: "HeartHandshake",
+    description: "Emerald stage wash, concert light beams, praying hands atmosphere, and multi-service dot pills",
+    data: {
+      templateId: "doxa-worship",
+      aspectRatio: "landscape",
+      churchName: "GRACE OF GOD MISSION ASABA",
+      category: "DOXA WORSHIP ENCOUNTER // PRAISE BANQUET",
+      title: "WORSHIP IN THE BEAUTY OF HIS HOLINESS",
+      subtitle: "Unbroken praise, deep prophetic worship, miraculous healing, and the holy communion table.",
+      scriptureRef: "PSALM 29:2",
+      scriptureText: "Give unto the LORD the glory due unto his name; worship the LORD in the beauty of holiness.",
+      date: "FRIDAY, 27TH NOVEMBER 2026",
+      time: "● 1ST SERVICE 8:00 AM  ● 2ND SERVICE 10:00 AM",
+      venue: "Main Sanctuary of Grace, 12 Jesus Saves Road, Asaba",
+      minister: "WORSHIP LEADER: PASTOR EZE & GGM MASS CHOIR",
+      guestMinister: "GUEST: GOSPEL WORSHIP ENSEMBLE",
+      badgeText: "INTENSIVE WORSHIP & MIRACLE COMMUNION",
+      broadcastBadge: "DOORS OPEN 4:30 PM · ADMISSION FREE",
       showChurchLogo: true,
     },
   },

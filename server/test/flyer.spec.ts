@@ -45,7 +45,7 @@ describe("Church Flyer Generator Engine", () => {
     });
   });
 
-  it("contains all 7 handcrafted graphic templates with complete design tokens", () => {
+  it("contains all 10 handcrafted graphic templates with complete design tokens", () => {
     const templateIds: FlyerTemplateId[] = [
       "royal-gold",
       "midnight-glory",
@@ -54,9 +54,12 @@ describe("Church Flyer Generator Engine", () => {
       "holy-minimal",
       "prophetic-word",
       "covenant-glory",
+      "prophetic-decree",
+      "mountain-glory",
+      "doxa-worship",
     ];
 
-    expect(Object.keys(FLYER_TEMPLATES)).toHaveLength(7);
+    expect(Object.keys(FLYER_TEMPLATES)).toHaveLength(10);
 
     templateIds.forEach((id) => {
       const t = FLYER_TEMPLATES[id];
@@ -71,8 +74,8 @@ describe("Church Flyer Generator Engine", () => {
     });
   });
 
-  it("contains pre-populated church presets with ready-to-use content including Word for the Month", () => {
-    expect(DEFAULT_PRESETS.length).toBeGreaterThanOrEqual(7);
+  it("contains pre-populated church presets with ready-to-use content including reference-inspired presets", () => {
+    expect(DEFAULT_PRESETS.length).toBeGreaterThanOrEqual(10);
 
     const sundayPreset = DEFAULT_PRESETS.find((p) => p.id === "sunday-service");
     expect(sundayPreset).toBeDefined();
@@ -100,16 +103,53 @@ describe("Church Flyer Generator Engine", () => {
     expect(exceedingPreset).toBeDefined();
     expect(exceedingPreset?.data.templateId).toBe("covenant-glory");
     expect(exceedingPreset?.data.aspectRatio).toBe("story");
+
+    // Reference-inspired presets
+    const koinoniaPreset = DEFAULT_PRESETS.find((p) => p.id === "koinonia-encounter");
+    expect(koinoniaPreset).toBeDefined();
+    expect(koinoniaPreset?.data.templateId).toBe("prophetic-decree");
+    expect(koinoniaPreset?.data.title).toContain("WONDERS OF HIS PRESENCE");
+    expect(koinoniaPreset?.data.guestMinister).toContain("APOSTLE JOSHUA SELMAN");
+
+    const divinePreset = DEFAULT_PRESETS.find((p) => p.id === "divine-encounter");
+    expect(divinePreset).toBeDefined();
+    expect(divinePreset?.data.templateId).toBe("mountain-glory");
+    expect(divinePreset?.data.title).toContain("DIVINE ENCOUNTER");
+
+    const doxaPreset = DEFAULT_PRESETS.find((p) => p.id === "doxa-worship-night");
+    expect(doxaPreset).toBeDefined();
+    expect(doxaPreset?.data.templateId).toBe("doxa-worship");
+    expect(doxaPreset?.data.time).toContain("●");
   });
 
   it("provides curated graphic design assets with appropriate blend modes for instant flyer overlay", () => {
-    expect(CURATED_ASSETS.length).toBeGreaterThanOrEqual(4);
+    expect(CURATED_ASSETS.length).toBeGreaterThanOrEqual(9);
 
     const flare = CURATED_ASSETS.find((a) => a.id === "asset-light-flare");
     expect(flare).toBeDefined();
     expect(flare?.defaultBlendMode).toBe("screen");
     expect(flare?.defaultMaskShape).toBe("feathered");
     expect(flare?.url).toContain("data:image/svg+xml");
+
+    const dove = CURATED_ASSETS.find((a) => a.id === "asset-holy-dove");
+    expect(dove).toBeDefined();
+    expect(dove?.defaultBlendMode).toBe("screen");
+
+    const spotlight = CURATED_ASSETS.find((a) => a.id === "asset-stage-spotlight");
+    expect(spotlight).toBeDefined();
+    expect(spotlight?.defaultBlendMode).toBe("screen");
+
+    const mountain = CURATED_ASSETS.find((a) => a.id === "asset-mountain-peak");
+    expect(mountain).toBeDefined();
+    expect(mountain?.defaultBlendMode).toBe("screen");
+
+    const hands = CURATED_ASSETS.find((a) => a.id === "asset-celestial-hands");
+    expect(hands).toBeDefined();
+    expect(hands?.defaultBlendMode).toBe("screen");
+
+    const seal = CURATED_ASSETS.find((a) => a.id === "asset-revival-seal");
+    expect(seal).toBeDefined();
+    expect(seal?.defaultBlendMode).toBe("overlay");
 
     const ember = CURATED_ASSETS.find((a) => a.id === "asset-pentecost-fire");
     expect(ember).toBeDefined();

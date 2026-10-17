@@ -372,6 +372,131 @@ export function FlyerRenderer({
         </g>
       )}
 
+      {/* Spotlight Koinonia Pattern (References 1 & 4) */}
+      {template.patternType === "spotlight-koinonia" && (
+        <g>
+          {/* Dual Corner Volumetric Spotlights */}
+          <path
+            d={`M 0,-10 L ${width * 0.16},0 L ${width * 0.72},${height} L ${width * 0.22},${height} Z`}
+            fill="url(#mesh-orb-1)"
+            opacity="0.8"
+          />
+          <path
+            d={`M ${width},-10 L ${width * 0.84},0 L ${width * 0.28},${height} L ${width * 0.78},${height} Z`}
+            fill="url(#mesh-orb-2)"
+            opacity="0.8"
+          />
+          {/* Direct Spotlight Light Cones */}
+          <g opacity="0.45" stroke="#FFFFFF" strokeWidth="0.8">
+            <line x1="0" y1="0" x2={width * 0.5} y2={height * 0.85} stroke={template.primaryAccent} strokeWidth="2" opacity="0.6" />
+            <line x1={width} y1="0" x2={width * 0.5} y2={height * 0.85} stroke={template.secondaryAccent} strokeWidth="2" opacity="0.6" />
+            <line x1="0" y1="0" x2={width * 0.7} y2={height} opacity="0.3" />
+            <line x1={width} y1="0" x2={width * 0.3} y2={height} opacity="0.3" />
+          </g>
+          {/* Corner Light Flare Origins */}
+          <circle cx="16" cy="16" r="60" fill="#FFFFFF" opacity="0.45" filter="url(#glow-volumetric)" />
+          <circle cx={width - 16} cy="16" r="60" fill="#FFFFFF" opacity="0.45" filter="url(#glow-volumetric)" />
+          {/* Central Stage Halo Wash */}
+          <ellipse
+            cx={width / 2}
+            cy={height * 0.85}
+            rx={width * 0.42}
+            ry={height * 0.14}
+            fill={template.primaryAccent}
+            opacity="0.25"
+            filter="url(#glow-volumetric)"
+          />
+        </g>
+      )}
+
+      {/* Mountain Encounter Pattern (References 3 & 6) */}
+      {template.patternType === "mountain-encounter" && (
+        <g>
+          {/* Descending Celestial God Rays */}
+          <g opacity="0.25">
+            {Array.from({ length: 9 }).map((_, i) => {
+              const xOffset = -width * 0.3 + (i * width * 1.6) / 8;
+              return (
+                <polygon
+                  key={i}
+                  points={`${width / 2},0 ${xOffset},${height} ${xOffset + width * 0.1},${height}`}
+                  fill={template.primaryAccent}
+                  opacity={i % 2 === 0 ? "0.35" : "0.15"}
+                />
+              );
+            })}
+          </g>
+          {/* Back Mountain Ridge Silhouette */}
+          <path
+            d={`M 0,${height * 0.75} L ${width * 0.18},${height * 0.6} L ${width * 0.42},${height * 0.68} L ${width * 0.62},${height * 0.55} L ${width * 0.82},${height * 0.64} L ${width},${height * 0.57} L ${width},${height} L 0,${height} Z`}
+            fill="#0F172A"
+            opacity="0.8"
+          />
+          {/* Foreground Sharp Peak of Encounter */}
+          <path
+            d={`M 0,${height * 0.82} L ${width * 0.28},${height * 0.66} L ${width * 0.5},${height * 0.52} L ${width * 0.72},${height * 0.7} L ${width},${height * 0.75} L ${width},${height} L 0,${height} Z`}
+            fill="#060A18"
+            opacity="0.95"
+          />
+          {/* Golden Peak Sunburst Flare */}
+          <polygon
+            points={`${width * 0.5},${height * 0.52} ${width * 0.46},${height * 0.58} ${width * 0.54},${height * 0.58}`}
+            fill={template.primaryAccent}
+            opacity="0.6"
+          />
+          {/* Valley Mist Wash */}
+          <rect
+            x="0"
+            y={height * 0.7}
+            width={width}
+            height={height * 0.3}
+            fill="url(#mesh-orb-3)"
+            opacity="0.75"
+          />
+        </g>
+      )}
+
+      {/* Stage Wash Pattern (Reference 5) */}
+      {template.patternType === "stage-wash" && (
+        <g>
+          {/* Concert Lighting Cones from top */}
+          <g opacity="0.3">
+            {Array.from({ length: 7 }).map((_, i) => {
+              const srcX = (width / 6) * i;
+              return (
+                <polygon
+                  key={i}
+                  points={`${srcX},0 ${srcX - 90},${height} ${srcX + 90},${height}`}
+                  fill={template.primaryAccent}
+                  opacity={0.16}
+                />
+              );
+            })}
+          </g>
+          {/* Stage Glow Floor Ellipse */}
+          <ellipse
+            cx={width / 2}
+            cy={height * 0.8}
+            rx={width * 0.45}
+            ry={height * 0.16}
+            fill={template.primaryAccent}
+            opacity="0.25"
+            filter="url(#glow-volumetric)"
+          />
+          {/* Stage Haze Light Bar */}
+          <line
+            x1="0"
+            y1="70"
+            x2={width}
+            y2="70"
+            stroke={template.secondaryAccent}
+            strokeWidth="1.5"
+            opacity="0.25"
+            strokeDasharray="12 10"
+          />
+        </g>
+      )}
+
       {/* 3. 2026 Architectural Framing & Corner Crosshairs */}
       <rect
         x={20}
@@ -493,20 +618,23 @@ export function FlyerRenderer({
 
             {/* Main Theme Headline */}
             <g transform={`translate(0, ${data.badgeText ? 44 : 8})`}>
-              {titleLines.map((line, idx) => (
-                <text
-                  key={idx}
-                  x="0"
-                  y={idx * (titleFontSize * 1.08) + titleFontSize * 0.9}
-                  fill="url(#liquid-metallic)"
-                  fontSize={titleFontSize}
-                  fontWeight="900"
-                  letterSpacing="0.8"
-                  filter="url(#shadow-deep)"
-                >
-                  {line}
-                </text>
-              ))}
+              {titleLines.map((line, idx) => {
+                const isDuotoneFirstLine = idx === 0 && titleLines.length > 1;
+                return (
+                  <text
+                    key={idx}
+                    x="0"
+                    y={idx * (titleFontSize * 1.08) + titleFontSize * 0.9}
+                    fill={isDuotoneFirstLine ? template.primaryAccent : "url(#liquid-metallic)"}
+                    fontSize={titleFontSize}
+                    fontWeight="900"
+                    letterSpacing="0.8"
+                    filter="url(#shadow-deep)"
+                  >
+                    {line}
+                  </text>
+                );
+              })}
             </g>
 
             {/* Subtitle */}
@@ -747,20 +875,23 @@ export function FlyerRenderer({
 
                 {/* Main Theme Headline */}
                 <g transform={`translate(0, ${titleY})`}>
-                  {titleLines.map((line, idx) => (
-                    <text
-                      key={idx}
-                      x="0"
-                      y={idx * (titleFontSize * 1.08) + titleFontSize * 0.9}
-                      fill="url(#liquid-metallic)"
-                      fontSize={titleFontSize}
-                      fontWeight="900"
-                      letterSpacing="0.5"
-                      filter="url(#shadow-deep)"
-                    >
-                      {line}
-                    </text>
-                  ))}
+                  {titleLines.map((line, idx) => {
+                    const isDuotoneFirstLine = idx === 0 && titleLines.length > 1;
+                    return (
+                      <text
+                        key={idx}
+                        x="0"
+                        y={idx * (titleFontSize * 1.08) + titleFontSize * 0.9}
+                        fill={isDuotoneFirstLine ? template.primaryAccent : "url(#liquid-metallic)"}
+                        fontSize={titleFontSize}
+                        fontWeight="900"
+                        letterSpacing="0.5"
+                        filter="url(#shadow-deep)"
+                      >
+                        {line}
+                      </text>
+                    );
+                  })}
                 </g>
 
                 {/* Subtitle */}

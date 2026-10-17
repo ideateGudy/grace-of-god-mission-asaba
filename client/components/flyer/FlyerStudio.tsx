@@ -32,6 +32,7 @@ import {
   Blend,
   Maximize2,
   Crown,
+  HeartHandshake,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -557,6 +558,9 @@ export function FlyerStudio({
             {p.id === "daily-devotion" && <BookOpen className="w-3.5 h-3.5 text-emerald-500" />}
             {p.id === "youth-awakening" && <Sparkles className="w-3.5 h-3.5 text-indigo-400" />}
             {p.id === "midweek-service" && <Calendar className="w-3.5 h-3.5 text-primary" />}
+            {p.id === "koinonia-encounter" && <Flame className="w-3.5 h-3.5 text-rose-500" />}
+            {p.id === "divine-encounter" && <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+            {p.id === "doxa-worship-night" && <HeartHandshake className="w-3.5 h-3.5 text-emerald-400" />}
             <span>{p.name}</span>
           </button>
         ))}
