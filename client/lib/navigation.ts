@@ -62,7 +62,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       },
       {
         title: "Service Countdown",
-        href: "/countdown",
+        href: "/countdown/live",
         description: "Live sanctuary countdown timer & projection display",
         icon: Clock,
       },

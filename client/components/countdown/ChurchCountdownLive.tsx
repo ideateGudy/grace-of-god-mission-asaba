@@ -120,34 +120,11 @@ export function ChurchCountdownLive() {
     }
     return 300;
   });
-  const [showHint, setShowHint] = useState<boolean>(true);
-
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chimePlayedRef = useRef<boolean>(false);
   const lastSecondRef = useRef<number>(-1);
-  const hideHintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentTheme = COUNTDOWN_THEMES[config.theme] || COUNTDOWN_THEMES["royal-gold"];
-
-  // Hide initial keyboard shortcut hint after 5 seconds
-  useEffect(() => {
-    hideHintTimeoutRef.current = setTimeout(() => {
-      setShowHint(false);
-    }, 5000);
-
-    return () => {
-      if (hideHintTimeoutRef.current) clearTimeout(hideHintTimeoutRef.current);
-    };
-  }, []);
-
-  // Show hint briefly on mouse move, then re-hide
-  const handleMouseMove = () => {
-    setShowHint(true);
-    if (hideHintTimeoutRef.current) clearTimeout(hideHintTimeoutRef.current);
-    hideHintTimeoutRef.current = setTimeout(() => {
-      setShowHint(false);
-    }, 3000);
-  };
 
   // Sync with Controller via BroadcastChannel & LocalStorage events
   useEffect(() => {
@@ -342,8 +319,7 @@ export function ChurchCountdownLive() {
     <div
       ref={containerRef}
       onDoubleClick={() => void toggleFullscreen()}
-      onMouseMove={handleMouseMove}
-      className="relative w-screen min-h-screen flex flex-col justify-between select-none overflow-hidden p-6 sm:p-10 md:p-14 cursor-default transition-colors duration-700"
+      className="relative w-full min-h-[100dvh] flex flex-col justify-between items-center select-none overflow-x-hidden p-3.5 sm:p-6 md:p-10 cursor-default transition-colors duration-700"
       style={{
         background: currentTheme.bgDark,
         color: currentTheme.digitColor,
@@ -360,7 +336,7 @@ export function ChurchCountdownLive() {
 
       {/* Volumetric Radial Aura Orb */}
       <div
-        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[850px] rounded-full blur-[160px] -z-10 transition-all duration-1000"
+        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[850px] h-[90vw] max-h-[850px] rounded-full blur-[100px] sm:blur-[160px] -z-10 transition-all duration-1000"
         style={{
           backgroundColor: isOvertime
             ? "rgba(239, 68, 68, 0.24)"
@@ -379,11 +355,11 @@ export function ChurchCountdownLive() {
         }}
       />
 
-      {/* TOP HEADER: Church Brand Pill (Read-only, Clean) */}
-      <header className="relative z-20 flex items-center justify-between max-w-7xl mx-auto w-full">
+      {/* 1. TOP HEADER: Church Brand Pill (Read-only, Clean) */}
+      <header className="relative z-20 flex items-center justify-center w-full pt-1 sm:pt-3">
         {config.showLogo && (
-          <div className="flex items-center gap-3.5 px-4 py-2.5 rounded-2xl bg-white/[0.06] border border-white/10 backdrop-blur-md shadow-xl">
-            <div className="relative w-9 h-9 rounded-full overflow-hidden border border-amber-400/50 bg-black/40">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-2xl bg-white/[0.06] border border-white/10 backdrop-blur-md shadow-xl">
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-amber-400/50 bg-black/40 shrink-0">
               <Image
                 src={CHURCH_LOGO_PATH}
                 alt="Grace of God Mission Logo"
@@ -392,38 +368,27 @@ export function ChurchCountdownLive() {
                 priority
               />
             </div>
-            <div>
-              <span className="text-xs sm:text-sm font-black tracking-wider block text-white">
+            <div className="text-left">
+              <span className="text-xs sm:text-sm font-black tracking-wider block text-white leading-tight">
                 GRACE OF GOD MISSION
               </span>
               <span
-                className="text-[10px] sm:text-xs font-bold tracking-widest block uppercase"
+                className="text-[9px] sm:text-[11px] font-bold tracking-widest block uppercase"
                 style={{ color: currentTheme.primaryAccent }}
               >
-                ASABA · SANCTUARY COUNTDOWN
+                ASABA SANCTUARY
               </span>
             </div>
           </div>
         )}
-
-        {/* Live Projection Indicator & Hint */}
-        <div
-          className={`flex items-center gap-2 text-xs text-white/50 transition-opacity duration-500 ${
-            showHint ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
-        >
-          <span className="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm text-[11px] font-semibold text-white/80">
-            📺 Live Projection Screen · Double-click or Press &apos;F&apos; for Fullscreen
-          </span>
-        </div>
       </header>
 
-      {/* MAIN STAGE COUNTDOWN (Completely Clean & Read-Only) */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center my-auto py-8 max-w-7xl mx-auto w-full">
-        {/* Subtitle Pill */}
-        <div className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-white/[0.08] border border-white/10 backdrop-blur-md mb-4 shadow-lg">
+      {/* 2. MAIN STAGE: Subtitle, Programme Title, Countdown Time & Progress */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center my-auto py-4 sm:py-8 max-w-7xl mx-auto w-full px-2 sm:px-4">
+        {/* Subtitle Eyebrow Banner */}
+        <div className="inline-flex items-center gap-2 px-3.5 sm:px-5 py-1 sm:py-1.5 rounded-full bg-white/[0.08] border border-white/10 backdrop-blur-md mb-2.5 sm:mb-4 shadow-lg">
           <span
-            className="w-2.5 h-2.5 rounded-full animate-pulse"
+            className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full animate-pulse shrink-0"
             style={{
               backgroundColor: isOvertime
                 ? "#EF4444"
@@ -433,42 +398,42 @@ export function ChurchCountdownLive() {
             }}
           />
           <span
-            className="text-xs sm:text-sm font-black tracking-widest uppercase"
+            className="text-[11px] sm:text-xs md:text-sm font-black tracking-widest uppercase"
             style={{ color: currentTheme.primaryAccent }}
           >
-            {config.subtitle}
+            {config.subtitle || "SERVICE STARTS IN..."}
           </span>
         </div>
 
-        {/* Programme Title (Non-editable, clean text) */}
-        <h1 className="font-black tracking-tight text-4xl sm:text-6xl md:text-7xl lg:text-8xl leading-tight text-white mb-6 max-w-5xl">
-          <span className="drop-shadow-[0_15px_35px_rgba(0,0,0,0.9)]">
+        {/* Programme Title */}
+        <h1 className="font-black tracking-tight text-2xl sm:text-4xl md:text-6xl lg:text-7xl leading-tight text-white mb-3 sm:mb-6 max-w-4xl px-2">
+          <span className="drop-shadow-[0_10px_30px_rgba(0,0,0,0.9)] break-words">
             {config.title || "UNTITLED CHURCH PROGRAMME"}
           </span>
         </h1>
 
         {/* OVERTIME BADGE ALERT */}
         {isOvertime && (
-          <div className="mb-6 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-rose-500/25 border border-rose-500/60 text-rose-300 font-extrabold text-base sm:text-lg animate-pulse">
+          <div className="mb-3 sm:mb-6 inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full bg-rose-500/25 border border-rose-500/60 text-rose-300 font-extrabold text-xs sm:text-base animate-pulse">
             <span>⚠️ SERVICE IN SESSION / OVERTIME</span>
           </div>
         )}
 
         {/* TIME'S UP CELEBRATORY BANNER (When 00:00:00 and overtime disabled) */}
         {!config.overtimeEnabled && remainingSeconds <= 0 && (
-          <div className="mb-8 px-8 py-4 rounded-3xl bg-amber-500/25 border-2 border-amber-400 text-amber-200 font-black text-2xl sm:text-4xl animate-bounce shadow-2xl">
+          <div className="mb-4 sm:mb-8 px-4 sm:px-8 py-2.5 sm:py-4 rounded-2xl sm:rounded-3xl bg-amber-500/25 border-2 border-amber-400 text-amber-200 font-black text-lg sm:text-3xl md:text-4xl animate-bounce shadow-2xl">
             ✨ WELCOME TO CHURCH · SERVICE HAS BEGUN ✨
           </div>
         )}
 
-        {/* MASSIVE TIME DISPLAY CARDS */}
-        <div className="flex items-center justify-center gap-3 sm:gap-6 md:gap-8 my-4">
-          {/* Hours Card */}
+        {/* MASSIVE TIME DISPLAY CARDS (Ultra-responsive on all screen sizes) */}
+        <div className="flex items-center justify-center gap-1.5 sm:gap-4 md:gap-6 lg:gap-8 my-2 sm:my-6 w-full max-w-5xl mx-auto">
+          {/* Hours Card (shown if target-time mode or hours > 0) */}
           {(hours > 0 || config.mode === "target-time") && (
             <>
               <div className="flex flex-col items-center">
                 <div
-                  className="w-28 sm:w-44 md:w-56 lg:w-64 h-36 sm:h-52 md:h-64 lg:h-72 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative overflow-hidden"
+                  className="w-[24vw] min-w-[72px] max-w-[100px] sm:max-w-[160px] md:max-w-[210px] lg:max-w-[250px] sm:w-36 md:w-52 lg:w-60 h-[28vw] min-h-[85px] max-h-[110px] sm:max-h-[190px] md:max-h-[250px] lg:max-h-[280px] sm:h-44 md:h-56 lg:h-68 rounded-2xl sm:rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_15px_35px_rgba(0,0,0,0.6)] sm:shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative overflow-hidden shrink-0"
                   style={{
                     backgroundColor: "rgba(255, 255, 255, 0.04)",
                     borderColor: currentTheme.borderColor,
@@ -479,14 +444,14 @@ export function ChurchCountdownLive() {
                     style={{ borderColor: "rgba(255, 255, 255, 0.06)" }}
                   />
                   <span
-                    className="font-black text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] tracking-tighter drop-shadow-[0_20px_40px_rgba(0,0,0,0.95)]"
+                    className="font-black text-3xl sm:text-6xl md:text-8xl lg:text-9xl tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.95)]"
                     style={{ color: currentTheme.digitColor }}
                   >
                     {formatTwoDigits(hours)}
                   </span>
                 </div>
                 <span
-                  className="mt-4 text-xs sm:text-base md:text-lg font-black tracking-widest uppercase"
+                  className="mt-2 sm:mt-4 text-[9px] sm:text-xs md:text-sm lg:text-base font-black tracking-widest uppercase"
                   style={{ color: currentTheme.labelColor }}
                 >
                   HOURS
@@ -494,9 +459,9 @@ export function ChurchCountdownLive() {
               </div>
 
               {/* Colon */}
-              <div className="flex flex-col justify-center items-center gap-3 sm:gap-5 pb-10 sm:pb-16 text-3xl sm:text-5xl md:text-7xl text-white/40 font-black">
-                <div className="w-2.5 sm:w-4 h-2.5 sm:h-4 rounded-full bg-white/70 animate-pulse" />
-                <div className="w-2.5 sm:w-4 h-2.5 sm:h-4 rounded-full bg-white/70 animate-pulse" />
+              <div className="flex flex-col justify-center items-center gap-1.5 sm:gap-3 md:gap-5 pb-5 sm:pb-8 md:pb-12 text-white/40 font-black shrink-0">
+                <div className="w-1.5 sm:w-3 md:w-3.5 h-1.5 sm:h-3 md:h-3.5 rounded-full bg-white/70 animate-pulse" />
+                <div className="w-1.5 sm:w-3 md:w-3.5 h-1.5 sm:h-3 md:h-3.5 rounded-full bg-white/70 animate-pulse" />
               </div>
             </>
           )}
@@ -504,7 +469,11 @@ export function ChurchCountdownLive() {
           {/* Minutes Card */}
           <div className="flex flex-col items-center">
             <div
-              className="w-28 sm:w-44 md:w-56 lg:w-64 h-36 sm:h-52 md:h-64 lg:h-72 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative overflow-hidden"
+              className={`rounded-2xl sm:rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_15px_35px_rgba(0,0,0,0.6)] sm:shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative overflow-hidden shrink-0 ${
+                hours > 0 || config.mode === "target-time"
+                  ? "w-[24vw] min-w-[72px] max-w-[100px] sm:max-w-[160px] md:max-w-[210px] lg:max-w-[250px] sm:w-36 md:w-52 lg:w-60 h-[28vw] min-h-[85px] max-h-[110px] sm:max-h-[190px] md:max-h-[250px] lg:max-h-[280px] sm:h-44 md:h-56 lg:h-68"
+                  : "w-[38vw] min-w-[110px] max-w-[160px] sm:max-w-[230px] md:max-w-[280px] lg:max-w-[320px] sm:w-52 md:w-64 lg:w-76 h-[40vw] min-h-[120px] max-h-[170px] sm:max-h-[240px] md:max-h-[300px] lg:max-h-[340px] sm:h-56 md:h-68 lg:h-80"
+              }`}
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderColor: currentTheme.borderColor,
@@ -515,14 +484,18 @@ export function ChurchCountdownLive() {
                 style={{ borderColor: "rgba(255, 255, 255, 0.06)" }}
               />
               <span
-                className="font-black text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] tracking-tighter drop-shadow-[0_20px_40px_rgba(0,0,0,0.95)]"
+                className={`font-black tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.95)] ${
+                  hours > 0 || config.mode === "target-time"
+                    ? "text-3xl sm:text-6xl md:text-8xl lg:text-9xl"
+                    : "text-5xl sm:text-7xl md:text-9xl lg:text-[10rem]"
+                }`}
                 style={{ color: currentTheme.digitColor }}
               >
                 {formatTwoDigits(minutes)}
               </span>
             </div>
             <span
-              className="mt-4 text-xs sm:text-base md:text-lg font-black tracking-widest uppercase"
+              className="mt-2 sm:mt-4 text-[9px] sm:text-xs md:text-sm lg:text-base font-black tracking-widest uppercase"
               style={{ color: currentTheme.labelColor }}
             >
               MINUTES
@@ -530,15 +503,19 @@ export function ChurchCountdownLive() {
           </div>
 
           {/* Colon */}
-          <div className="flex flex-col justify-center items-center gap-3 sm:gap-5 pb-10 sm:pb-16 text-3xl sm:text-5xl md:text-7xl text-white/40 font-black">
-            <div className="w-2.5 sm:w-4 h-2.5 sm:h-4 rounded-full bg-white/70 animate-pulse" />
-            <div className="w-2.5 sm:w-4 h-2.5 sm:h-4 rounded-full bg-white/70 animate-pulse" />
+          <div className="flex flex-col justify-center items-center gap-1.5 sm:gap-3 md:gap-5 pb-5 sm:pb-8 md:pb-12 text-white/40 font-black shrink-0">
+            <div className="w-1.5 sm:w-3 md:w-3.5 h-1.5 sm:h-3 md:h-3.5 rounded-full bg-white/70 animate-pulse" />
+            <div className="w-1.5 sm:w-3 md:w-3.5 h-1.5 sm:h-3 md:h-3.5 rounded-full bg-white/70 animate-pulse" />
           </div>
 
           {/* Seconds Card */}
           <div className="flex flex-col items-center">
             <div
-              className="w-28 sm:w-44 md:w-56 lg:w-64 h-36 sm:h-52 md:h-64 lg:h-72 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative overflow-hidden"
+              className={`rounded-2xl sm:rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_15px_35px_rgba(0,0,0,0.6)] sm:shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative overflow-hidden shrink-0 ${
+                hours > 0 || config.mode === "target-time"
+                  ? "w-[24vw] min-w-[72px] max-w-[100px] sm:max-w-[160px] md:max-w-[210px] lg:max-w-[250px] sm:w-36 md:w-52 lg:w-60 h-[28vw] min-h-[85px] max-h-[110px] sm:max-h-[190px] md:max-h-[250px] lg:max-h-[280px] sm:h-44 md:h-56 lg:h-68"
+                  : "w-[38vw] min-w-[110px] max-w-[160px] sm:max-w-[230px] md:max-w-[280px] lg:max-w-[320px] sm:w-52 md:w-64 lg:w-76 h-[40vw] min-h-[120px] max-h-[170px] sm:max-h-[240px] md:max-h-[300px] lg:max-h-[340px] sm:h-56 md:h-68 lg:h-80"
+              }`}
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderColor:
@@ -552,7 +529,11 @@ export function ChurchCountdownLive() {
                 style={{ borderColor: "rgba(255, 255, 255, 0.06)" }}
               />
               <span
-                className="font-black text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] tracking-tighter drop-shadow-[0_20px_40px_rgba(0,0,0,0.95)]"
+                className={`font-black tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.95)] ${
+                  hours > 0 || config.mode === "target-time"
+                    ? "text-3xl sm:text-6xl md:text-8xl lg:text-9xl"
+                    : "text-5xl sm:text-7xl md:text-9xl lg:text-[10rem]"
+                }`}
                 style={{
                   color:
                     remainingSeconds <= 10 && remainingSeconds > 0
@@ -564,7 +545,7 @@ export function ChurchCountdownLive() {
               </span>
             </div>
             <span
-              className="mt-4 text-xs sm:text-base md:text-lg font-black tracking-widest uppercase"
+              className="mt-2 sm:mt-4 text-[9px] sm:text-xs md:text-sm lg:text-base font-black tracking-widest uppercase"
               style={{ color: currentTheme.labelColor }}
             >
               SECONDS
@@ -572,9 +553,9 @@ export function ChurchCountdownLive() {
           </div>
         </div>
 
-        {/* Ambient Glowing Progress Bar */}
-        <div className="w-full max-w-2xl mx-auto my-8 px-4">
-          <div className="w-full h-2.5 rounded-full bg-white/10 overflow-hidden relative shadow-inner">
+        {/* 3. Ambient Glowing Progress Bar */}
+        <div className="w-full max-w-xs sm:max-w-xl md:max-w-2xl mx-auto my-3 sm:my-8 px-4">
+          <div className="w-full h-2 sm:h-3 rounded-full bg-white/10 overflow-hidden relative shadow-inner">
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
@@ -585,36 +566,10 @@ export function ChurchCountdownLive() {
             />
           </div>
         </div>
-
-        {/* Scripture Card (Sanctuary Focus) */}
-        {config.showScripture && config.scriptureText && (
-          <div className="max-w-3xl mx-auto mt-2 px-8 py-5 rounded-3xl bg-white/[0.04] border border-white/10 backdrop-blur-md shadow-2xl">
-            <span
-              className="text-xs sm:text-sm font-black tracking-widest block uppercase mb-1.5"
-              style={{ color: currentTheme.primaryAccent }}
-            >
-              // {config.scriptureRef || "SCRIPTURE FOCUS"}
-            </span>
-            <p className="text-base sm:text-lg md:text-xl font-medium italic text-white/95 leading-relaxed">
-              &ldquo;{config.scriptureText}&rdquo;
-            </p>
-          </div>
-        )}
       </main>
 
-      {/* FOOTER: Minimalist subtle sanctuary indicator */}
-      <footer className="relative z-20 flex items-center justify-between text-xs text-white/40 max-w-7xl mx-auto w-full pt-4">
-        <span className="flex items-center gap-2">
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: currentTheme.primaryAccent }}
-          />
-          <span>{currentTheme.name}</span>
-        </span>
-        <span className="text-[11px] font-medium tracking-wider uppercase opacity-60">
-          Grace of God Mission · Asaba Sanctuary
-        </span>
-      </footer>
+      {/* 4. BALANCED BOTTOM SPACER */}
+      <div className="relative z-20 h-2 sm:h-4 w-full pointer-events-none" />
     </div>
   );
 }

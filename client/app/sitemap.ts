@@ -3,7 +3,7 @@ import { api } from "@/lib/api/client";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
-  const routes = ["", "/about", "/visit", "/sermons", "/events", "/announcements", "/gallery", "/contact", "/prayer", "/give", "/countdown", "/privacy"];
+  const routes = ["", "/about", "/visit", "/sermons", "/events", "/announcements", "/gallery", "/contact", "/prayer", "/give", "/countdown", "/countdown/live", "/privacy"];
   const entries: MetadataRoute.Sitemap = routes.map((route) => ({ url: `${base}${route}`, changeFrequency: route === "" ? "weekly" : "monthly", priority: route === "" ? 1 : 0.6 }));
   const [sermons, events] = await Promise.allSettled([
     api.public.sermons("?page=1&limit=500"),
