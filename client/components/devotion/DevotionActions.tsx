@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Share2, Copy, Check } from "lucide-react";
+import { Share2, Copy, Check, Tv } from "lucide-react";
 import { toast } from "sonner";
 import type { DevotionDto } from "@ggm/types";
+import { DevotionPresenter } from "./DevotionPresenter";
 
 interface DevotionActionsProps {
   devotion: DevotionDto;
@@ -13,6 +14,7 @@ interface DevotionActionsProps {
 
 export function DevotionActions({ devotion, formattedDate }: DevotionActionsProps) {
   const [copied, setCopied] = useState(false);
+  const [isPresenterOpen, setIsPresenterOpen] = useState(false);
 
   const getFullDevotionText = () => {
     const seriesText = devotion.series || "DAILY GRACE";
@@ -61,35 +63,57 @@ export function DevotionActions({ devotion, formattedDate }: DevotionActionsProp
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleCopy}
-        className="rounded-xl border-border/80 bg-background/50 backdrop-blur text-xs font-semibold hover:border-primary/50"
-      >
-        {copied ? (
-          <>
-            <Check className="h-3.5 w-3.5 text-emerald-500 mr-1.5" />
-            <span>Copied</span>
-          </>
-        ) : (
-          <>
-            <Copy className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-            <span>Copy Devotion</span>
-          </>
-        )}
-      </Button>
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsPresenterOpen(true)}
+          className="rounded-xl border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 backdrop-blur text-xs font-semibold shadow-xs"
+          title="Open high-legibility presentation & projector view"
+        >
+          <Tv className="h-3.5 w-3.5 mr-1.5 text-primary" />
+          <span>Presentation Mode</span>
+        </Button>
 
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleShare}
-        className="rounded-xl border-border/80 bg-background/50 backdrop-blur text-xs font-semibold hover:border-primary/50"
-      >
-        <Share2 className="h-3.5 w-3.5 mr-1.5 text-gold" />
-        <span>Share</span>
-      </Button>
-    </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCopy}
+          className="rounded-xl border-border/80 bg-background/50 backdrop-blur text-xs font-semibold hover:border-primary/50"
+        >
+          {copied ? (
+            <>
+              <Check className="h-3.5 w-3.5 text-emerald-500 mr-1.5" />
+              <span>Copied</span>
+            </>
+          ) : (
+            <>
+              <Copy className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+              <span>Copy Devotion</span>
+            </>
+          )}
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleShare}
+          className="rounded-xl border-border/80 bg-background/50 backdrop-blur text-xs font-semibold hover:border-primary/50"
+        >
+          <Share2 className="h-3.5 w-3.5 mr-1.5 text-gold" />
+          <span>Share</span>
+        </Button>
+      </div>
+
+      {/* Full-screen Presentation View Overlay */}
+      {isPresenterOpen && (
+        <DevotionPresenter
+          devotion={devotion}
+          formattedDate={formattedDate}
+          onClose={() => setIsPresenterOpen(false)}
+        />
+      )}
+    </>
   );
 }

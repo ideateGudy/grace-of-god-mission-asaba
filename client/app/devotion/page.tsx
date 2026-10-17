@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Flame,
   BookmarkCheck,
+  Tv,
 } from "lucide-react";
 
 export const revalidate = 120;
@@ -173,13 +174,22 @@ export default async function DevotionPage() {
                   <Heart className="h-4 w-4" />
                   <span>Need personal prayer today? Submit a request →</span>
                 </Link>
-                <Link
-                  href="/prayer/wall"
-                  className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                >
-                  <Sparkles className="h-3.5 w-3.5 text-gold" />
-                  <span>Visit Community Prayer Wall</span>
-                </Link>
+                <div className="flex flex-wrap items-center gap-4">
+                  <Link
+                    href="/devotion/present"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary transition"
+                  >
+                    <Tv className="h-3.5 w-3.5 text-primary" />
+                    <span>Projector Screen View</span>
+                  </Link>
+                  <Link
+                    href="/prayer/wall"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 text-gold" />
+                    <span>Community Prayer Wall</span>
+                  </Link>
+                </div>
               </div>
             </GlassCard>
           </div>
