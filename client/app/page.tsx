@@ -267,9 +267,16 @@ export default async function HomePage() {
               className="border border-border/80 bg-gradient-to-r from-primary/5 via-card/70 to-card shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
             >
               <div className="space-y-2 max-w-2xl">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-primary">
-                  <Sparkles className="h-3 w-3 text-gold" />
-                  <span>Today's Word of Grace · {todayDevotion.scriptureRef}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-primary">
+                    <Sparkles className="h-3 w-3 text-gold" />
+                    <span>{todayDevotion.series || "DAILY GRACE"} · {todayDevotion.scriptureRef}</span>
+                  </div>
+                  {todayDevotion.textRef && (
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-gold bg-gold/10 px-2.5 py-0.5 rounded-full border border-gold/20">
+                      TEXT: {todayDevotion.textRef}
+                    </span>
+                  )}
                 </div>
                 <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground">
                   {todayDevotion.title}
@@ -277,6 +284,11 @@ export default async function HomePage() {
                 <p className="text-xs sm:text-sm italic text-muted-foreground line-clamp-2">
                   "{todayDevotion.scriptureText}"
                 </p>
+                {todayDevotion.actionPoint && (
+                  <p className="text-[11px] font-semibold text-primary line-clamp-1">
+                    Action Point: {todayDevotion.actionPoint}
+                  </p>
+                )}
               </div>
               <Link
                 href="/devotion"

@@ -1,25 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { toast } from "sonner";
+import { useState, useEffect, useCallback, type FormEvent } from "react";
 import {
   BookOpen,
+  Calendar,
   Plus,
   Pencil,
   Trash2,
-  Calendar,
+  Sparkles,
   Loader2,
-  Eye,
-  Check,
-  X,
+  Flame,
+  BookmarkCheck,
 } from "lucide-react";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { GlassCard } from "@/components/shared/GlassCard";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { GlassCard } from "@/components/shared/GlassCard";
 import {
   Dialog,
   DialogContent,
@@ -41,11 +40,15 @@ export default function AdminDevotionsPage() {
 
   const [formData, setFormData] = useState<CreateDevotionDto>({
     date: new Date().toISOString().slice(0, 10),
+    series: "DAILY GRACE",
     title: "",
+    textRef: "",
     scriptureRef: "",
     scriptureText: "",
     content: "",
     prayer: "",
+    bibleIn365Days: "",
+    actionPoint: "",
     published: true,
   });
 
@@ -71,11 +74,15 @@ export default function AdminDevotionsPage() {
     setEditingId(null);
     setFormData({
       date: new Date().toISOString().slice(0, 10),
+      series: "DAILY GRACE",
       title: "",
+      textRef: "",
       scriptureRef: "",
       scriptureText: "",
       content: "",
       prayer: "",
+      bibleIn365Days: "",
+      actionPoint: "",
       published: true,
     });
     setDialogOpen(true);
@@ -85,11 +92,15 @@ export default function AdminDevotionsPage() {
     setEditingId(devotion.id);
     setFormData({
       date: devotion.date,
+      series: devotion.series || "DAILY GRACE",
       title: devotion.title,
+      textRef: devotion.textRef || "",
       scriptureRef: devotion.scriptureRef,
       scriptureText: devotion.scriptureText,
       content: devotion.content,
       prayer: devotion.prayer || "",
+      bibleIn365Days: devotion.bibleIn365Days || "",
+      actionPoint: devotion.actionPoint || "",
       published: devotion.published,
     });
     setDialogOpen(true);
@@ -109,11 +120,15 @@ export default function AdminDevotionsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: formData.date,
+          series: formData.series?.trim() || "DAILY GRACE",
           title: formData.title.trim(),
+          textRef: formData.textRef?.trim() || undefined,
           scriptureRef: formData.scriptureRef.trim(),
           scriptureText: formData.scriptureText.trim(),
           content: formData.content.trim(),
           prayer: formData.prayer?.trim() || undefined,
+          bibleIn365Days: formData.bibleIn365Days?.trim() || undefined,
+          actionPoint: formData.actionPoint?.trim() || undefined,
           published: formData.published,
         }),
         cache: "no-store",
@@ -140,13 +155,12 @@ export default function AdminDevotionsPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ published: !devotion.published }),
-        cache: "no-store",
       });
-      if (!res.ok) throw new Error("Update failed.");
-      toast.success(!devotion.published ? "Devotion published." : "Devotion unpublished.");
+      if (!res.ok) throw new Error("Could not update publish state.");
+      toast.success(devotion.published ? "Devotion moved to drafts." : "Devotion published live.");
       await load();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to update devotion status.");
+    } catch {
+      toast.error("Failed to update status.");
     }
   };
 
@@ -155,51 +169,55 @@ export default function AdminDevotionsPage() {
     try {
       const res = await authFetch(`/api/v1/admin/devotions/${encodeURIComponent(pendingDelete.id)}`, {
         method: "DELETE",
-        cache: "no-store",
       });
-      if (!res.ok) throw new Error("Delete failed.");
-      toast.success("Devotion permanently deleted.");
+      if (!res.ok) throw new Error("Could not delete devotion.");
+      toast.success("Devotion deleted permanently.");
       setPendingDelete(null);
       await load();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete devotion.");
+    } catch {
+      toast.error("Failed to delete devotion.");
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <PageHeader
-          title="Daily Devotions"
-          description="Write, schedule, and publish spiritual devotionals and daily verses for church members."
-        />
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <Button asChild variant="outline" size="sm">
-            <a href="/devotion" target="_blank" rel="noopener noreferrer">
-              <Eye className="w-4 h-4 mr-2" />
-              <span>Preview Live Page</span>
-            </a>
-          </Button>
-          <Button size="sm" onClick={openCreate} className="gap-2">
-            <Plus className="w-4 h-4" />
-            <span>New Devotion</span>
-          </Button>
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+              Daily Devotions Manager
+            </h1>
+            <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-bold text-gold border border-gold/30">
+              <Sparkles className="w-3 h-3" />
+              <span>Daily Grace</span>
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
+            Schedule and publish daily Scripture readings, verses of the day, pastoral reflections, closing prayers, 365-day reading plans, and practical action points.
+          </p>
         </div>
+
+        <Button onClick={openCreate} className="gap-2 shrink-0 rounded-xl">
+          <Plus className="w-4 h-4" />
+          <span>New Daily Devotion</span>
+        </Button>
       </div>
 
+      {/* Grid of Devotions */}
       {loading ? (
-        <div className="flex items-center justify-center p-16 text-muted-foreground">
-          <Loader2 className="w-6 h-6 animate-spin mr-2" />
-          <span>Loading scheduled devotions...</span>
+        <div className="py-20 text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+          <p className="mt-2 text-xs text-muted-foreground">Loading devotional schedule...</p>
         </div>
       ) : rows.length === 0 ? (
-        <GlassCard surface="solid" padding="lg" className="text-center py-16 text-muted-foreground">
-          <BookOpen className="w-12 h-12 mx-auto mb-3 text-muted-foreground/60" />
-          <h3 className="font-bold text-foreground text-lg">No Devotions Scheduled Yet</h3>
-          <p className="text-xs mt-1 max-w-sm mx-auto">
+        <GlassCard surface="strong" padding="lg" className="text-center py-16 border-dashed">
+          <BookOpen className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
+          <h3 className="font-display text-lg font-bold">No Devotions Scheduled</h3>
+          <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
             Click below to create your first daily verse and reflection for the congregation.
           </p>
-          <Button onClick={openCreate} className="mt-4 gap-2">
+          <Button onClick={openCreate} className="mt-4 gap-2 rounded-xl">
             <Plus className="w-4 h-4" />
             <span>Create First Devotion</span>
           </Button>
@@ -213,12 +231,17 @@ export default function AdminDevotionsPage() {
               padding="md"
               className="flex flex-col justify-between space-y-4 hover:border-primary/40 transition"
             >
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div className="flex items-center justify-between border-b border-border/50 pb-2.5 text-xs">
-                  <span className="font-bold text-primary flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>{row.date}</span>
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-primary flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{row.date}</span>
+                    </span>
+                    <span className="text-[10px] font-bold text-gold uppercase tracking-wider bg-gold/10 px-2 py-0.5 rounded-full border border-gold/20">
+                      {row.series || "DAILY GRACE"}
+                    </span>
+                  </div>
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                       row.published
@@ -230,11 +253,27 @@ export default function AdminDevotionsPage() {
                   </span>
                 </div>
 
-                <h3 className="font-bold text-base text-foreground line-clamp-1">{row.title}</h3>
-                <p className="text-xs font-semibold text-primary/90">{row.scriptureRef}</p>
-                <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed italic">
-                  "{row.scriptureText}"
-                </p>
+                <div>
+                  <h3 className="font-bold text-base text-foreground line-clamp-1">{row.title}</h3>
+                  {row.textRef && (
+                    <p className="text-[11px] font-bold text-gold tracking-wide mt-0.5">
+                      TEXT: {row.textRef}
+                    </p>
+                  )}
+                  <p className="text-xs font-semibold text-primary/90 mt-1">
+                    VERSE: {row.scriptureRef}
+                  </p>
+                  <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed italic mt-0.5">
+                    "{row.scriptureText}"
+                  </p>
+                </div>
+
+                {row.actionPoint && (
+                  <div className="rounded-lg bg-gold/10 p-2 text-[11px] font-semibold text-foreground border border-gold/20">
+                    <span className="font-bold text-gold uppercase text-[9px] block">Action Point:</span>
+                    <span className="line-clamp-1">{row.actionPoint}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between pt-3 border-t border-border/50">
@@ -272,11 +311,12 @@ export default function AdminDevotionsPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold">
-              {editingId ? "Edit Devotion" : "New Daily Devotion"}
+            <DialogTitle className="font-display text-xl font-bold flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-gold" />
+              <span>{editingId ? "Edit Devotion" : "New Daily Devotion"}</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Provide the Scripture passage, biblical reflection, and closing prayer.
+              Configure the church's Daily Grace devotional publication format.
             </DialogDescription>
           </DialogHeader>
 
@@ -294,23 +334,47 @@ export default function AdminDevotionsPage() {
               </div>
 
               <div className="space-y-1.5">
+                <Label htmlFor="devotion-series">Series / Header Label</Label>
+                <Input
+                  id="devotion-series"
+                  placeholder="e.g. DAILY GRACE"
+                  value={formData.series || ""}
+                  onChange={(e) => setFormData((p) => ({ ...p, series: e.target.value }))}
+                  maxLength={100}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="devotion-title">Devotion Title *</Label>
                 <Input
                   id="devotion-title"
-                  placeholder="e.g. Walking in the Power of the Holy Spirit"
+                  placeholder="e.g. LET GOD TRANSFORM YOUR LIFE"
                   value={formData.title}
                   onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
                   required
                   maxLength={200}
                 />
               </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="textRef">Scripture Reading / TEXT (Optional)</Label>
+                <Input
+                  id="textRef"
+                  placeholder="e.g. EPHESIANS 4:22-24"
+                  value={formData.textRef || ""}
+                  onChange={(e) => setFormData((p) => ({ ...p, textRef: e.target.value }))}
+                  maxLength={150}
+                />
+              </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="scriptureRef">Scripture Reference *</Label>
+              <Label htmlFor="scriptureRef">Verse of the Day Reference *</Label>
               <Input
                 id="scriptureRef"
-                placeholder="e.g. Galatians 5:16 / Romans 8:28 / Psalm 23:1"
+                placeholder="e.g. 2 CORINTHIANS 5:17"
                 value={formData.scriptureRef}
                 onChange={(e) => setFormData((p) => ({ ...p, scriptureRef: e.target.value }))}
                 required
@@ -319,10 +383,10 @@ export default function AdminDevotionsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="scriptureText">Scripture Passage Text *</Label>
+              <Label htmlFor="scriptureText">Verse of the Day Text *</Label>
               <Textarea
                 id="scriptureText"
-                placeholder="Paste the Bible verse or passage text..."
+                placeholder='e.g. "THEREFORE IF ANY MAN BE IN CHRIST, HE IS A NEW CREATURE: OLD THINGS ARE PASSED AWAY; BEHOLD, ALL THINGS ARE BECOME NEW"'
                 value={formData.scriptureText}
                 onChange={(e) => setFormData((p) => ({ ...p, scriptureText: e.target.value }))}
                 rows={2}
@@ -332,28 +396,56 @@ export default function AdminDevotionsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="content">Devotional Reflection *</Label>
+              <Label htmlFor="content">Devotional Message / Reflection *</Label>
               <Textarea
                 id="content"
-                placeholder="Write the full pastoral message and practical application..."
+                placeholder="Write or paste the full devotional message paragraphs..."
                 value={formData.content}
                 onChange={(e) => setFormData((p) => ({ ...p, content: e.target.value }))}
                 rows={6}
                 required
-                maxLength={10000}
+                maxLength={15000}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="prayer">Closing Prayer for Today (Optional)</Label>
+              <Label htmlFor="prayer">Closing PRAYER (Optional)</Label>
               <Textarea
                 id="prayer"
-                placeholder="e.g. Lord Jesus, empower my steps today and fill my heart with peace..."
+                placeholder="e.g. Dear Lord, complete the work of transformation you started in my life, in Jesus' Name, Amen."
                 value={formData.prayer || ""}
                 onChange={(e) => setFormData((p) => ({ ...p, prayer: e.target.value }))}
                 rows={2}
-                maxLength={2000}
+                maxLength={3000}
               />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="bibleIn365Days">BIBLE IN 365 DAYS (Optional)</Label>
+                <Textarea
+                  id="bibleIn365Days"
+                  placeholder={"Job 42\nProverbs 25:1–14\nHebrews 5"}
+                  value={formData.bibleIn365Days || ""}
+                  onChange={(e) => setFormData((p) => ({ ...p, bibleIn365Days: e.target.value }))}
+                  rows={3}
+                  maxLength={2000}
+                />
+                <p className="text-[10px] text-muted-foreground">Enter one reading reference per line.</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="actionPoint">ACTION POINT (Optional)</Label>
+                <Textarea
+                  id="actionPoint"
+                  placeholder="e.g. MAKE PRAYER YOUR PRIORITY AS A BELIEVER."
+                  value={formData.actionPoint || ""}
+                  onChange={(e) => setFormData((p) => ({ ...p, actionPoint: e.target.value }))}
+                  rows={3}
+                  maxLength={1000}
+                />
+                <p className="text-[10px] text-muted-foreground">Practical daily spiritual takeaway for the reader.</p>
+              </div>
             </div>
 
             <div className="flex items-center justify-between rounded-xl border border-border p-3.5 bg-card">
@@ -380,10 +472,11 @@ export default function AdminDevotionsPage() {
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
                 disabled={saving}
+                className="rounded-xl"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={saving} className="min-w-32">
+              <Button type="submit" disabled={saving} className="min-w-32 rounded-xl">
                 {saving ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />

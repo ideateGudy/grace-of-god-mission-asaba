@@ -95,20 +95,28 @@ export class DevotionsService {
     const created = await this.prisma.devotion.upsert({
       where: { date: dateObj },
       update: {
+        series: dto.series || 'DAILY GRACE',
         title: dto.title,
+        textRef: dto.textRef || null,
         scriptureRef: dto.scriptureRef,
         scriptureText: dto.scriptureText,
         content: dto.content,
         prayer: dto.prayer || null,
+        bibleIn365Days: dto.bibleIn365Days || null,
+        actionPoint: dto.actionPoint || null,
         published: dto.published ?? true,
       },
       create: {
         date: dateObj,
+        series: dto.series || 'DAILY GRACE',
         title: dto.title,
+        textRef: dto.textRef || null,
         scriptureRef: dto.scriptureRef,
         scriptureText: dto.scriptureText,
         content: dto.content,
         prayer: dto.prayer || null,
+        bibleIn365Days: dto.bibleIn365Days || null,
+        actionPoint: dto.actionPoint || null,
         published: dto.published ?? true,
       },
     });
@@ -134,11 +142,15 @@ export class DevotionsService {
     }
 
     const data: any = {};
+    if (dto.series !== undefined) data.series = dto.series || 'DAILY GRACE';
     if (dto.title !== undefined) data.title = dto.title;
+    if (dto.textRef !== undefined) data.textRef = dto.textRef || null;
     if (dto.scriptureRef !== undefined) data.scriptureRef = dto.scriptureRef;
     if (dto.scriptureText !== undefined) data.scriptureText = dto.scriptureText;
     if (dto.content !== undefined) data.content = dto.content;
     if (dto.prayer !== undefined) data.prayer = dto.prayer || null;
+    if (dto.bibleIn365Days !== undefined) data.bibleIn365Days = dto.bibleIn365Days || null;
+    if (dto.actionPoint !== undefined) data.actionPoint = dto.actionPoint || null;
     if (dto.published !== undefined) data.published = dto.published;
     if (dto.date !== undefined) data.date = new Date(`${dto.date}T00:00:00.000Z`);
 
@@ -184,11 +196,15 @@ export class DevotionsService {
     return {
       id: devotion.id,
       date: devotion.date.toISOString().slice(0, 10),
+      series: devotion.series || 'DAILY GRACE',
       title: devotion.title,
+      textRef: devotion.textRef || null,
       scriptureRef: devotion.scriptureRef,
       scriptureText: devotion.scriptureText,
       content: devotion.content,
-      prayer: devotion.prayer,
+      prayer: devotion.prayer || null,
+      bibleIn365Days: devotion.bibleIn365Days || null,
+      actionPoint: devotion.actionPoint || null,
       published: devotion.published,
       createdAt: devotion.createdAt.toISOString(),
       updatedAt: devotion.updatedAt.toISOString(),

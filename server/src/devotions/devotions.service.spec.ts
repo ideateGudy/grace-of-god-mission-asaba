@@ -40,11 +40,15 @@ describe('DevotionsService', () => {
     const mockDevotion = {
       id: 'dev-1',
       date: new Date('2026-10-17T00:00:00.000Z'),
+      series: 'DAILY GRACE',
       title: 'Walking in the Spirit',
+      textRef: 'Galatians 5:16-25',
       scriptureRef: 'Galatians 5:16',
       scriptureText: 'Walk in the Spirit, and ye shall not fulfil the lust of the flesh.',
       content: 'Live in complete submission to God today.',
       prayer: 'Lord, guide my steps today.',
+      bibleIn365Days: 'Genesis 1-3\nMatthew 1',
+      actionPoint: 'Walk in love and patience.',
       published: true,
       createdAt: new Date('2026-10-17T00:00:00.000Z'),
       updatedAt: new Date('2026-10-17T00:00:00.000Z'),
@@ -54,7 +58,11 @@ describe('DevotionsService', () => {
     const result = await service.getTodayDevotion();
     expect(result).not.toBeNull();
     expect(result?.title).toBe('Walking in the Spirit');
+    expect(result?.series).toBe('DAILY GRACE');
+    expect(result?.textRef).toBe('Galatians 5:16-25');
     expect(result?.scriptureRef).toBe('Galatians 5:16');
+    expect(result?.bibleIn365Days).toBe('Genesis 1-3\nMatthew 1');
+    expect(result?.actionPoint).toBe('Walk in love and patience.');
   });
 
   it('creates or upserts a devotion', async () => {
@@ -62,11 +70,15 @@ describe('DevotionsService', () => {
     const mockCreated = {
       id: 'dev-2',
       date: new Date('2026-10-18T00:00:00.000Z'),
+      series: 'DAILY GRACE',
       title: 'Grace Abounding',
+      textRef: '2 Corinthians 9:6-15',
       scriptureRef: '2 Corinthians 9:8',
       scriptureText: 'And God is able to make all grace abound toward you...',
       content: 'Abundance of every good work.',
       prayer: 'Thank you Lord for your grace.',
+      bibleIn365Days: 'Job 42\nProverbs 25:1–14\nHebrews 5',
+      actionPoint: 'MAKE PRAYER YOUR PRIORITY AS A BELIEVER.',
       published: true,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -75,15 +87,21 @@ describe('DevotionsService', () => {
 
     const result = await service.create(actor as any, {
       date: '2026-10-18',
+      series: 'DAILY GRACE',
       title: 'Grace Abounding',
+      textRef: '2 Corinthians 9:6-15',
       scriptureRef: '2 Corinthians 9:8',
       scriptureText: 'And God is able to make all grace abound toward you...',
       content: 'Abundance of every good work.',
       prayer: 'Thank you Lord for your grace.',
+      bibleIn365Days: 'Job 42\nProverbs 25:1–14\nHebrews 5',
+      actionPoint: 'MAKE PRAYER YOUR PRIORITY AS A BELIEVER.',
       published: true,
     });
 
     expect(result.id).toBe('dev-2');
+    expect(result.textRef).toBe('2 Corinthians 9:6-15');
+    expect(result.actionPoint).toBe('MAKE PRAYER YOUR PRIORITY AS A BELIEVER.');
     expect(auditMock.log).toHaveBeenCalledWith(
       expect.objectContaining({
         actorId: 'admin-1',

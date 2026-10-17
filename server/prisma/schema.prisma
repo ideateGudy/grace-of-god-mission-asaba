@@ -161,16 +161,20 @@ model Testimony {
 }
 
 model Devotion {
-  id            String   @id @default(cuid())
-  date          DateTime @unique
-  title         String
-  scriptureRef  String
-  scriptureText String
-  content       String
-  prayer        String?
-  published     Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String   @id @default(cuid())
+  date           DateTime @unique
+  series         String?  @default("DAILY GRACE")
+  title          String
+  textRef        String?
+  scriptureRef   String
+  scriptureText  String
+  content        String
+  prayer         String?
+  bibleIn365Days String?
+  actionPoint    String?
+  published      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   @@index([published, date])
 }
 
