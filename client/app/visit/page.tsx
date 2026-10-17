@@ -236,7 +236,7 @@ export default async function PlanaVisitPage() {
             <div className="flex flex-wrap items-center justify-center gap-3 shrink-0">
               {phoneAvailable && (
                 <a
-                  href={`tel:${siteConfig.phone}`}
+                  href={siteConfig.telUrl || `tel:${siteConfig.phone}`}
                   className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground shadow-xs hover:bg-muted transition"
                 >
                   <Phone className="h-4 w-4 text-primary" />
@@ -246,7 +246,7 @@ export default async function PlanaVisitPage() {
 
               {whatsappAvailable && (
                 <a
-                  href={`https://wa.me/${siteConfig.whatsapp.replace(/[^0-9]/g, "")}`}
+                  href={siteConfig.whatsAppUrl || `https://wa.me/2349075602319`}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground shadow-xs hover:bg-muted transition"

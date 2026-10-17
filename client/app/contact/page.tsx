@@ -131,7 +131,7 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold text-foreground">Telephone</h3>
                     <a
-                      href={`tel:${siteConfig.phone}`}
+                      href={siteConfig.telUrl || `tel:${siteConfig.phone}`}
                       className="text-xs text-primary font-medium hover:underline mt-0.5 block"
                     >
                       {siteConfig.phone}
@@ -146,7 +146,7 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold text-foreground">WhatsApp Chat</h3>
                     <a
-                      href={`https://wa.me/${siteConfig.whatsapp.replace(/[^0-9]/g, "")}`}
+                      href={siteConfig.whatsAppUrl || `https://wa.me/2349075602319`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-xs text-[#25D366] font-medium hover:underline mt-0.5 block"

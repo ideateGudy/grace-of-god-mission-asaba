@@ -10,15 +10,15 @@ export const defaultSiteConfig = {
   url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
 
   // Contact
-  phone: "+234 803 000 0000",
-  whatsapp: "+2348030000000",
+  phone: "+2349075602319",
+  whatsapp: "+2349075602319",
   email: "info@ggmasaba.org",
   address: "No. 33 Arthur Richard Street, Akwuebulu (Cable Point), Asaba, Delta State",
   city: "Asaba",
   state: "Delta State",
   country: "Nigeria",
   googleMapsUrl:
-    "https://www.google.com/maps/place/Grace+of+God+Mission+Asaba+Hq/@6.1763103,6.7464769,17.38z/data=!4m6!3m5!1s0x1043ed616ce913ef:0x5cda51b288ccb076!8m2!3d6.1764146!4d6.748862!16s%2Fg%2F11tf999ctn?entry=ttu",
+    "https://www.google.com/maps/place/Grace+of+God+Mission+Asaba+Hq/@6.1763103,6.7464769,17z/data=!4m6!3m5!1s0x1043ed616ce913ef:0x5cda51b288ccb076!8m2!3d6.1764146!4d6.748862!16s%2Fg%2F11tf999ctn?entry=ttu&g_ep=EgoyMDI2MTAxMy4wIKXMDSoASAFQAw%3D%3D",
   googleMapsEmbedUrl:
     "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3053.4168993678427!2d6.746476945982947!3d6.1763103233292345!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1043ed616ce913ef%3A0x5cda51b288ccb076!2sGrace%20of%20God%20Mission%20Asaba%20Hq!5e0!3m2!1sen!2sng!4v1792062152635!5m2!1sen!2sng",
 
@@ -53,6 +53,37 @@ export const defaultSiteConfig = {
     "Grace of God Mission Asaba is a vibrant fellowship of believers situated in the capital city of Delta State. Committed to preaching Christ in all His fullness, the church has stood as a beacon of truth, hope, and prayer for families, youth, and workers across Asaba and the surrounding communities.",
   beliefs: [] as string[],
 };
+
+export function normalizeWhatsAppNumber(raw?: string | null): string {
+  if (!raw || raw.startsWith("[")) return "2349075602319";
+  const digits = raw.replace(/\D/g, "");
+  if (!digits || digits.length < 7) return "2349075602319";
+  if (digits.length === 11 && digits.startsWith("0")) {
+    return `234${digits.slice(1)}`;
+  }
+  if (digits.length === 10 && (digits.startsWith("8") || digits.startsWith("7") || digits.startsWith("9"))) {
+    return `234${digits}`;
+  }
+  return digits;
+}
+
+export function normalizePhoneNumber(raw?: string | null): string {
+  if (!raw || raw.startsWith("[")) return "+2349075602319";
+  const cleaned = raw.trim();
+  if (!cleaned) return "+2349075602319";
+  if (cleaned.startsWith("+")) {
+    const digits = cleaned.replace(/\D/g, "");
+    return `+${digits}`;
+  }
+  const digits = cleaned.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("0")) {
+    return `+234${digits.slice(1)}`;
+  }
+  if (digits.length === 10 && (digits.startsWith("8") || digits.startsWith("7") || digits.startsWith("9"))) {
+    return `+234${digits}`;
+  }
+  return `+${digits}`;
+}
 
 let activeSiteSettings: SiteSettingsDto | null = null;
 
@@ -92,6 +123,11 @@ export function resolveSiteConfig(settings?: SiteSettingsDto | null) {
   const youtube = current?.youtubeUrl ?? defaultSiteConfig.youtube;
   const instagram = current?.instagramUrl ?? defaultSiteConfig.instagram;
 
+  const whatsAppNumber = normalizeWhatsAppNumber(whatsapp);
+  const telNumber = normalizePhoneNumber(phone);
+  const whatsAppUrl = whatsAppNumber ? `https://wa.me/${whatsAppNumber}` : "https://wa.me/2349075602319";
+  const telUrl = telNumber ? `tel:${telNumber}` : "tel:+2349075602319";
+
   return {
     ...defaultSiteConfig,
     name,
@@ -107,6 +143,9 @@ export function resolveSiteConfig(settings?: SiteSettingsDto | null) {
     tiktok,
     youtube,
     instagram,
+    // Formatted action URLs
+    whatsAppUrl,
+    telUrl,
     // Backward compatibility aliases
     churchAddress: address,
     directionsUrl: googleMapsUrl,
@@ -213,6 +252,16 @@ export const siteConfig = {
   },
   get beliefs() {
     return defaultSiteConfig.beliefs;
+  },
+
+  // Formatted Action URLs
+  get whatsAppUrl() {
+    const num = normalizeWhatsAppNumber(this.whatsapp);
+    return num ? `https://wa.me/${num}` : "https://wa.me/2349075602319";
+  },
+  get telUrl() {
+    const num = normalizePhoneNumber(this.phone);
+    return num ? `tel:${num}` : "tel:+2349075602319";
   },
 
   // Backward compatibility getters
