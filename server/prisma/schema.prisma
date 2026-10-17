@@ -284,5 +284,6 @@ model SiteSetting {
   tiktokUrl     String?
   youtubeUrl    String?
   instagramUrl  String?
+  leadership    Json?    @default("[]")
   updatedAt     DateTime @updatedAt
 }

@@ -38,6 +38,7 @@ describe('SettingsService', () => {
       churchName: 'Grace of God Mission Asaba',
       phone: '+234 803 111 2222',
       email: 'office@ggmasaba.org',
+      leadership: [],
     };
     prismaMock.siteSetting.findUnique.mockResolvedValue(existing);
 
@@ -51,6 +52,7 @@ describe('SettingsService', () => {
     const created = {
       id: 'default',
       churchName: 'Grace of God Mission Asaba',
+      leadership: [],
     };
     prismaMock.siteSetting.create.mockResolvedValue(created);
 
@@ -80,6 +82,15 @@ describe('SettingsService', () => {
       tiktokUrl: null,
       youtubeUrl: null,
       instagramUrl: null,
+      leadership: [
+        {
+          id: 'lead-1',
+          name: 'Pastor John Doe',
+          title: 'Senior Pastor',
+          bio: 'Serving with grace and truth.',
+          imageUrl: 'https://res.cloudinary.com/demo/image/upload/sample.jpg',
+        },
+      ],
     };
     const updated = { id: 'default', ...dto };
     prismaMock.siteSetting.upsert.mockResolvedValue(updated);
@@ -89,6 +100,9 @@ describe('SettingsService', () => {
     expect(prismaMock.siteSetting.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'default' },
+        update: expect.objectContaining({
+          leadership: dto.leadership,
+        }),
       }),
     );
     expect(auditMock.log).toHaveBeenCalledWith(
@@ -98,5 +112,16 @@ describe('SettingsService', () => {
         entity: 'SiteSetting',
       }),
     );
+  });
+
+  it('ensures getSettings always returns leadership as an array', async () => {
+    prismaMock.siteSetting.findUnique.mockResolvedValue({
+      id: 'default',
+      churchName: 'Grace of God Mission Asaba',
+      leadership: null,
+    });
+
+    const result = await service.getSettings();
+    expect(result.leadership).toEqual([]);
   });
 });

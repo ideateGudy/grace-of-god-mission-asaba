@@ -2,16 +2,30 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Building2, Landmark, Share2, Save, Loader2, ShieldAlert } from "lucide-react";
+import {
+  Building2,
+  Landmark,
+  Share2,
+  Save,
+  Loader2,
+  ShieldAlert,
+  Users,
+  Plus,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ImageUploadField } from "@/components/shared/ImageUploadField";
 import { api } from "@/lib/api/client";
 import { useSessionStore } from "@/store/useSessionStore";
 import { useSettingsStore } from "@/lib/settings-store";
-import type { UpdateSiteSettingsDto } from "@ggm/types";
+import type { UpdateSiteSettingsDto, LeaderProfileDto } from "@ggm/types";
 
 export default function SiteSettingsPage() {
   const user = useSessionStore((state) => state.user);
@@ -32,6 +46,7 @@ export default function SiteSettingsPage() {
     tiktokUrl: "",
     youtubeUrl: "",
     instagramUrl: "",
+    leadership: [],
   });
 
   useEffect(() => {
@@ -54,6 +69,7 @@ export default function SiteSettingsPage() {
             tiktokUrl: data.tiktokUrl || "",
             youtubeUrl: data.youtubeUrl || "",
             instagramUrl: data.instagramUrl || "",
+            leadership: Array.isArray(data.leadership) ? data.leadership : [],
           });
         }
       })
@@ -102,10 +118,71 @@ export default function SiteSettingsPage() {
     );
   }
 
+  const handleAddLeader = () => {
+    setFormData((prev) => ({
+      ...prev,
+      leadership: [
+        ...(prev.leadership || []),
+        {
+          name: "",
+          title: "",
+          bio: "",
+          imageUrl: "",
+        },
+      ],
+    }));
+  };
+
+  const handleRemoveLeader = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      leadership: (prev.leadership || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleMoveLeader = (index: number, direction: "up" | "down") => {
+    setFormData((prev) => {
+      const list = [...(prev.leadership || [])];
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= list.length) return prev;
+      const temp = list[index];
+      list[index] = list[targetIndex];
+      list[targetIndex] = temp;
+      return { ...prev, leadership: list };
+    });
+  };
+
+  const handleLeaderChange = (
+    index: number,
+    field: keyof LeaderProfileDto,
+    value: string
+  ) => {
+    setFormData((prev) => {
+      const list = [...(prev.leadership || [])];
+      list[index] = { ...list[index], [field]: value };
+      return { ...prev, leadership: list };
+    });
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
+      const currentLeaders = formData.leadership || [];
+      for (let i = 0; i < currentLeaders.length; i++) {
+        const item = currentLeaders[i];
+        if (!item.name?.trim()) {
+          toast.error(`Pastoral Leader #${i + 1} requires a name.`);
+          setSaving(false);
+          return;
+        }
+        if (!item.title?.trim()) {
+          toast.error(`Pastoral Leader #${i + 1} requires a title or role.`);
+          setSaving(false);
+          return;
+        }
+      }
+
       const payload: UpdateSiteSettingsDto = {
         ...formData,
         googleMapsUrl: normalizeUrl(formData.googleMapsUrl),
@@ -113,6 +190,12 @@ export default function SiteSettingsPage() {
         tiktokUrl: normalizeUrl(formData.tiktokUrl),
         youtubeUrl: normalizeUrl(formData.youtubeUrl),
         instagramUrl: normalizeUrl(formData.instagramUrl),
+        leadership: currentLeaders.map((leader) => ({
+          name: leader.name.trim(),
+          title: leader.title.trim(),
+          bio: leader.bio?.trim() || "",
+          imageUrl: normalizeUrl(leader.imageUrl),
+        })),
       };
       const res = await api.settings.update(payload);
       if (res?.data) {
@@ -363,6 +446,157 @@ export default function SiteSettingsPage() {
               />
             </div>
           </div>
+        </GlassCard>
+
+        {/* Pastoral Leadership Profiles */}
+        <GlassCard surface="solid" padding="lg" className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold">Pastoral Leadership Profiles</h2>
+                <p className="text-xs text-muted-foreground">
+                  Pastors and leaders featured publicly on the About Us page.
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddLeader}
+              className="flex items-center gap-2 self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Leader Profile</span>
+            </Button>
+          </div>
+
+          {(!formData.leadership || formData.leadership.length === 0) ? (
+            <div className="rounded-xl border border-dashed border-border/80 p-8 text-center bg-card/40">
+              <Users className="mx-auto h-8 w-8 text-muted-foreground/60 mb-2" />
+              <p className="text-sm font-medium text-foreground">No pastoral profiles added yet</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+                Profiles added here will automatically appear on the public About page with their photo, role, and bio.
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleAddLeader}
+                className="mt-4 inline-flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add First Leader</span>
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {formData.leadership.map((leader, index) => (
+                <div
+                  key={index}
+                  className="rounded-2xl border border-border bg-card/60 p-5 shadow-xs space-y-4 transition hover:border-primary/30"
+                >
+                  <div className="flex items-center justify-between border-b border-border/40 pb-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                      Leader #{index + 1}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        disabled={index === 0}
+                        onClick={() => handleMoveLeader(index, "up")}
+                        title="Move Up"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                        <span className="sr-only">Move Up</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        disabled={index === (formData.leadership?.length ?? 0) - 1}
+                        onClick={() => handleMoveLeader(index, "down")}
+                        title="Move Down"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                        <span className="sr-only">Move Down</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleRemoveLeader(index)}
+                        title="Remove Leader"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="sr-only">Remove Leader</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor={`leader-name-${index}`}>Full Name & Title Prefix *</Label>
+                      <Input
+                        id={`leader-name-${index}`}
+                        placeholder="e.g. Rev. Dr. Emmah Isong / Pastor John Okonkwo"
+                        value={leader.name}
+                        onChange={(e) => handleLeaderChange(index, "name", e.target.value)}
+                        required
+                        maxLength={120}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`leader-title-${index}`}>Ministry Role / Title *</Label>
+                      <Input
+                        id={`leader-title-${index}`}
+                        placeholder="e.g. Senior Pastor / Resident Pastor / Associate Pastor"
+                        value={leader.title}
+                        onChange={(e) => handleLeaderChange(index, "title", e.target.value)}
+                        required
+                        maxLength={120}
+                      />
+                    </div>
+
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor={`leader-bio-${index}`}>Brief Biography or Profile</Label>
+                      <Textarea
+                        id={`leader-bio-${index}`}
+                        placeholder="Write a brief pastoral profile, ministry calling, or summary..."
+                        value={leader.bio || ""}
+                        onChange={(e) => handleLeaderChange(index, "bio", e.target.value)}
+                        rows={3}
+                        maxLength={1000}
+                        className="resize-none"
+                      />
+                      <p className="text-[11px] text-muted-foreground text-right">
+                        {(leader.bio || "").length}/1000 characters
+                      </p>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <ImageUploadField
+                        label="Leader Profile Photo"
+                        value={leader.imageUrl || ""}
+                        onChange={(url) => handleLeaderChange(index, "imageUrl", url)}
+                        scope="gallery"
+                        id={`leader-photo-${index}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </GlassCard>
 
         <div className="flex justify-end pt-2">

@@ -1,4 +1,4 @@
-import type { SiteSettingsDto } from "@ggm/types";
+import type { SiteSettingsDto, LeaderProfileDto } from "@ggm/types";
 import { api } from "@/lib/api/client";
 
 export const defaultSiteConfig = {
@@ -45,7 +45,7 @@ export const defaultSiteConfig = {
   instagram: "",
 
   // Leadership (array, can be empty)
-  leadership: [] as Array<{ name: string; title: string; bio?: string; imageUrl?: string }>,
+  leadership: [] as LeaderProfileDto[],
 
   // About
   foundedYear: "1994",
@@ -122,6 +122,11 @@ export function resolveSiteConfig(settings?: SiteSettingsDto | null) {
   const tiktok = current?.tiktokUrl ?? defaultSiteConfig.tiktok;
   const youtube = current?.youtubeUrl ?? defaultSiteConfig.youtube;
   const instagram = current?.instagramUrl ?? defaultSiteConfig.instagram;
+  const leadership: LeaderProfileDto[] = (
+    (current as any)?.leadership && Array.isArray((current as any).leadership) && (current as any).leadership.length > 0
+      ? (current as any).leadership
+      : defaultSiteConfig.leadership
+  ) as LeaderProfileDto[];
 
   const whatsAppNumber = normalizeWhatsAppNumber(whatsapp);
   const telNumber = normalizePhoneNumber(phone);
@@ -143,6 +148,7 @@ export function resolveSiteConfig(settings?: SiteSettingsDto | null) {
     tiktok,
     youtube,
     instagram,
+    leadership,
     // Formatted action URLs
     whatsAppUrl,
     telUrl,
@@ -241,8 +247,12 @@ export const siteConfig = {
   get instagram() {
     return activeSiteSettings?.instagramUrl ?? defaultSiteConfig.instagram;
   },
-  get leadership() {
-    return defaultSiteConfig.leadership;
+  get leadership(): LeaderProfileDto[] {
+    return ((activeSiteSettings as any)?.leadership &&
+      Array.isArray((activeSiteSettings as any).leadership) &&
+      (activeSiteSettings as any).leadership.length > 0
+      ? (activeSiteSettings as any).leadership
+      : defaultSiteConfig.leadership) as LeaderProfileDto[];
   },
   get foundedYear() {
     return defaultSiteConfig.foundedYear;

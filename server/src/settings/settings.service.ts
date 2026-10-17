@@ -35,11 +35,15 @@ export class SettingsService {
           googleMapsUrl: 'https://www.google.com/maps/place/Grace+of+God+Mission+Asaba+Hq/@6.1763103,6.7464769,17.38z/data=!4m6!3m5!1s0x1043ed616ce913ef:0x5cda51b288ccb076!8m2!3d6.1764146!4d6.748862!16s%2Fg%2F11tf999ctn?entry=ttu',
           facebookUrl: 'https://www.facebook.com/profile.php?id=61594831403921',
           tiktokUrl: 'https://www.tiktok.com/@graceofgodmissionasaba?_r=1&_t=ZS-9AcSfnQD7yO',
+          leadership: [],
         },
       });
     }
 
-    return settings;
+    return {
+      ...settings,
+      leadership: Array.isArray(settings.leadership) ? settings.leadership : [],
+    };
   }
 
   async updateSettings(actor: AuthenticatedActor, dto: UpdateSiteSettingsDto) {
@@ -59,6 +63,7 @@ export class SettingsService {
         tiktokUrl: dto.tiktokUrl || null,
         youtubeUrl: dto.youtubeUrl || null,
         instagramUrl: dto.instagramUrl || null,
+        leadership: dto.leadership ? (dto.leadership as any) : [],
       },
       create: {
         id: 'default',
@@ -75,6 +80,7 @@ export class SettingsService {
         tiktokUrl: dto.tiktokUrl || null,
         youtubeUrl: dto.youtubeUrl || null,
         instagramUrl: dto.instagramUrl || null,
+        leadership: dto.leadership ? (dto.leadership as any) : [],
       },
     });
 
@@ -88,7 +94,7 @@ export class SettingsService {
     });
 
     // On-demand Next.js ISR revalidation for site settings
-    this.triggerRevalidate(['settings', 'home', 'visit', 'give']).catch((err) => {
+    this.triggerRevalidate(['settings', 'home', 'visit', 'give', 'about']).catch((err) => {
       this.logger.warn(`Failed to revalidate site pages after settings update: ${err?.message}`);
     });
 

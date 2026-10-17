@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { getLiveSiteSettings, resolveSiteConfig } from "@/config/site";
+import type { LeaderProfileDto } from "@ggm/types";
 import {
   Flame,
   BookOpen,
@@ -188,18 +189,30 @@ export default async function AboutUsPage() {
 
           {hasLeadership ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {siteConfig.leadership.map((leader, idx) => (
+              {siteConfig.leadership.map((leader: LeaderProfileDto, idx: number) => (
                 <div
                   key={idx}
-                  className="rounded-2xl border border-border bg-card p-5 shadow-xs transition hover:shadow-md"
+                  className="group rounded-2xl border border-border bg-card p-6 shadow-xs transition hover:shadow-md hover:border-primary/40 flex flex-col items-center text-center sm:items-start sm:text-left"
                 >
-                  <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary text-primary font-bold text-xl">
-                    {leader.name.charAt(0)}
-                  </div>
+                  {leader.imageUrl ? (
+                    <div className="relative mb-4 h-24 w-24 overflow-hidden rounded-2xl border-2 border-primary/20 shadow-sm shrink-0">
+                      <Image
+                        src={leader.imageUrl}
+                        alt={leader.name}
+                        fill
+                        className="object-cover transition duration-300 group-hover:scale-105"
+                        sizes="(max-width: 640px) 96px, 96px"
+                      />
+                    </div>
+                  ) : (
+                    <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-2xl bg-primary/10 text-primary font-bold text-2xl border border-primary/20 shadow-inner shrink-0">
+                      {leader.name.charAt(0)}
+                    </div>
+                  )}
                   <h3 className="font-display text-lg font-bold text-foreground">{leader.name}</h3>
                   <p className="text-xs font-semibold text-primary">{leader.title}</p>
                   {leader.bio && (
-                    <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                    <p className="mt-3 text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
                       {leader.bio}
                     </p>
                   )}
