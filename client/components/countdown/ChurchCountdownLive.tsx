@@ -56,75 +56,66 @@ function calculateSecondsUntilTarget(targetHHMM: string): number {
 }
 
 export function ChurchCountdownLive() {
-  const [config, setConfig] = useState<ChurchCountdownState>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem(COUNTDOWN_STORAGE_KEY);
-        if (saved) {
-          return { ...DEFAULT_STATE, ...JSON.parse(saved) };
-        }
-      } catch {
-        // Fallback
-      }
-    }
-    return DEFAULT_STATE;
-  });
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [config, setConfig] = useState<ChurchCountdownState>(DEFAULT_STATE);
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(300);
+  const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(300);
 
-  const [isRunning, setIsRunning] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
-        if (isZeroed === "true") return false;
-
-        const savedRunning = localStorage.getItem(COUNTDOWN_RUNNING_KEY);
-        if (savedRunning !== null) {
-          return JSON.parse(savedRunning);
-        }
-      } catch {
-        // Fallback
-      }
-    }
-    return false;
-  });
-
-  const [remainingSeconds, setRemainingSeconds] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
-        if (isZeroed === "true") return 0;
-
-        const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
-        if (savedSecs !== null) {
-          return Number(JSON.parse(savedSecs));
-        }
-      } catch {
-        // Fallback
-      }
-    }
-    return 300;
-  });
-
-  const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
-        if (isZeroed === "true") return 0;
-
-        const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
-        if (savedSecs !== null) {
-          return Math.max(Number(JSON.parse(savedSecs)), 1);
-        }
-      } catch {
-        // Fallback
-      }
-    }
-    return 300;
-  });
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chimePlayedRef = useRef<boolean>(false);
   const lastSecondRef = useRef<number>(-1);
 
   const currentTheme = COUNTDOWN_THEMES[config.theme] || COUNTDOWN_THEMES["royal-gold"];
+
+  // Restore live countdown state on client mount before revealing UI (prevents hydration mismatch #418 & preset flash)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      let loadedConfig: ChurchCountdownState = DEFAULT_STATE;
+      const savedConfig = localStorage.getItem(COUNTDOWN_STORAGE_KEY);
+      if (savedConfig) {
+        loadedConfig = { ...DEFAULT_STATE, ...JSON.parse(savedConfig) };
+        setConfig(loadedConfig);
+      }
+
+      const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
+      if (isZeroed === "true") {
+        setIsRunning(false);
+        setRemainingSeconds(0);
+        setInitialTotalSeconds(0);
+        chimePlayedRef.current = true;
+      } else {
+        const savedRunning = localStorage.getItem(COUNTDOWN_RUNNING_KEY);
+        if (savedRunning !== null) {
+          setIsRunning(JSON.parse(savedRunning));
+        } else {
+          setIsRunning(false);
+        }
+
+        const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
+        if (savedSecs !== null) {
+          const parsed = Number(JSON.parse(savedSecs));
+          setRemainingSeconds(parsed);
+          setInitialTotalSeconds(Math.max(parsed, 1));
+        } else {
+          if (loadedConfig.mode === "target-time") {
+            const secs = calculateSecondsUntilTarget(loadedConfig.targetTimeString);
+            setRemainingSeconds(secs);
+            setInitialTotalSeconds(Math.max(secs, 1));
+          } else {
+            setRemainingSeconds(loadedConfig.durationSeconds);
+            setInitialTotalSeconds(Math.max(loadedConfig.durationSeconds, 1));
+          }
+        }
+      }
+    } catch {
+      // Fallback
+    }
+
+    setIsMounted(true);
+  }, []);
 
   // Sync with Controller via BroadcastChannel & LocalStorage events
   useEffect(() => {
@@ -181,32 +172,14 @@ export function ChurchCountdownLive() {
     };
   }, []);
 
-  const isInitialMountRef = useRef<boolean>(true);
+  const hasMountedSyncRef = useRef<boolean>(false);
 
-  // Compute countdown target when mode or parameters change
+  // Compute countdown target when mode or parameters change dynamically (skip initial mount, since state was restored)
   useEffect(() => {
-    if (isInitialMountRef.current) {
-      isInitialMountRef.current = false;
-      if (typeof window !== "undefined") {
-        try {
-          const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
-          if (isZeroed === "true") {
-            setRemainingSeconds(0);
-            setInitialTotalSeconds(0);
-            chimePlayedRef.current = true;
-            return;
-          }
-          const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
-          if (savedSecs !== null) {
-            const parsed = Number(JSON.parse(savedSecs));
-            setRemainingSeconds(parsed);
-            setInitialTotalSeconds(Math.max(parsed, 1));
-            return;
-          }
-        } catch {
-          // Fallback to calculation
-        }
-      }
+    if (!isMounted) return;
+    if (!hasMountedSyncRef.current) {
+      hasMountedSyncRef.current = true;
+      return;
     }
 
     if (config.mode === "target-time") {
@@ -219,11 +192,11 @@ export function ChurchCountdownLive() {
       setInitialTotalSeconds(Math.max(config.durationSeconds, 1));
       chimePlayedRef.current = false;
     }
-  }, [config.mode, config.targetTimeString, config.durationSeconds]);
+  }, [isMounted, config.mode, config.targetTimeString, config.durationSeconds]);
 
   // 1-second interval ticker for live projection
   useEffect(() => {
-    if (!isRunning) return;
+    if (!isMounted || !isRunning) return;
 
     const interval = setInterval(() => {
       if (config.mode === "target-time") {
@@ -271,7 +244,7 @@ export function ChurchCountdownLive() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning, config.mode, config.targetTimeString, config.soundEnabled, config.overtimeEnabled]);
+  }, [isMounted, isRunning, config.mode, config.targetTimeString, config.soundEnabled, config.overtimeEnabled]);
 
   // Toggle fullscreen on double click or pressing 'F'
   const toggleFullscreen = async () => {
@@ -314,6 +287,43 @@ export function ChurchCountdownLive() {
     if (remainingSeconds <= 0) return 1;
     return 1 - remainingSeconds / initialTotalSeconds;
   }, [remainingSeconds, initialTotalSeconds]);
+
+  // Render neutral sanctuary loading screen until mounted on client
+  // Prevents React hydration mismatch #418 and eliminates flashing wrong preset colors/time on refresh
+  if (!isMounted) {
+    return (
+      <div className="relative w-full min-h-[100dvh] flex flex-col justify-center items-center bg-[#060714] text-white select-none overflow-hidden p-6">
+        <div
+          className="pointer-events-none absolute inset-0 -z-10 opacity-70"
+          style={{
+            background: "radial-gradient(ellipse at 50% 20%, #171B38 0%, #0B0E20 45%, #05060E 100%)",
+          }}
+        />
+        <div className="relative z-10 flex flex-col items-center gap-4 animate-in fade-in duration-200">
+          <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-amber-400/60 bg-black/60 shadow-[0_0_30px_rgba(217,164,65,0.3)] p-1 animate-pulse">
+            <Image
+              src={CHURCH_LOGO_PATH}
+              alt="Grace of God Mission Logo"
+              fill
+              className="object-contain p-1"
+              priority
+            />
+          </div>
+          <div className="text-center space-y-1">
+            <h2 className="text-xs sm:text-sm font-black tracking-widest text-white uppercase">
+              GRACE OF GOD MISSION
+            </h2>
+            <p className="text-[10px] sm:text-xs font-bold tracking-widest text-amber-400 uppercase">
+              ASABA SANCTUARY COUNTDOWN
+            </p>
+          </div>
+          <div className="w-32 sm:w-40 h-1.5 rounded-full bg-white/10 overflow-hidden mt-2">
+            <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full animate-pulse w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
