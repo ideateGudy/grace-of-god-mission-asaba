@@ -63,12 +63,14 @@ export default async function DevotionPage() {
 
   const formattedDate = todayDevotion
     ? new Date(`${todayDevotion.date}T00:00:00Z`).toLocaleDateString("en-GB", {
+        timeZone: "Africa/Lagos",
         weekday: "long",
         day: "numeric",
         month: "long",
         year: "numeric",
       })
     : new Date().toLocaleDateString("en-GB", {
+        timeZone: "Africa/Lagos",
         weekday: "long",
         day: "numeric",
         month: "long",

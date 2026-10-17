@@ -11,6 +11,9 @@ import {
   Loader2,
   Flame,
   BookmarkCheck,
+  Clock,
+  AlertCircle,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -38,8 +41,10 @@ export default function AdminDevotionsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<DevotionDto | null>(null);
 
+  const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos" }).format(new Date());
+
   const [formData, setFormData] = useState<CreateDevotionDto>({
-    date: new Date().toISOString().slice(0, 10),
+    date: todayStr,
     series: "DAILY GRACE",
     title: "",
     textRef: "",
@@ -51,6 +56,10 @@ export default function AdminDevotionsPage() {
     actionPoint: "",
     published: true,
   });
+
+  const dateConflict = rows.find(
+    (r) => r.date === formData.date && r.id !== editingId
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -73,7 +82,7 @@ export default function AdminDevotionsPage() {
   const openCreate = () => {
     setEditingId(null);
     setFormData({
-      date: new Date().toISOString().slice(0, 10),
+      date: todayStr,
       series: "DAILY GRACE",
       title: "",
       textRef: "",
@@ -204,6 +213,19 @@ export default function AdminDevotionsPage() {
         </Button>
       </div>
 
+      {/* Guidance Banner */}
+      <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4 flex items-start gap-3 text-xs text-foreground/90 shadow-2xs">
+        <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <span className="font-bold text-foreground block">
+            Automated Daily Calendar Scheduling (West Africa Time · Africa/Lagos)
+          </span>
+          <p className="text-muted-foreground leading-relaxed">
+            You can create devotions ahead of time. Each devotion is locked to its specific date (only one devotion allowed per calendar day). When midnight arrives in Asaba, that day's scheduled devotion automatically becomes active for the congregation on the website and projector presentation screen.
+          </p>
+        </div>
+      </div>
+
       {/* Grid of Devotions */}
       {loading ? (
         <div className="py-20 text-center">
@@ -242,15 +264,32 @@ export default function AdminDevotionsPage() {
                       {row.series || "DAILY GRACE"}
                     </span>
                   </div>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                      row.published
-                        ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {row.published ? "Published" : "Draft"}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {row.date === todayStr ? (
+                      <span className="rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        <span>Today</span>
+                      </span>
+                    ) : row.date > todayStr ? (
+                      <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-sky-500/15 text-sky-400 border border-sky-500/30 flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5" />
+                        <span>Ahead</span>
+                      </span>
+                    ) : (
+                      <span className="rounded-full px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider bg-muted text-muted-foreground">
+                        Past
+                      </span>
+                    )}
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                        row.published
+                          ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {row.published ? "Live" : "Draft"}
+                    </span>
+                  </div>
                 </div>
 
                 <div>
@@ -344,6 +383,18 @@ export default function AdminDevotionsPage() {
                 />
               </div>
             </div>
+
+            {dateConflict && (
+              <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive flex items-start gap-2.5 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-destructive" />
+                <div className="space-y-0.5">
+                  <span className="font-bold block">Date Already Scheduled</span>
+                  <span>
+                    A Daily Devotion already exists for <strong>{formData.date}</strong>: "{dateConflict.title}". Only one devotion can be created per date. Please choose another date or edit that devotion.
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
@@ -476,12 +527,18 @@ export default function AdminDevotionsPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={saving} className="min-w-32 rounded-xl">
+              <Button
+                type="submit"
+                disabled={saving || !!dateConflict}
+                className="min-w-36 rounded-xl"
+              >
                 {saving ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Saving...
                   </>
+                ) : dateConflict ? (
+                  <span>Date Already Taken</span>
                 ) : (
                   <span>{editingId ? "Update Devotion" : "Save Devotion"}</span>
                 )}

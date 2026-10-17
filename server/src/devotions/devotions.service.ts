@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { ConfigService } from '@nestjs/config';
@@ -17,26 +17,21 @@ export class DevotionsService {
     private readonly configService: ConfigService,
   ) {}
 
-  async getTodayDevotion(): Promise<DevotionDto | null> {
+  async getTodayDevotion(dateParam?: string): Promise<DevotionDto | null> {
     // Normalize date to West Africa Time (Africa/Lagos, UTC+1)
-    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Lagos' }).format(new Date());
+    const todayStr =
+      dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+        ? dateParam
+        : new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Lagos' }).format(new Date());
     const todayDate = new Date(`${todayStr}T00:00:00.000Z`);
 
-    // 1. Try finding an exact match for today's date
-    let devotion = await this.prisma.devotion.findFirst({
+    // Strictly match the devotion published for today's date
+    const devotion = await this.prisma.devotion.findFirst({
       where: {
         published: true,
         date: todayDate,
       },
     });
-
-    // 2. If no devotion is scheduled exactly for today, get the latest published devotion
-    if (!devotion) {
-      devotion = await this.prisma.devotion.findFirst({
-        where: { published: true },
-        orderBy: { date: 'desc' },
-      });
-    }
 
     if (!devotion) return null;
 
@@ -44,8 +39,15 @@ export class DevotionsService {
   }
 
   async listPublic(page: number = 1, limit: number = 10) {
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Lagos' }).format(new Date());
+    const todayDate = new Date(`${todayStr}T00:00:00.000Z`);
+
     const skip = (page - 1) * limit;
-    const where = { published: true };
+    // Only past or current devotions should be publicly visible in the archive
+    const where = {
+      published: true,
+      date: { lte: todayDate },
+    };
 
     const [total, items] = await Promise.all([
       this.prisma.devotion.count({ where }),
@@ -92,21 +94,17 @@ export class DevotionsService {
   async create(actor: AuthenticatedActor, dto: CreateDevotionDto) {
     const dateObj = new Date(`${dto.date}T00:00:00.000Z`);
 
-    const created = await this.prisma.devotion.upsert({
+    const existing = await this.prisma.devotion.findUnique({
       where: { date: dateObj },
-      update: {
-        series: dto.series || 'DAILY GRACE',
-        title: dto.title,
-        textRef: dto.textRef || null,
-        scriptureRef: dto.scriptureRef,
-        scriptureText: dto.scriptureText,
-        content: dto.content,
-        prayer: dto.prayer || null,
-        bibleIn365Days: dto.bibleIn365Days || null,
-        actionPoint: dto.actionPoint || null,
-        published: dto.published ?? true,
-      },
-      create: {
+    });
+    if (existing) {
+      throw new BadRequestException(
+        `A Daily Devotion already exists for date ${dto.date} ("${existing.title}"). Only one devotion can be created and associated with a particular date. Please choose another date or edit the existing devotion.`
+      );
+    }
+
+    const created = await this.prisma.devotion.create({
+      data: {
         date: dateObj,
         series: dto.series || 'DAILY GRACE',
         title: dto.title,
@@ -152,7 +150,22 @@ export class DevotionsService {
     if (dto.bibleIn365Days !== undefined) data.bibleIn365Days = dto.bibleIn365Days || null;
     if (dto.actionPoint !== undefined) data.actionPoint = dto.actionPoint || null;
     if (dto.published !== undefined) data.published = dto.published;
-    if (dto.date !== undefined) data.date = new Date(`${dto.date}T00:00:00.000Z`);
+
+    if (dto.date !== undefined) {
+      const newDateObj = new Date(`${dto.date}T00:00:00.000Z`);
+      const conflict = await this.prisma.devotion.findFirst({
+        where: {
+          date: newDateObj,
+          id: { not: id },
+        },
+      });
+      if (conflict) {
+        throw new BadRequestException(
+          `A Daily Devotion already exists for date ${dto.date} ("${conflict.title}"). Only one devotion can be associated with a particular date.`
+        );
+      }
+      data.date = newDateObj;
+    }
 
     const updated = await this.prisma.devotion.update({
       where: { id },

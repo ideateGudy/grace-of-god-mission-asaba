@@ -29,8 +29,8 @@ export class DevotionsController {
 
   @PublicRoute()
   @Get('devotions/today')
-  async getToday() {
-    const data = await this.devotionsService.getTodayDevotion();
+  async getToday(@Query('date') dateParam?: string) {
+    const data = await this.devotionsService.getTodayDevotion(dateParam);
     return { data };
   }
 

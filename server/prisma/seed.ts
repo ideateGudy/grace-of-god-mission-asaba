@@ -137,45 +137,45 @@ async function main() {
       },
     });
 
-    // Seed Official Daily Grace Devotion
-    const devotionDate = new Date('2026-10-16T00:00:00.000Z');
+    // Seed Official Daily Grace Devotion for 2026-10-17 (Today)
+    const devotionToday = new Date('2026-10-17T00:00:00.000Z');
     await prisma.devotion.upsert({
-      where: { date: devotionDate },
+      where: { date: devotionToday },
       update: {
         series: 'DAILY GRACE',
-        title: 'LET GOD TRANSFORM YOUR LIFE',
-        textRef: 'EPHESIANS 4:22-24',
-        scriptureRef: '2 CORINTHIANS 5:17',
-        scriptureText: 'THEREFORE IF ANY MAN BE IN CHRIST, HE IS A NEW CREATURE: OLD THINGS ARE PASSED AWAY; BEHOLD, ALL THINGS ARE BECOME NEW',
-        content: `Do you feel like something is missing from your life, even though on the outside it looks successful? Despite all of our accomplishments and victories in this world, we still cannot find true happiness. As a Christian, you know that true transformation can only be found by seeking God’s will for your life and allowing him to work through you. Fortunately, tapping into God’s power does not have to be complicated; there are simple steps anyone can take today to allow God to begin transforming their life.
+        title: 'WALKING IN SUPERNATURAL PEACE',
+        textRef: 'PHILIPPIANS 4:6-9',
+        scriptureRef: 'ISAIAH 26:3',
+        scriptureText: 'THOU WILT KEEP HIM IN PERFECT PEACE, WHOSE MIND IS STAYED ON THEE: BECAUSE HE TRUSTETH IN THEE.',
+        content: `In a world characterized by anxiety, hurry, and endless uncertainty, peace is one of the greatest treasures a believer can possess. The peace of God is not the absence of trouble; it is the presence of God in the midst of any storm. When life's pressures mount, the natural human reaction is to worry and attempt to control outcomes in our own human strength. Yet Scripture invites us into a higher posture: fixing our gaze entirely on the Lord Jesus Christ.
 
-Make Prayer a Priority. As a Christian, you know that prayer is a powerful tool. It allows you to connect with God on a deep level and seek guidance, peace, and strength. 1 Thessalonians 5:17 instructs followers of Jesus to “Pray without ceasing,” but you can often get so caught up in your busy life that you forget to make prayer a priority. That is why it is important to take time each day to speak to God and listen for his guidance. Find a time that works for you and stick to it. Create a quiet space where you can pray without distractions. Remember, prayer is a two-way conversation, so take time to listen to God’s response as well. By making prayer a priority, you can strengthen your relationship with God and let him transform you.
+Fix Your Thoughts Upon God. Isaiah 26:3 reveals that perfect peace is the direct fruit of a mind that is stayed on God. Whatever consumes your thoughts will eventually dictate your emotions and decisions. If you meditate on the challenges, fear will multiply. But when you anchor your heart on the character, promises, and sovereignty of God, divine calmness floods your soul. Take deliberate moments today to replace anxious thoughts with the truth of God's Word.
 
-Another way you can let God transform your life is by reading the Bible and understanding what it says about how you should live. The Bible is not only a book of wisdom and guidance, but it also reminds us of God’s love and faithfulness toward those who believe. By getting into the Word of God, you can grow spiritually and develop a deeper relationship with him. It may be challenging at times to understand the language or the context, but you can always seek guidance from trusted Pastors, Christian friends, or even online resources. Take the time to read your Bible and let its truth transform you from the inside out.
+Cast Every Care Through Prayer. The Apostle Paul writing from prison gave the divine remedy for anxiety: "Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God. And the peace of God, which passeth all understanding, shall keep your hearts and minds through Christ Jesus" (Philippians 4:6-7). Thanksgiving is the secret weapon of faith. When you thank God before the breakthrough appears, you declare that your Father is already in control.
 
-One of the most important things you can do to strengthen your faith is to spend time in fellowship with other believers. Regularly attending church services, joining a small group Bible study, or getting involved in a ministry are all great ways to connect with other Christians and deepen your understanding of God’s Word. It can be easy to get caught up in your busy life and neglect this aspect of your faith, but making time for fellowship is crucial for your spiritual growth. Hebrews 10:25 says, “not neglecting to meet together, as is the habit of some, but encouraging one another, and all the more as you see the Day drawing near.” Not only does Christian fellowship provide opportunities for you to learn and be encouraged by others, but it also allows you to serve and support your brothers and sisters in Christ. Make it a priority to invest in your relationships with other believers and see how God transforms you through your connectedness.`,
-        prayer: "Dear Lord, complete the work of transformation you started in my life, in Jesus' Name, Amen.",
-        bibleIn365Days: "Job 42\nProverbs 25:1–14\nHebrews 5",
-        actionPoint: 'MAKE PRAYER YOUR PRIORITY AS A BELIEVER.',
+Guard Your Sanctuary and Fellowship. Spiritual peace is nurtured in an environment of worship and godly community. Walk with believers who speak faith, not despair. Keep the worship of Jesus playing in your home and car. As you step out today, refuse to entertain fear. You are carried by the everlasting arms of the Almighty God.`,
+        prayer: 'Father, I anchor my mind on You today. Keep my heart in Your supernatural peace, and let every trace of anxiety flee in the mighty Name of Jesus, Amen.',
+        bibleIn365Days: 'Psalms 1-3\nProverbs 25:15–28\nHebrews 6',
+        actionPoint: 'REFUSE TO ENTERTAIN ANXIETY TODAY; CAST EVERY BURDEN ON GOD IN THANKSGIVING.',
         published: true,
       },
       create: {
-        date: devotionDate,
+        date: devotionToday,
         series: 'DAILY GRACE',
-        title: 'LET GOD TRANSFORM YOUR LIFE',
-        textRef: 'EPHESIANS 4:22-24',
-        scriptureRef: '2 CORINTHIANS 5:17',
-        scriptureText: 'THEREFORE IF ANY MAN BE IN CHRIST, HE IS A NEW CREATURE: OLD THINGS ARE PASSED AWAY; BEHOLD, ALL THINGS ARE BECOME NEW',
-        content: `Do you feel like something is missing from your life, even though on the outside it looks successful? Despite all of our accomplishments and victories in this world, we still cannot find true happiness. As a Christian, you know that true transformation can only be found by seeking God’s will for your life and allowing him to work through you. Fortunately, tapping into God’s power does not have to be complicated; there are simple steps anyone can take today to allow God to begin transforming their life.
+        title: 'WALKING IN SUPERNATURAL PEACE',
+        textRef: 'PHILIPPIANS 4:6-9',
+        scriptureRef: 'ISAIAH 26:3',
+        scriptureText: 'THOU WILT KEEP HIM IN PERFECT PEACE, WHOSE MIND IS STAYED ON THEE: BECAUSE HE TRUSTETH IN THEE.',
+        content: `In a world characterized by anxiety, hurry, and endless uncertainty, peace is one of the greatest treasures a believer can possess. The peace of God is not the absence of trouble; it is the presence of God in the midst of any storm. When life's pressures mount, the natural human reaction is to worry and attempt to control outcomes in our own human strength. Yet Scripture invites us into a higher posture: fixing our gaze entirely on the Lord Jesus Christ.
 
-Make Prayer a Priority. As a Christian, you know that prayer is a powerful tool. It allows you to connect with God on a deep level and seek guidance, peace, and strength. 1 Thessalonians 5:17 instructs followers of Jesus to “Pray without ceasing,” but you can often get so caught up in your busy life that you forget to make prayer a priority. That is why it is important to take time each day to speak to God and listen for his guidance. Find a time that works for you and stick to it. Create a quiet space where you can pray without distractions. Remember, prayer is a two-way conversation, so take time to listen to God’s response as well. By making prayer a priority, you can strengthen your relationship with God and let him transform you.
+Fix Your Thoughts Upon God. Isaiah 26:3 reveals that perfect peace is the direct fruit of a mind that is stayed on God. Whatever consumes your thoughts will eventually dictate your emotions and decisions. If you meditate on the challenges, fear will multiply. But when you anchor your heart on the character, promises, and sovereignty of God, divine calmness floods your soul. Take deliberate moments today to replace anxious thoughts with the truth of God's Word.
 
-Another way you can let God transform your life is by reading the Bible and understanding what it says about how you should live. The Bible is not only a book of wisdom and guidance, but it also reminds us of God’s love and faithfulness toward those who believe. By getting into the Word of God, you can grow spiritually and develop a deeper relationship with him. It may be challenging at times to understand the language or the context, but you can always seek guidance from trusted Pastors, Christian friends, or even online resources. Take the time to read your Bible and let its truth transform you from the inside out.
+Cast Every Care Through Prayer. The Apostle Paul writing from prison gave the divine remedy for anxiety: "Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God. And the peace of God, which passeth all understanding, shall keep your hearts and minds through Christ Jesus" (Philippians 4:6-7). Thanksgiving is the secret weapon of faith. When you thank God before the breakthrough appears, you declare that your Father is already in control.
 
-One of the most important things you can do to strengthen your faith is to spend time in fellowship with other believers. Regularly attending church services, joining a small group Bible study, or getting involved in a ministry are all great ways to connect with other Christians and deepen your understanding of God’s Word. It can be easy to get caught up in your busy life and neglect this aspect of your faith, but making time for fellowship is crucial for your spiritual growth. Hebrews 10:25 says, “not neglecting to meet together, as is the habit of some, but encouraging one another, and all the more as you see the Day drawing near.” Not only does Christian fellowship provide opportunities for you to learn and be encouraged by others, but it also allows you to serve and support your brothers and sisters in Christ. Make it a priority to invest in your relationships with other believers and see how God transforms you through your connectedness.`,
-        prayer: "Dear Lord, complete the work of transformation you started in my life, in Jesus' Name, Amen.",
-        bibleIn365Days: "Job 42\nProverbs 25:1–14\nHebrews 5",
-        actionPoint: 'MAKE PRAYER YOUR PRIORITY AS A BELIEVER.',
+Guard Your Sanctuary and Fellowship. Spiritual peace is nurtured in an environment of worship and godly community. Walk with believers who speak faith, not despair. Keep the worship of Jesus playing in your home and car. As you step out today, refuse to entertain fear. You are carried by the everlasting arms of the Almighty God.`,
+        prayer: 'Father, I anchor my mind on You today. Keep my heart in Your supernatural peace, and let every trace of anxiety flee in the mighty Name of Jesus, Amen.',
+        bibleIn365Days: 'Psalms 1-3\nProverbs 25:15–28\nHebrews 6',
+        actionPoint: 'REFUSE TO ENTERTAIN ANXIETY TODAY; CAST EVERY BURDEN ON GOD IN THANKSGIVING.',
         published: true,
       },
     });

@@ -17,6 +17,7 @@ describe('DevotionsService', () => {
         findUnique: vi.fn(),
         findMany: vi.fn(),
         count: vi.fn(),
+        create: vi.fn(),
         upsert: vi.fn(),
         update: vi.fn(),
         delete: vi.fn(),
@@ -65,7 +66,7 @@ describe('DevotionsService', () => {
     expect(result?.actionPoint).toBe('Walk in love and patience.');
   });
 
-  it('creates or upserts a devotion', async () => {
+  it('creates a new devotion for a unique date', async () => {
     const actor = { id: 'admin-1', name: 'Pastor Joy' };
     const mockCreated = {
       id: 'dev-2',
@@ -83,7 +84,8 @@ describe('DevotionsService', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    prismaMock.devotion.upsert.mockResolvedValue(mockCreated);
+    prismaMock.devotion.findUnique.mockResolvedValue(null);
+    prismaMock.devotion.create.mockResolvedValue(mockCreated);
 
     const result = await service.create(actor as any, {
       date: '2026-10-18',
@@ -108,5 +110,24 @@ describe('DevotionsService', () => {
         action: 'devotion.create',
       }),
     );
+  });
+
+  it('throws BadRequestException when creating a devotion on an already-taken date', async () => {
+    const actor = { id: 'admin-1', name: 'Pastor Joy' };
+    prismaMock.devotion.findUnique.mockResolvedValue({
+      id: 'existing-dev',
+      date: new Date('2026-10-18T00:00:00.000Z'),
+      title: 'Existing Devotion',
+    });
+
+    await expect(
+      service.create(actor as any, {
+        date: '2026-10-18',
+        title: 'Duplicate Devotion',
+        scriptureRef: 'John 3:16',
+        scriptureText: 'For God so loved the world...',
+        content: 'Content...',
+      }),
+    ).rejects.toThrow(/Only one devotion can be created/);
   });
 });
