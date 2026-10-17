@@ -54,6 +54,33 @@ export interface FlyerTemplateStyle {
   patternType: "radial-rays" | "aurora" | "fire-burst" | "sacred-waves" | "fine-mesh";
 }
 
+export type LayerBlendMode =
+  | "normal"
+  | "screen"
+  | "multiply"
+  | "overlay"
+  | "soft-light"
+  | "color-dodge"
+  | "lighten"
+  | "luminosity";
+
+export type LayerMaskShape = "rect" | "circle" | "rounded" | "feathered";
+
+export interface FlyerImageLayer {
+  id: string;
+  name: string;
+  url: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  opacity: number;
+  blendMode: LayerBlendMode;
+  maskShape: LayerMaskShape;
+  locked?: boolean;
+}
+
 export interface FlyerData {
   templateId: FlyerTemplateId;
   aspectRatio: FlyerAspectRatio;
@@ -72,6 +99,7 @@ export interface FlyerData {
   broadcastBadge: string;
   speakerPhotoUrl?: string;
   showChurchLogo: boolean;
+  layers?: FlyerImageLayer[];
 }
 
 export interface FlyerPreset {

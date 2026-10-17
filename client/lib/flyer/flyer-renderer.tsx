@@ -11,6 +11,9 @@ interface FlyerRendererProps {
   svgRef?: React.Ref<SVGSVGElement>;
   logoDataUrl?: string;
   className?: string;
+  selectedLayerId?: string | null;
+  onSelectLayer?: (layerId: string) => void;
+  onLayerPointerDown?: (e: React.PointerEvent, layerId: string) => void;
 }
 
 /**
@@ -74,6 +77,9 @@ export function FlyerRenderer({
   svgRef,
   logoDataUrl,
   className = "",
+  selectedLayerId,
+  onSelectLayer,
+  onLayerPointerDown,
 }: FlyerRendererProps) {
   const { width, height } = FLYER_DIMENSIONS[data.aspectRatio];
   const template = FLYER_TEMPLATES[data.templateId] || FLYER_TEMPLATES["royal-gold"];
@@ -224,6 +230,49 @@ export function FlyerRenderer({
         <clipPath id="speaker-halo-clip">
           <circle cx="110" cy="110" r="102" />
         </clipPath>
+
+        {/* Dynamic Custom Layer Masks & Clips */}
+        {data.layers?.map((layer) => (
+          <React.Fragment key={layer.id}>
+            {layer.maskShape === "circle" && (
+              <clipPath id={`clip-circle-${layer.id}`}>
+                <circle
+                  cx={layer.width / 2}
+                  cy={layer.height / 2}
+                  r={Math.min(layer.width, layer.height) / 2}
+                />
+              </clipPath>
+            )}
+            {layer.maskShape === "rounded" && (
+              <clipPath id={`clip-round-${layer.id}`}>
+                <rect
+                  x="0"
+                  y="0"
+                  width={layer.width}
+                  height={layer.height}
+                  rx={Math.min(layer.width, layer.height) * 0.12}
+                />
+              </clipPath>
+            )}
+            {layer.maskShape === "feathered" && (
+              <mask id={`mask-feather-${layer.id}`}>
+                <radialGradient id={`feather-grad-${layer.id}`} cx="50%" cy="50%" r="50%">
+                  <stop offset="35%" stopColor="#FFFFFF" stopOpacity="1" />
+                  <stop offset="65%" stopColor="#FFFFFF" stopOpacity="0.75" />
+                  <stop offset="85%" stopColor="#FFFFFF" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+                </radialGradient>
+                <rect
+                  x="0"
+                  y="0"
+                  width={layer.width}
+                  height={layer.height}
+                  fill={`url(#feather-grad-${layer.id})`}
+                />
+              </mask>
+            )}
+          </React.Fragment>
+        ))}
       </defs>
 
       {/* 1. Base Dark & Mesh Layer */}
@@ -809,6 +858,80 @@ export function FlyerRenderer({
               )}
             </g>
           </g>
+        </g>
+      )}
+
+      {/* ============================================================== */}
+      {/* 2026 CUSTOM DRAG-AND-DROP IMAGE LAYERS & BLEND ENGINE          */}
+      {/* ============================================================== */}
+      {data.layers && data.layers.length > 0 && (
+        <g id="custom-image-layers">
+          {data.layers.map((layer) => {
+            const isSelected = selectedLayerId === layer.id;
+            return (
+              <g
+                key={layer.id}
+                id={`layer-${layer.id}`}
+                transform={`translate(${layer.x + layer.width / 2}, ${layer.y + layer.height / 2}) rotate(${layer.rotation}) translate(${-layer.width / 2}, ${-layer.height / 2})`}
+                style={{
+                  mixBlendMode: layer.blendMode,
+                  opacity: layer.opacity,
+                  cursor: onLayerPointerDown ? "grab" : "default",
+                }}
+                onPointerDown={(e) => {
+                  if (onLayerPointerDown) {
+                    onLayerPointerDown(e, layer.id);
+                  }
+                }}
+                onClick={(e) => {
+                  if (onSelectLayer) {
+                    e.stopPropagation();
+                    onSelectLayer(layer.id);
+                  }
+                }}
+              >
+                <image
+                  href={layer.url}
+                  x="0"
+                  y="0"
+                  width={layer.width}
+                  height={layer.height}
+                  preserveAspectRatio="xMidYMid slice"
+                  clipPath={
+                    layer.maskShape === "circle"
+                      ? `url(#clip-circle-${layer.id})`
+                      : layer.maskShape === "rounded"
+                      ? `url(#clip-round-${layer.id})`
+                      : undefined
+                  }
+                  mask={
+                    layer.maskShape === "feathered"
+                      ? `url(#mask-feather-${layer.id})`
+                      : undefined
+                  }
+                />
+                {isSelected && (
+                  <g pointerEvents="none">
+                    <rect
+                      x="0"
+                      y="0"
+                      width={layer.width}
+                      height={layer.height}
+                      fill="none"
+                      stroke="#38BDF8"
+                      strokeWidth="3.5"
+                      strokeDasharray="12 8"
+                      rx={layer.maskShape === "circle" ? layer.width / 2 : 14}
+                    />
+                    <circle cx="0" cy="0" r="9" fill="#38BDF8" stroke="#FFFFFF" strokeWidth="2.5" />
+                    <circle cx={layer.width} cy="0" r="9" fill="#38BDF8" stroke="#FFFFFF" strokeWidth="2.5" />
+                    <circle cx="0" cy={layer.height} r="9" fill="#38BDF8" stroke="#FFFFFF" strokeWidth="2.5" />
+                    <circle cx={layer.width} cy={layer.height} r="9" fill="#38BDF8" stroke="#FFFFFF" strokeWidth="2.5" />
+                  </g>
+                )}
+              </g>
+            );
+          })}
         </g>
       )}
     </svg>
