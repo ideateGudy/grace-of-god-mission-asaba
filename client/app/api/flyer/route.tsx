@@ -33,6 +33,8 @@ export async function GET(req: NextRequest) {
     const template = FLYER_TEMPLATES[templateId] || FLYER_TEMPLATES["royal-gold"];
     const dimensions = FLYER_DIMENSIONS[ratio] || FLYER_DIMENSIONS["square"];
 
+    const logoUrl = `${req.nextUrl.origin}/ggm_logo.png`;
+
     return new ImageResponse(
       (
         <div
@@ -99,28 +101,40 @@ export async function GET(req: NextRequest) {
               width: "100%",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <span
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <img
+                src={logoUrl}
+                width="48"
+                height="48"
                 style={{
-                  fontSize: 18,
-                  fontWeight: 800,
-                  letterSpacing: "2px",
-                  color: "#FFFFFF",
+                  borderRadius: "50%",
+                  border: `2px solid ${template.primaryAccent}`,
+                  backgroundColor: template.badgeBg,
                 }}
-              >
-                {churchName}
-              </span>
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  letterSpacing: "1px",
-                  color: template.mutedColor,
-                  opacity: 0.8,
-                }}
-              >
-                SANCTUARY OF GRACE & TRUTH · ASABA
-              </span>
+              />
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    letterSpacing: "2px",
+                    color: "#FFFFFF",
+                  }}
+                >
+                  {churchName}
+                </span>
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    letterSpacing: "1px",
+                    color: template.mutedColor,
+                    opacity: 0.8,
+                  }}
+                >
+                  SANCTUARY OF GRACE & TRUTH · ASABA
+                </span>
+              </div>
             </div>
 
             <div

@@ -45,6 +45,7 @@ import {
   downloadFlyerJpeg,
   copyFlyerToClipboard,
 } from "@/lib/flyer/flyer-export";
+import { getChurchLogoDataUrl } from "@/lib/flyer/church-logo";
 import { authFetch } from "@/lib/api/client";
 import type { DevotionDto } from "@ggm/types";
 
@@ -72,6 +73,7 @@ export function FlyerStudio({
     showChurchLogo: true,
   }));
 
+  const [logoDataUrl, setLogoDataUrl] = useState<string>("/ggm_logo.png");
   const [downloading, setDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [syncingDevotion, setSyncingDevotion] = useState(false);
@@ -79,6 +81,13 @@ export function FlyerStudio({
   const [activeTab, setActiveTab] = useState<"content" | "style" | "logistics">("content");
 
   const svgRef = useRef<SVGSVGElement | null>(null);
+
+  // Load official church logo base64 on mount for seamless zero-taint canvas export
+  useEffect(() => {
+    void getChurchLogoDataUrl().then((url) => {
+      if (url) setLogoDataUrl(url);
+    });
+  }, []);
 
   // Sync from scheduled devotions if requested
   useEffect(() => {
@@ -593,13 +602,20 @@ export function FlyerStudio({
                 </div>
 
                 <div className="flex items-center justify-between rounded-xl border border-border p-3 bg-muted/10">
-                  <div>
-                    <Label htmlFor="show-logo" className="text-xs font-semibold cursor-pointer">
-                      Display Sacred Cross Crest
-                    </Label>
-                    <p className="text-[10px] text-muted-foreground">
-                      Renders the golden cross emblem in the top branding row.
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <img
+                      src="/ggm_logo.png"
+                      alt="GGM Official Logo"
+                      className="w-10 h-10 rounded-full object-contain border border-gold/40 bg-black/40 p-0.5"
+                    />
+                    <div>
+                      <Label htmlFor="show-logo" className="text-xs font-semibold cursor-pointer">
+                        Official Church Logo Emblem
+                      </Label>
+                      <p className="text-[10px] text-muted-foreground">
+                        Always included by default on every flyer.
+                      </p>
+                    </div>
                   </div>
                   <Switch
                     id="show-logo"
@@ -675,7 +691,7 @@ export function FlyerStudio({
                 }}
                 className="shadow-2xl rounded-2xl overflow-hidden border border-border/70"
               >
-                <FlyerRenderer data={data} svgRef={svgRef} />
+                <FlyerRenderer data={data} svgRef={svgRef} logoDataUrl={logoDataUrl} />
               </div>
             </div>
 
