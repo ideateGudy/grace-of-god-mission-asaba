@@ -95,7 +95,7 @@ function calculateSecondsUntilTarget(targetHHMM: string): number {
 export function ChurchCountdown() {
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [config, setConfig] = useState<ChurchCountdownState>(DEFAULT_STATE);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [isRunning, setIsRunning] = useState<boolean>(true);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(300);
   const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(300);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -138,7 +138,7 @@ export function ChurchCountdown() {
         if (savedRunning !== null) {
           setIsRunning(JSON.parse(savedRunning));
         } else {
-          setIsRunning(false);
+          setIsRunning(true);
         }
 
         const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);

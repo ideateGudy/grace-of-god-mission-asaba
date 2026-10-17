@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
+import { Play } from "lucide-react";
 import {
   type CountdownThemeId,
   type ChurchCountdownState,
@@ -58,7 +59,7 @@ function calculateSecondsUntilTarget(targetHHMM: string): number {
 export function ChurchCountdownLive() {
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [config, setConfig] = useState<ChurchCountdownState>(DEFAULT_STATE);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [isRunning, setIsRunning] = useState<boolean>(true);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(300);
   const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(300);
 
@@ -91,7 +92,8 @@ export function ChurchCountdownLive() {
         if (savedRunning !== null) {
           setIsRunning(JSON.parse(savedRunning));
         } else {
-          setIsRunning(false);
+          // Default to running so live projection counts down immediately on fresh devices
+          setIsRunning(true);
         }
 
         const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
@@ -263,11 +265,30 @@ export function ChurchCountdownLive() {
     }
   };
 
+  // Toggle play/pause state
+  const togglePlayPause = () => {
+    setIsRunning((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(next));
+        if (next) {
+          localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
+        }
+      } catch {
+        // Ignored
+      }
+      return next;
+    });
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "KeyF") {
         e.preventDefault();
         void toggleFullscreen();
+      } else if (e.code === "Space") {
+        e.preventDefault();
+        togglePlayPause();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -433,6 +454,20 @@ export function ChurchCountdownLive() {
         {!config.overtimeEnabled && remainingSeconds <= 0 && (
           <div className="mb-4 sm:mb-8 px-4 sm:px-8 py-2.5 sm:py-4 rounded-2xl sm:rounded-3xl bg-amber-500/25 border-2 border-amber-400 text-amber-200 font-black text-lg sm:text-3xl md:text-4xl animate-bounce shadow-2xl">
             ✨ WELCOME TO CHURCH · SERVICE HAS BEGUN ✨
+          </div>
+        )}
+
+        {/* RESUME / PLAY BUTTON IF PAUSED */}
+        {!isRunning && remainingSeconds > 0 && (
+          <div className="mb-3 sm:mb-6 z-20">
+            <button
+              type="button"
+              onClick={togglePlayPause}
+              className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 border-2 border-amber-400 text-amber-200 font-black text-xs sm:text-sm backdrop-blur-md shadow-[0_0_25px_rgba(245,158,11,0.4)] transition-all cursor-pointer animate-pulse"
+            >
+              <Play className="w-4 h-4 fill-amber-400 text-amber-400" />
+              <span>TIMER PAUSED · TAP TO RESUME</span>
+            </button>
           </div>
         )}
 
