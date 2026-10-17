@@ -25,6 +25,15 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ path
   return handleProxy(req, path);
 }
 
+const STRIP_RESPONSE_HEADERS = new Set([
+  "content-encoding",
+  "content-length",
+  "transfer-encoding",
+  "connection",
+  "keep-alive",
+  "set-cookie",
+]);
+
 async function handleProxy(req: NextRequest, path: string[]) {
   const backendBase = process.env.API_INTERNAL_URL || "http://127.0.0.1:5000";
   const search = req.nextUrl.search;
@@ -32,6 +41,9 @@ async function handleProxy(req: NextRequest, path: string[]) {
 
   const headers = new Headers(req.headers);
   headers.delete("host");
+  headers.delete("connection");
+  // Delete accept-encoding so upstream sends uncompressed bytes; Next.js/Vercel handles compression to the browser
+  headers.delete("accept-encoding");
 
   const body = req.method !== "GET" && req.method !== "HEAD" ? await req.arrayBuffer() : undefined;
 
@@ -50,14 +62,16 @@ async function handleProxy(req: NextRequest, path: string[]) {
     );
   }
 
-  const res = new NextResponse(backendRes.body, {
+  const responseBody = await backendRes.arrayBuffer();
+
+  const res = new NextResponse(responseBody, {
     status: backendRes.status,
     statusText: backendRes.statusText,
   });
 
-  // Forward all response headers except set-cookie (which we forward explicitly below)
+  // Forward all response headers except hop-by-hop and encoding headers
   backendRes.headers.forEach((val, key) => {
-    if (key.toLowerCase() !== "set-cookie") {
+    if (!STRIP_RESPONSE_HEADERS.has(key.toLowerCase())) {
       res.headers.set(key, val);
     }
   });
