@@ -25,6 +25,7 @@ import {
   BookOpen,
   Sparkles,
   Palette,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import { useSessionStore } from "@/store/useSessionStore";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/countdown", label: "Countdown Timer", icon: Clock },
   { href: "/admin/live", label: "Livestream", icon: Radio, permission: "LIVESTREAM_MANAGE" },
   { href: "/admin/sermons", label: "Sermons", icon: Video, permission: "SERMONS_MANAGE" },
   { href: "/admin/devotions", label: "Devotions", icon: BookOpen, permission: "DEVOTIONS_MANAGE" },

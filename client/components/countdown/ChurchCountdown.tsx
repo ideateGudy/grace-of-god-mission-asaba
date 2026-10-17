@@ -49,6 +49,8 @@ import {
 import { audioSynth } from "@/lib/countdown/audio-synth";
 import { CHURCH_LOGO_PATH } from "@/lib/flyer/church-logo";
 import { toast } from "sonner";
+import { api } from "@/lib/api/client";
+import type { UpdateCountdownDto } from "@ggm/types";
 
 const STORAGE_KEY = COUNTDOWN_STORAGE_KEY;
 
@@ -115,53 +117,109 @@ export function ChurchCountdown() {
   const currentTheme = COUNTDOWN_THEMES[config.theme] || COUNTDOWN_THEMES["royal-gold"];
   const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
 
-  // Restore state from localStorage on client mount (prevents React error #418 & preset flash)
+  // Restore state from database (with localStorage offline fallback)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    try {
-      let loadedConfig: ChurchCountdownState = DEFAULT_STATE;
-      const savedConfig = localStorage.getItem(STORAGE_KEY);
-      if (savedConfig) {
-        loadedConfig = { ...DEFAULT_STATE, ...JSON.parse(savedConfig) };
-        setConfig(loadedConfig);
-      }
+    let isMountedCancelled = false;
 
-      const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
-      if (isZeroed === "true") {
-        setIsRunning(false);
-        setRemainingSeconds(0);
-        setInitialTotalSeconds(0);
-        chimePlayedRef.current = true;
-      } else {
-        const savedRunning = localStorage.getItem(COUNTDOWN_RUNNING_KEY);
-        if (savedRunning !== null) {
-          setIsRunning(JSON.parse(savedRunning));
-        } else {
-          setIsRunning(true);
+    async function initializeCountdown() {
+      // 1. Instant local restore to prepare memory
+      let loadedConfig: ChurchCountdownState = DEFAULT_STATE;
+      try {
+        const savedConfig = localStorage.getItem(STORAGE_KEY);
+        if (savedConfig) {
+          loadedConfig = { ...DEFAULT_STATE, ...JSON.parse(savedConfig) };
+          setConfig(loadedConfig);
         }
 
-        const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
-        if (savedSecs !== null) {
-          const parsed = Number(JSON.parse(savedSecs));
-          setRemainingSeconds(parsed);
-          setInitialTotalSeconds(Math.max(parsed, 1));
+        const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
+        if (isZeroed === "true") {
+          setIsRunning(false);
+          setRemainingSeconds(0);
+          setInitialTotalSeconds(0);
+          chimePlayedRef.current = true;
         } else {
-          if (loadedConfig.mode === "target-time") {
-            const secs = calculateSecondsUntilTarget(loadedConfig.targetTimeString);
-            setRemainingSeconds(secs);
-            setInitialTotalSeconds(Math.max(secs, 1));
+          const savedRunning = localStorage.getItem(COUNTDOWN_RUNNING_KEY);
+          if (savedRunning !== null) {
+            setIsRunning(JSON.parse(savedRunning));
           } else {
-            setRemainingSeconds(loadedConfig.durationSeconds);
-            setInitialTotalSeconds(Math.max(loadedConfig.durationSeconds, 1));
+            setIsRunning(true);
+          }
+
+          const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
+          if (savedSecs !== null) {
+            const parsed = Number(JSON.parse(savedSecs));
+            setRemainingSeconds(parsed);
+            setInitialTotalSeconds(Math.max(parsed, 1));
+          } else {
+            if (loadedConfig.mode === "target-time") {
+              const secs = calculateSecondsUntilTarget(loadedConfig.targetTimeString);
+              setRemainingSeconds(secs);
+              setInitialTotalSeconds(Math.max(secs, 1));
+            } else {
+              setRemainingSeconds(loadedConfig.durationSeconds);
+              setInitialTotalSeconds(Math.max(loadedConfig.durationSeconds, 1));
+            }
           }
         }
+      } catch {}
+
+      // 2. Authoritative Database Fetch (sync across all physical devices)
+      try {
+        const response = await api.countdown.get();
+        if (!isMountedCancelled && response?.data) {
+          const dbData = response.data;
+          const mergedConfig: ChurchCountdownState = {
+            title: dbData.title || DEFAULT_STATE.title,
+            subtitle: dbData.subtitle || DEFAULT_STATE.subtitle,
+            scriptureRef: dbData.scriptureRef || DEFAULT_STATE.scriptureRef,
+            scriptureText: dbData.scriptureText || DEFAULT_STATE.scriptureText,
+            mode: dbData.mode || DEFAULT_STATE.mode,
+            targetTimeString: dbData.targetTimeString || DEFAULT_STATE.targetTimeString,
+            durationSeconds: dbData.durationSeconds || DEFAULT_STATE.durationSeconds,
+            theme: dbData.theme || DEFAULT_STATE.theme,
+            soundEnabled: dbData.soundEnabled ?? DEFAULT_STATE.soundEnabled,
+            overtimeEnabled: dbData.overtimeEnabled ?? DEFAULT_STATE.overtimeEnabled,
+            showScripture: dbData.showScripture ?? DEFAULT_STATE.showScripture,
+            showLogo: dbData.showLogo ?? DEFAULT_STATE.showLogo,
+            stageMode: dbData.stageMode ?? DEFAULT_STATE.stageMode,
+          };
+
+          setConfig(mergedConfig);
+          setIsRunning(dbData.isRunning);
+          setRemainingSeconds(dbData.remainingSeconds);
+          setInitialTotalSeconds(
+            dbData.mode === "duration"
+              ? Math.max(dbData.durationSeconds, 1)
+              : Math.max(dbData.remainingSeconds, 1)
+          );
+
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedConfig));
+            localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(dbData.isRunning));
+            localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(dbData.remainingSeconds));
+            if (dbData.remainingSeconds === 0 && !dbData.isRunning) {
+              localStorage.setItem(COUNTDOWN_ZEROED_KEY, "true");
+            } else {
+              localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
+            }
+          } catch {}
+        }
+      } catch {
+        // Fallback already restored from localStorage
       }
-    } catch {
-      // Fallback
+
+      if (!isMountedCancelled) {
+        setIsMounted(true);
+      }
     }
 
-    setIsMounted(true);
+    void initializeCountdown();
+
+    return () => {
+      isMountedCancelled = true;
+    };
   }, []);
 
   // Initialize broadcast channel for live projection synchronization
@@ -197,6 +255,53 @@ export function ChurchCountdown() {
       // Ignore
     }
   }, [isMounted, config]);
+
+  // Debounced database sync ref so every state modification saves to database
+  const lastSavedPayloadRef = useRef<string>("");
+  const dbSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync state modifications to the database so all physical devices stay in lockstep
+  useEffect(() => {
+    if (!isMounted) return;
+
+    if (dbSyncTimeoutRef.current) {
+      clearTimeout(dbSyncTimeoutRef.current);
+    }
+
+    dbSyncTimeoutRef.current = setTimeout(() => {
+      const payload: UpdateCountdownDto = {
+        title: config.title,
+        subtitle: config.subtitle,
+        scriptureRef: config.scriptureRef,
+        scriptureText: config.scriptureText,
+        mode: config.mode,
+        targetTimeString: config.targetTimeString,
+        durationSeconds: config.durationSeconds,
+        theme: config.theme,
+        soundEnabled: config.soundEnabled,
+        overtimeEnabled: config.overtimeEnabled,
+        showScripture: config.showScripture,
+        showLogo: config.showLogo,
+        stageMode: config.stageMode,
+        isRunning,
+        remainingSeconds,
+      };
+
+      const key = `${config.title}|${config.subtitle}|${config.mode}|${config.targetTimeString}|${config.durationSeconds}|${config.theme}|${isRunning}|${remainingSeconds}|${config.showScripture}|${config.showLogo}`;
+      if (key === lastSavedPayloadRef.current) return;
+      lastSavedPayloadRef.current = key;
+
+      api.countdown.update(payload).catch(() => {
+        // Offline resilient
+      });
+    }, 350);
+
+    return () => {
+      if (dbSyncTimeoutRef.current) {
+        clearTimeout(dbSyncTimeoutRef.current);
+      }
+    };
+  }, [isMounted, config, isRunning, remainingSeconds]);
 
   // Monitor network status
   useEffect(() => {

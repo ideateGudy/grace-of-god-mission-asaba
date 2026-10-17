@@ -89,6 +89,36 @@ export const COUNTDOWN_THEMES: Record<CountdownThemeId, CountdownTheme> = {
   },
 };
 
+import { z } from "zod";
+
+export const updateCountdownSchema = z.object({
+  title: z.string().trim().max(300).optional(),
+  subtitle: z.string().trim().max(300).optional(),
+  scriptureRef: z.string().trim().max(200).optional(),
+  scriptureText: z.string().trim().max(1000).optional(),
+  mode: z.enum(["target-time", "duration"]).optional(),
+  targetTimeString: z.string().trim().max(20).optional(),
+  durationSeconds: z.number().int().min(0).max(86400).optional(),
+  theme: z.enum(["royal-gold", "pentecost-fire", "celestial-blue", "emerald-grace", "obs-transparent"]).optional(),
+  soundEnabled: z.boolean().optional(),
+  overtimeEnabled: z.boolean().optional(),
+  showScripture: z.boolean().optional(),
+  showLogo: z.boolean().optional(),
+  stageMode: z.boolean().optional(),
+  isRunning: z.boolean().optional(),
+  remainingSeconds: z.number().int().optional(),
+  targetEndTime: z.number().nullable().optional(),
+});
+
+export type UpdateCountdownDto = z.infer<typeof updateCountdownSchema>;
+
+export interface PublicCountdownDto extends ChurchCountdownState {
+  isRunning: boolean;
+  remainingSeconds: number;
+  targetEndTime: number | null;
+  updatedAt: string;
+}
+
 export interface ChurchCountdownState {
   title: string;
   subtitle: string;

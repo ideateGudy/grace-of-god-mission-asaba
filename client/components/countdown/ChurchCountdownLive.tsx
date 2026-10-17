@@ -18,6 +18,7 @@ import {
 } from "@/lib/countdown/countdown-sync";
 import { audioSynth } from "@/lib/countdown/audio-synth";
 import { CHURCH_LOGO_PATH } from "@/lib/flyer/church-logo";
+import { api } from "@/lib/api/client";
 
 const DEFAULT_STATE: ChurchCountdownState = {
   title: "SUNDAY CELEBRATION SERVICE",
@@ -73,53 +74,194 @@ export function ChurchCountdownLive() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    try {
-      let loadedConfig: ChurchCountdownState = DEFAULT_STATE;
-      const savedConfig = localStorage.getItem(COUNTDOWN_STORAGE_KEY);
-      if (savedConfig) {
-        loadedConfig = { ...DEFAULT_STATE, ...JSON.parse(savedConfig) };
-        setConfig(loadedConfig);
-      }
+    let isMountedCancelled = false;
 
-      const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
-      if (isZeroed === "true") {
-        setIsRunning(false);
-        setRemainingSeconds(0);
-        setInitialTotalSeconds(0);
-        chimePlayedRef.current = true;
-      } else {
-        const savedRunning = localStorage.getItem(COUNTDOWN_RUNNING_KEY);
-        if (savedRunning !== null) {
-          setIsRunning(JSON.parse(savedRunning));
-        } else {
-          // Default to running so live projection counts down immediately on fresh devices
-          setIsRunning(true);
+    async function initializeLiveCountdown() {
+      // 1. Instant local restore to prime memory
+      let loadedConfig: ChurchCountdownState = DEFAULT_STATE;
+      try {
+        const savedConfig = localStorage.getItem(COUNTDOWN_STORAGE_KEY);
+        if (savedConfig) {
+          loadedConfig = { ...DEFAULT_STATE, ...JSON.parse(savedConfig) };
+          setConfig(loadedConfig);
         }
 
-        const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
-        if (savedSecs !== null) {
-          const parsed = Number(JSON.parse(savedSecs));
-          setRemainingSeconds(parsed);
-          setInitialTotalSeconds(Math.max(parsed, 1));
+        const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
+        if (isZeroed === "true") {
+          setIsRunning(false);
+          setRemainingSeconds(0);
+          setInitialTotalSeconds(0);
+          chimePlayedRef.current = true;
         } else {
-          if (loadedConfig.mode === "target-time") {
-            const secs = calculateSecondsUntilTarget(loadedConfig.targetTimeString);
-            setRemainingSeconds(secs);
-            setInitialTotalSeconds(Math.max(secs, 1));
+          const savedRunning = localStorage.getItem(COUNTDOWN_RUNNING_KEY);
+          if (savedRunning !== null) {
+            setIsRunning(JSON.parse(savedRunning));
           } else {
-            setRemainingSeconds(loadedConfig.durationSeconds);
-            setInitialTotalSeconds(Math.max(loadedConfig.durationSeconds, 1));
+            setIsRunning(true);
+          }
+
+          const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
+          if (savedSecs !== null) {
+            const parsed = Number(JSON.parse(savedSecs));
+            setRemainingSeconds(parsed);
+            setInitialTotalSeconds(Math.max(parsed, 1));
+          } else {
+            if (loadedConfig.mode === "target-time") {
+              const secs = calculateSecondsUntilTarget(loadedConfig.targetTimeString);
+              setRemainingSeconds(secs);
+              setInitialTotalSeconds(Math.max(secs, 1));
+            } else {
+              setRemainingSeconds(loadedConfig.durationSeconds);
+              setInitialTotalSeconds(Math.max(loadedConfig.durationSeconds, 1));
+            }
           }
         }
+      } catch {}
+
+      // 2. Authoritative Database Fetch (syncs across PC and mobile)
+      try {
+        const response = await api.countdown.get();
+        if (!isMountedCancelled && response?.data) {
+          const remote = response.data;
+          const mergedConfig: ChurchCountdownState = {
+            title: remote.title || DEFAULT_STATE.title,
+            subtitle: remote.subtitle || DEFAULT_STATE.subtitle,
+            scriptureRef: remote.scriptureRef || DEFAULT_STATE.scriptureRef,
+            scriptureText: remote.scriptureText || DEFAULT_STATE.scriptureText,
+            mode: remote.mode || DEFAULT_STATE.mode,
+            targetTimeString: remote.targetTimeString || DEFAULT_STATE.targetTimeString,
+            durationSeconds: remote.durationSeconds || DEFAULT_STATE.durationSeconds,
+            theme: remote.theme || DEFAULT_STATE.theme,
+            soundEnabled: remote.soundEnabled ?? DEFAULT_STATE.soundEnabled,
+            overtimeEnabled: remote.overtimeEnabled ?? DEFAULT_STATE.overtimeEnabled,
+            showScripture: remote.showScripture ?? DEFAULT_STATE.showScripture,
+            showLogo: remote.showLogo ?? DEFAULT_STATE.showLogo,
+            stageMode: remote.stageMode ?? DEFAULT_STATE.stageMode,
+          };
+
+          setConfig(mergedConfig);
+          setIsRunning(remote.isRunning);
+          setRemainingSeconds(remote.remainingSeconds);
+          setInitialTotalSeconds(
+            remote.mode === "duration"
+              ? Math.max(remote.durationSeconds, 1)
+              : Math.max(remote.remainingSeconds, 1)
+          );
+
+          try {
+            localStorage.setItem(COUNTDOWN_STORAGE_KEY, JSON.stringify(mergedConfig));
+            localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(remote.isRunning));
+            localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(remote.remainingSeconds));
+            if (remote.remainingSeconds === 0 && !remote.isRunning) {
+              localStorage.setItem(COUNTDOWN_ZEROED_KEY, "true");
+            } else {
+              localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
+            }
+          } catch {}
+        }
+      } catch {
+        // Fallback already restored from localStorage
       }
-    } catch {
-      // Fallback
+
+      if (!isMountedCancelled) {
+        setIsMounted(true);
+      }
     }
 
-    setIsMounted(true);
+    void initializeLiveCountdown();
+
+    return () => {
+      isMountedCancelled = true;
+    };
   }, []);
 
-  // Sync with Controller via BroadcastChannel & LocalStorage events
+  // Poll authoritative database state every 3 seconds to stay synchronized with PC/controller across devices
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const syncFromRemote = async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+
+      try {
+        const response = await api.countdown.get();
+        if (!response?.data) return;
+        const remote = response.data;
+
+        // Sync config properties if changed on controller
+        setConfig((prev) => {
+          if (
+            prev.title !== remote.title ||
+            prev.subtitle !== remote.subtitle ||
+            prev.mode !== remote.mode ||
+            prev.targetTimeString !== remote.targetTimeString ||
+            prev.durationSeconds !== remote.durationSeconds ||
+            prev.theme !== remote.theme ||
+            prev.showScripture !== remote.showScripture ||
+            prev.showLogo !== remote.showLogo
+          ) {
+            return {
+              ...prev,
+              title: remote.title,
+              subtitle: remote.subtitle,
+              scriptureRef: remote.scriptureRef,
+              scriptureText: remote.scriptureText,
+              mode: remote.mode,
+              targetTimeString: remote.targetTimeString,
+              durationSeconds: remote.durationSeconds,
+              theme: remote.theme,
+              showScripture: remote.showScripture,
+              showLogo: remote.showLogo,
+              overtimeEnabled: remote.overtimeEnabled,
+              soundEnabled: remote.soundEnabled,
+            };
+          }
+          return prev;
+        });
+
+        // Sync running status
+        setIsRunning((prevRunning) => {
+          if (prevRunning !== remote.isRunning) {
+            return remote.isRunning;
+          }
+          return prevRunning;
+        });
+
+        // Sync time if paused or reset to 0
+        if (!remote.isRunning || remote.remainingSeconds === 0) {
+          setRemainingSeconds(remote.remainingSeconds);
+        } else if (remote.mode === "duration" && remote.targetEndTime) {
+          const calculatedSecs = Math.round((remote.targetEndTime - Date.now()) / 1000);
+          setRemainingSeconds((prev) => {
+            if (Math.abs(prev - calculatedSecs) > 2) {
+              return calculatedSecs;
+            }
+            return prev;
+          });
+        }
+      } catch {
+        // Stays resilient offline
+      }
+    };
+
+    const interval = setInterval(syncFromRemote, 3000);
+
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === "visible") {
+        void syncFromRemote();
+      }
+    };
+
+    window.addEventListener("focus", handleFocusOrVisible);
+    document.addEventListener("visibilitychange", handleFocusOrVisible);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocusOrVisible);
+      document.removeEventListener("visibilitychange", handleFocusOrVisible);
+    };
+  }, [isMounted]);
+
+  // Sync with Controller via BroadcastChannel & LocalStorage events on the same device
   useEffect(() => {
     if (typeof window === "undefined") return;
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ChurchCountdown } from "@/components/countdown/ChurchCountdown";
+import { CountdownAuthGuard } from "@/components/countdown/CountdownAuthGuard";
 
 export const metadata: Metadata = {
   title: "Service Countdown Timer | Grace of God Mission Asaba",
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default function CountdownPage() {
   return (
     <main className="min-h-screen bg-black">
-      <ChurchCountdown />
+      <CountdownAuthGuard />
     </main>
   );
 }

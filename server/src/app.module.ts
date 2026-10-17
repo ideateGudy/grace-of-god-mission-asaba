@@ -26,6 +26,7 @@ import { NotificationsModule } from './notifications/notifications.module.js';
 import { TestimoniesModule } from './testimonies/testimonies.module.js';
 import { DevotionsModule } from './devotions/devotions.module.js';
 import { LivestreamModule } from './livestream/livestream.module.js';
+import { CountdownModule } from './countdown/countdown.module.js';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import Redis from 'ioredis';
@@ -97,6 +98,7 @@ import Redis from 'ioredis';
     TestimoniesModule,
     DevotionsModule,
     LivestreamModule,
+    CountdownModule,
   ],
   controllers: [],
   providers: [

@@ -239,5 +239,70 @@ describe("Church Countdown Engine & Offline Presets", () => {
     expect(restoredRunning).toBe(false);
     expect(restoredSeconds).toBe(145);
   });
+
+  it("CountdownService reads default countdown when database has no saved countdown", async () => {
+    const { CountdownService } = await import("../src/countdown/countdown.service.js");
+    const mockPrisma = {
+      siteSetting: {
+        findUnique: async () => null,
+      },
+    };
+    const mockAudit = { log: async () => {} };
+    const mockConfig = { get: () => null };
+
+    const service = new CountdownService(mockPrisma as any, mockAudit as any, mockConfig as any);
+    const data = await service.getCountdown();
+
+    expect(data).toBeDefined();
+    expect(data.title).toBe("SUNDAY CELEBRATION SERVICE");
+    expect(data.mode).toBe("target-time");
+    expect(data.isRunning).toBe(true);
+    expect(data.remainingSeconds).toBeGreaterThan(0);
+  });
+
+  it("CountdownService updates and persists countdown state to database", async () => {
+    const { CountdownService } = await import("../src/countdown/countdown.service.js");
+    let savedState: any = null;
+    let auditLogCalls: any[] = [];
+
+    const mockPrisma = {
+      siteSetting: {
+        findUnique: async () => ({ countdown: savedState }),
+        upsert: async (args: any) => {
+          savedState = args.update.countdown;
+          return { countdown: savedState, updatedAt: new Date() };
+        },
+      },
+    };
+    const mockAudit = {
+      log: async (entry: any) => {
+        auditLogCalls.push(entry);
+      },
+    };
+    const mockConfig = { get: () => null };
+
+    const service = new CountdownService(mockPrisma as any, mockAudit as any, mockConfig as any);
+    const updated = await service.updateCountdown(
+      { id: "admin-1", email: "admin@ggmasaba.org", role: "ADMIN", name: "Pastor John" } as any,
+      {
+        title: "ANOINTING & MIRACLE COMMUNION SERVICE",
+        mode: "duration",
+        durationSeconds: 600,
+        remainingSeconds: 600,
+        isRunning: true,
+        theme: "celestial-blue",
+      }
+    );
+
+    expect(updated.title).toBe("ANOINTING & MIRACLE COMMUNION SERVICE");
+    expect(updated.mode).toBe("duration");
+    expect(updated.durationSeconds).toBe(600);
+    expect(updated.remainingSeconds).toBe(600);
+    expect(updated.theme).toBe("celestial-blue");
+    expect(updated.targetEndTime).toBeGreaterThan(Date.now());
+    expect(auditLogCalls).toHaveLength(1);
+    expect(auditLogCalls[0].action).toBe("countdown.update");
+  });
 });
+
 

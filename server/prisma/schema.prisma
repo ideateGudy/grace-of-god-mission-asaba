@@ -337,5 +337,6 @@ model SiteSetting {
   liveServiceType String?
   liveVideoUrl    String?
   liveNotes       String?
+  countdown       Json?
   updatedAt       DateTime @updatedAt
 }

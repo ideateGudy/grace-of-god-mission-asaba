@@ -8,6 +8,8 @@ import type {
   LivestreamStatusDto,
   UpdateLivestreamDto,
   PrayerWallItemDto,
+  PublicCountdownDto,
+  UpdateCountdownDto,
 } from "@ggm/types";
 
 const IS_SERVER = typeof window === "undefined";
@@ -232,6 +234,15 @@ export const api = {
   livestream: {
     get: () => fetcher<{ data: LivestreamStatusDto }>("/livestream", { tags: ["livestream"] }),
     update: (data: UpdateLivestreamDto) => fetcher<{ data: LivestreamStatusDto }>("/admin/livestream", { method: "PATCH", body: JSON.stringify(data), cache: "no-store" }),
+  },
+  countdown: {
+    get: () => fetcher<{ data: PublicCountdownDto }>("/countdown", { cache: "no-store" }),
+    update: (data: UpdateCountdownDto) =>
+      fetcher<{ data: PublicCountdownDto }>("/admin/countdown", {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        cache: "no-store",
+      }),
   },
   giving: {
     getStatus: (reference: string) => fetcher<{ data: { status: string; reference: string; amountKobo: string; projectTitle: string; displayName: string; createdAt: string } }>(`/giving/status/${encodeURIComponent(reference)}`, { cache: "no-store" }),
