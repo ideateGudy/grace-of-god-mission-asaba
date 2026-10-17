@@ -30,6 +30,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { SmartDevotionPasteDialog } from "@/components/devotion/SmartDevotionPasteDialog";
 import { authFetch } from "@/lib/api/client";
 import type { DevotionDto, CreateDevotionDto } from "@ggm/types";
 
@@ -37,6 +38,7 @@ export default function AdminDevotionsPage() {
   const [rows, setRows] = useState<DevotionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [smartPasteOpen, setSmartPasteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<DevotionDto | null>(null);
@@ -78,6 +80,56 @@ export default function AdminDevotionsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const handleApplySmartPaste = (data: Partial<CreateDevotionDto>) => {
+    setEditingId(null);
+    setFormData((prev) => ({
+      ...prev,
+      ...data,
+      date: data.date || prev.date || todayStr,
+      series: data.series || "DAILY GRACE",
+      title: data.title || "",
+      textRef: data.textRef || "",
+      scriptureRef: data.scriptureRef || "",
+      scriptureText: data.scriptureText || "",
+      content: data.content || "",
+      prayer: data.prayer || "",
+      bibleIn365Days: data.bibleIn365Days || "",
+      actionPoint: data.actionPoint || "",
+      published: data.published ?? true,
+    }));
+    setDialogOpen(true);
+    toast.success("Devotion populated from announcement. Please review and save.");
+  };
+
+  const handleDirectSaveSmartPaste = async (data: CreateDevotionDto) => {
+    const res = await authFetch("/api/v1/admin/devotions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: data.date,
+        series: data.series?.trim() || "DAILY GRACE",
+        title: data.title.trim(),
+        textRef: data.textRef?.trim() || undefined,
+        scriptureRef: data.scriptureRef.trim(),
+        scriptureText: data.scriptureText.trim(),
+        content: data.content.trim(),
+        prayer: data.prayer?.trim() || undefined,
+        bibleIn365Days: data.bibleIn365Days?.trim() || undefined,
+        actionPoint: data.actionPoint?.trim() || undefined,
+        published: data.published,
+      }),
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      const errorJson = await res.json().catch(() => null);
+      throw new Error(errorJson?.message || "Failed to schedule devotion.");
+    }
+
+    toast.success("Devotion automatically parsed, scheduled, and published live!");
+    await load();
+  };
 
   const openCreate = () => {
     setEditingId(null);
@@ -207,10 +259,22 @@ export default function AdminDevotionsPage() {
           </p>
         </div>
 
-        <Button onClick={openCreate} className="gap-2 shrink-0 rounded-xl">
-          <Plus className="w-4 h-4" />
-          <span>New Daily Devotion</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setSmartPasteOpen(true)}
+            className="gap-2 shrink-0 rounded-xl border-gold/40 text-gold hover:bg-gold/10 hover:text-gold shadow-2xs"
+          >
+            <Sparkles className="w-4 h-4 text-gold" />
+            <span>Smart Paste / Auto-Detect</span>
+          </Button>
+
+          <Button onClick={openCreate} className="gap-2 shrink-0 rounded-xl">
+            <Plus className="w-4 h-4" />
+            <span>New Daily Devotion</span>
+          </Button>
+        </div>
       </div>
 
       {/* Guidance Banner */}
@@ -237,12 +301,23 @@ export default function AdminDevotionsPage() {
           <BookOpen className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
           <h3 className="font-display text-lg font-bold">No Devotions Scheduled</h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-            Click below to create your first daily verse and reflection for the congregation.
+            Click below to create your first daily verse and reflection for the congregation or paste an announcement draft.
           </p>
-          <Button onClick={openCreate} className="mt-4 gap-2 rounded-xl">
-            <Plus className="w-4 h-4" />
-            <span>Create First Devotion</span>
-          </Button>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSmartPasteOpen(true)}
+              className="gap-2 rounded-xl border-gold/40 text-gold hover:bg-gold/10"
+            >
+              <Sparkles className="w-4 h-4 text-gold" />
+              <span>Smart Paste / Auto-Detect</span>
+            </Button>
+            <Button onClick={openCreate} className="gap-2 rounded-xl">
+              <Plus className="w-4 h-4" />
+              <span>Create First Devotion</span>
+            </Button>
+          </div>
         </GlassCard>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -350,10 +425,22 @@ export default function AdminDevotionsPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-gold" />
-              <span>{editingId ? "Edit Devotion" : "New Daily Devotion"}</span>
-            </DialogTitle>
+            <div className="flex flex-wrap items-center justify-between gap-2 pr-6">
+              <DialogTitle className="font-display text-xl font-bold flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-gold" />
+                <span>{editingId ? "Edit Devotion" : "New Daily Devotion"}</span>
+              </DialogTitle>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSmartPasteOpen(true)}
+                className="text-xs gap-1.5 border-gold/40 text-gold hover:bg-gold/10 hover:text-gold"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Smart Auto-Detect</span>
+              </Button>
+            </div>
             <DialogDescription className="text-xs text-muted-foreground">
               Configure the church's Daily Grace devotional publication format.
             </DialogDescription>
@@ -556,6 +643,15 @@ export default function AdminDevotionsPage() {
         confirmText="Delete permanently"
         onConfirm={() => void remove()}
         isDestructive
+      />
+
+      <SmartDevotionPasteDialog
+        open={smartPasteOpen}
+        onOpenChange={setSmartPasteOpen}
+        onApply={handleApplySmartPaste}
+        onDirectSave={handleDirectSaveSmartPaste}
+        existingDevotions={rows}
+        editingId={editingId}
       />
     </div>
   );
