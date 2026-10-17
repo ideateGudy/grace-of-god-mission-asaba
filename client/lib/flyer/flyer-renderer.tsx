@@ -39,6 +39,36 @@ function wrapText(text: string, maxCharsPerLine: number, maxLines = 5): string[]
   return lines.slice(0, maxLines);
 }
 
+/**
+ * Parses day number and month from date string for 2026 Bento date card.
+ * e.g. "SUNDAY, 25TH OCTOBER 2026" -> { day: "25", month: "OCT 2026", weekday: "SUNDAY" }
+ */
+function parseBentoDate(dateStr: string): { day: string; month: string; weekday: string } {
+  if (!dateStr) return { day: "25", month: "OCT 2026", weekday: "SUNDAY" };
+
+  const dayMatch = dateStr.match(/\b(\d{1,2})(?:st|nd|rd|th)?\b/i);
+  const day = dayMatch ? dayMatch[1].padStart(2, "0") : "25";
+
+  const monthMatch = dateStr.match(
+    /\b(JAN(?:UARY)?|FEB(?:RUARY)?|MAR(?:CH)?|APR(?:IL)?|MAY|JUN(?:E)?|JUL(?:Y)?|AUG(?:UST)?|SEP(?:TEMBER)?|OCT(?:OBER)?|NOV(?:EMBER)?|DEC(?:EMBER)?)\b/i
+  );
+  const monthName = monthMatch ? monthMatch[1].slice(0, 3).toUpperCase() : "OCT";
+
+  const yearMatch = dateStr.match(/\b(202\d)\b/);
+  const year = yearMatch ? yearMatch[1] : "2026";
+
+  const weekdayMatch = dateStr.match(
+    /\b(SUNDAY|MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUN|MON|TUE|WED|THU|FRI|SAT)\b/i
+  );
+  const weekday = weekdayMatch ? weekdayMatch[1].toUpperCase() : "SUNDAY";
+
+  return {
+    day,
+    month: `${monthName} ${year}`,
+    weekday,
+  };
+}
+
 export function FlyerRenderer({
   data,
   svgRef,
@@ -52,69 +82,69 @@ export function FlyerRenderer({
   const isStory = data.aspectRatio === "story";
   const isLandscape = data.aspectRatio === "landscape";
 
-  // Margins
+  // Modern 2026 Architectural Margins
   const paddingX = isLandscape ? 72 : 56;
-  const paddingY = isStory ? 84 : isLandscape ? 52 : 52;
+  const paddingY = isStory ? 80 : isLandscape ? 48 : 50;
   const contentWidth = width - paddingX * 2;
 
   // -------------------------------------------------------------
-  // DYNAMIC ADAPTIVE TYPOGRAPHY SCALING (Prevents text clipping)
+  // DYNAMIC ADAPTIVE 2026 TYPOGRAPHY SCALING (Prevents text clipping)
   // -------------------------------------------------------------
   const titleChars = (data.title || "").length;
   let titleFontSize = 64;
-  let charsPerLine = 24;
+  let charsPerLine = 22;
 
   if (isLandscape) {
-    // In landscape, left column is ~1040px
     if (titleChars > 90) {
-      titleFontSize = 40;
+      titleFontSize = 38;
       charsPerLine = 34;
     } else if (titleChars > 60) {
-      titleFontSize = 48;
+      titleFontSize = 46;
       charsPerLine = 28;
     } else if (titleChars > 35) {
-      titleFontSize = 58;
+      titleFontSize = 56;
       charsPerLine = 24;
     } else {
-      titleFontSize = 68;
+      titleFontSize = 66;
       charsPerLine = 20;
     }
   } else if (isStory) {
-    // In story mode, height is 1920px (generous)
     if (titleChars > 90) {
-      titleFontSize = 48;
-      charsPerLine = 26;
+      titleFontSize = 46;
+      charsPerLine = 24;
     } else if (titleChars > 60) {
       titleFontSize = 56;
-      charsPerLine = 22;
+      charsPerLine = 20;
     } else if (titleChars > 35) {
-      titleFontSize = 66;
-      charsPerLine = 18;
+      titleFontSize = 68;
+      charsPerLine = 17;
     } else {
-      titleFontSize = 76;
-      charsPerLine = 16;
+      titleFontSize = 80;
+      charsPerLine = 15;
     }
   } else {
-    // Square mode (1080x1080) - tighter vertical space
+    // Square mode (1080x1080)
     if (titleChars > 90) {
       titleFontSize = 38;
-      charsPerLine = 32;
+      charsPerLine = 30;
     } else if (titleChars > 60) {
       titleFontSize = 46;
-      charsPerLine = 26;
+      charsPerLine = 24;
     } else if (titleChars > 35) {
       titleFontSize = 54;
-      charsPerLine = 22;
+      charsPerLine = 20;
     } else {
       titleFontSize = 64;
-      charsPerLine = 18;
+      charsPerLine = 17;
     }
   }
 
   const titleLines = wrapText(data.title || "UNTITLED PROGRAM", charsPerLine, 4);
-  const subtitleCharsPerLine = isLandscape ? 60 : isStory ? 38 : 42;
+  const subtitleCharsPerLine = isLandscape ? 58 : isStory ? 36 : 40;
   const subtitleLines = wrapText(data.subtitle || "", subtitleCharsPerLine, 3);
   const scriptureLines = wrapText(data.scriptureText || "", subtitleCharsPerLine, 3);
+
+  const bentoDate = parseBentoDate(data.date);
 
   return (
     <svg
@@ -131,190 +161,201 @@ export function FlyerRenderer({
         background: template.bgDark,
         fontFamily:
           template.titleFont === "serif"
-            ? "Georgia, 'Times New Roman', serif"
-            : "system-ui, -apple-system, sans-serif",
+            ? "Playfair Display, 'Times New Roman', Georgia, serif"
+            : "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
       <defs>
         {/* Glow Filters */}
-        <filter id="glow-gold" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="35" result="blur" />
+        <filter id="glow-volumetric" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="50" result="blur" />
           <feComposite in="SourceGraphic" in2="blur" operator="over" />
         </filter>
-        <filter id="shadow-drop" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="6" stdDeviation="14" floodColor="#000000" floodOpacity="0.75" />
+        <filter id="shadow-deep" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="10" stdDeviation="18" floodColor="#000000" floodOpacity="0.85" />
+        </filter>
+        <filter id="card-shadow" x="-10%" y="-10%" width="120%" height="120%">
+          <feDropShadow dx="0" dy="8" stdDeviation="16" floodColor="#000000" floodOpacity="0.6" />
         </filter>
 
-        {/* Gradients */}
-        <radialGradient id="ambient-radial-1" cx="50%" cy="30%" r="65%">
-          <stop offset="0%" stopColor={template.secondaryAccent} stopOpacity="0.32" />
-          <stop offset="50%" stopColor={template.primaryAccent} stopOpacity="0.14" />
+        {/* 2026 Multi-Point Mesh Gradients */}
+        <radialGradient id="mesh-orb-1" cx="20%" cy="15%" r="70%">
+          <stop offset="0%" stopColor={template.primaryAccent} stopOpacity="0.35" />
+          <stop offset="45%" stopColor={template.secondaryAccent} stopOpacity="0.12" />
           <stop offset="100%" stopColor={template.bgDark} stopOpacity="0" />
         </radialGradient>
 
-        <radialGradient id="ambient-radial-2" cx="80%" cy="85%" r="50%">
-          <stop offset="0%" stopColor={template.primaryAccent} stopOpacity="0.25" />
+        <radialGradient id="mesh-orb-2" cx="80%" cy="40%" r="65%">
+          <stop offset="0%" stopColor={template.secondaryAccent} stopOpacity="0.3" />
+          <stop offset="60%" stopColor={template.primaryAccent} stopOpacity="0.08" />
           <stop offset="100%" stopColor={template.bgDark} stopOpacity="0" />
         </radialGradient>
 
-        <linearGradient id="gold-metallic" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FFF2D6" />
-          <stop offset="35%" stopColor={template.primaryAccent} />
-          <stop offset="70%" stopColor={template.secondaryAccent} />
-          <stop offset="100%" stopColor="#FFFDF7" />
+        <radialGradient id="mesh-orb-3" cx="50%" cy="85%" r="55%">
+          <stop offset="0%" stopColor={template.primaryAccent} stopOpacity="0.22" />
+          <stop offset="100%" stopColor={template.bgDark} stopOpacity="0" />
+        </radialGradient>
+
+        {/* 2026 Liquid Chrome & Metallic Gold Gradients */}
+        <linearGradient id="liquid-metallic" x1="0%" y1="0%" x2="100%" y2="80%">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="25%" stopColor="#FFF4D4" />
+          <stop offset="55%" stopColor={template.primaryAccent} />
+          <stop offset="85%" stopColor={template.secondaryAccent} />
+          <stop offset="100%" stopColor="#FFFDF5" />
         </linearGradient>
 
-        <linearGradient id="card-glass" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.08" />
-          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.02" />
+        <linearGradient id="glass-card-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.07" />
+          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.015" />
         </linearGradient>
 
-        {/* Clip path for circular logos and photos */}
+        <linearGradient id="glass-card-border" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.25" />
+          <stop offset="50%" stopColor={template.primaryAccent} stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.05" />
+        </linearGradient>
+
+        {/* Clip Paths */}
         <clipPath id="logo-circle-clip">
-          <circle cx="26" cy="26" r="24" />
+          <circle cx="28" cy="28" r="26" />
         </clipPath>
 
-        <clipPath id="feature-circle-clip">
-          <circle cx="100" cy="100" r="95" />
+        <clipPath id="speaker-halo-clip">
+          <circle cx="110" cy="110" r="102" />
         </clipPath>
       </defs>
 
-      {/* 1. Base Ambient Background */}
+      {/* 1. Base Dark & Mesh Layer */}
       <rect width={width} height={height} fill={template.bgDark} />
-      <rect width={width} height={height} fill="url(#ambient-radial-1)" />
-      <rect width={width} height={height} fill="url(#ambient-radial-2)" />
+      <rect width={width} height={height} fill="url(#mesh-orb-1)" />
+      <rect width={width} height={height} fill="url(#mesh-orb-2)" />
+      <rect width={width} height={height} fill="url(#mesh-orb-3)" />
 
-      {/* 2. Visual Pattern Layer based on Template */}
+      {/* 2. 2026 Sacred Geometry & Subtle Grid Overlay */}
+      <g opacity="0.04" stroke="#FFFFFF" strokeWidth="1">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <line key={`v-${i}`} x1={(width / 12) * i} y1="0" x2={(width / 12) * i} y2={height} />
+        ))}
+        {Array.from({ length: 12 }).map((_, i) => (
+          <line key={`h-${i}`} x1="0" y1={(height / 12) * i} x2={width} y2={(height / 12) * i} />
+        ))}
+      </g>
+
+      {/* Dynamic Template Lighting Accents */}
       {template.patternType === "radial-rays" && (
-        <g opacity="0.08" stroke={template.primaryAccent} strokeWidth="1">
-          {Array.from({ length: 24 }).map((_, i) => {
-            const angle = (i * 360) / 24;
+        <g opacity="0.07" stroke={template.primaryAccent} strokeWidth="1.2">
+          {Array.from({ length: 32 }).map((_, i) => {
+            const angle = (i * 360) / 32;
             const rad = (angle * Math.PI) / 180;
             const x2 = width / 2 + Math.cos(rad) * Math.max(width, height);
-            const y2 = height / 2 + Math.sin(rad) * Math.max(width, height);
-            return <line key={i} x1={width / 2} y1={height / 2} x2={x2} y2={y2} />;
+            const y2 = height * 0.35 + Math.sin(rad) * Math.max(width, height);
+            return <line key={i} x1={width / 2} y1={height * 0.35} x2={x2} y2={y2} />;
           })}
         </g>
       )}
 
       {template.patternType === "fire-burst" && (
-        <g opacity="0.14">
-          <circle cx={width / 2} cy={height * 0.4} r={width * 0.45} fill="url(#ambient-radial-1)" filter="url(#glow-gold)" />
-          <circle cx={width * 0.2} cy={height * 0.2} r="250" fill={template.primaryAccent} filter="url(#glow-gold)" opacity="0.25" />
-          <circle cx={width * 0.8} cy={height * 0.7} r="300" fill={template.secondaryAccent} filter="url(#glow-gold)" opacity="0.2" />
+        <g opacity="0.15">
+          <circle cx={width * 0.5} cy={height * 0.35} r={width * 0.4} fill="url(#mesh-orb-1)" filter="url(#glow-volumetric)" />
+          <circle cx={width * 0.15} cy={height * 0.2} r="280" fill={template.primaryAccent} filter="url(#glow-volumetric)" opacity="0.3" />
         </g>
       )}
 
       {template.patternType === "aurora" && (
-        <g opacity="0.16">
+        <g opacity="0.2">
           <path
-            d={`M 0,${height * 0.35} Q ${width * 0.3},${height * 0.15} ${width * 0.6},${height * 0.4} T ${width},${height * 0.25} L ${width},${height} L 0,${height} Z`}
-            fill="url(#ambient-radial-1)"
-          />
-          <path
-            d={`M 0,${height * 0.55} Q ${width * 0.4},${height * 0.75} ${width * 0.7},${height * 0.5} T ${width},${height * 0.7} L ${width},${height} L 0,${height} Z`}
-            fill="url(#ambient-radial-2)"
+            d={`M 0,${height * 0.3} Q ${width * 0.35},${height * 0.1} ${width * 0.7},${height * 0.35} T ${width},${height * 0.2} L ${width},${height} L 0,${height} Z`}
+            fill="url(#mesh-orb-1)"
           />
         </g>
       )}
 
-      {/* 3. Outer Sacred Border Framing */}
+      {/* 3. 2026 Architectural Framing & Corner Crosshairs */}
       <rect
-        x={22}
-        y={22}
-        width={width - 44}
-        height={height - 44}
+        x={20}
+        y={20}
+        width={width - 40}
+        height={height - 40}
         fill="none"
-        stroke={template.borderColor}
+        stroke="url(#glass-card-border)"
         strokeWidth="1.5"
-        rx="22"
-      />
-      <rect
-        x={30}
-        y={30}
-        width={width - 60}
-        height={height - 60}
-        fill="none"
-        stroke={template.borderColor}
-        strokeWidth="0.5"
-        strokeDasharray="8 6"
-        rx="18"
-        opacity="0.55"
+        rx="26"
       />
 
-      {/* Corner Ornaments */}
+      {/* Modern Editorial Crosshairs `+` in 4 corners */}
       {[
-        { x: 30, y: 30 },
-        { x: width - 30, y: 30 },
-        { x: 30, y: height - 30 },
-        { x: width - 30, y: height - 30 },
+        { x: 38, y: 38 },
+        { x: width - 38, y: 38 },
+        { x: 38, y: height - 38 },
+        { x: width - 38, y: height - 38 },
       ].map((pt, idx) => (
         <g key={idx} transform={`translate(${pt.x}, ${pt.y})`}>
-          <circle cx="0" cy="0" r="4.5" fill={template.primaryAccent} opacity="0.8" />
-          <line x1="-10" y1="0" x2="10" y2="0" stroke={template.primaryAccent} strokeWidth="1" opacity="0.5" />
-          <line x1="0" y1="-10" x2="0" y2="10" stroke={template.primaryAccent} strokeWidth="1" opacity="0.5" />
+          <line x1="-8" y1="0" x2="8" y2="0" stroke={template.primaryAccent} strokeWidth="1.5" opacity="0.75" />
+          <line x1="0" y1="-8" x2="0" y2="8" stroke={template.primaryAccent} strokeWidth="1.5" opacity="0.75" />
         </g>
       ))}
 
+      {/* Micro-Editorial Technical Tags */}
+      <g opacity="0.55" fontSize="10" fontWeight="700" letterSpacing="2.5" fill="#FFFFFF" fontFamily="monospace">
+        <text x="56" y="32">GGM ASABA // 2026.SEASON</text>
+        <text x={width - 56} y="32" textAnchor="end">06°11&apos;N · 06°44&apos;E</text>
+      </g>
+
       {/* ============================================================== */}
-      {/* LAYOUT A: LANDSCAPE 16:9 MODE (Two-Column Balanced Composition) */}
+      {/* 2026 ARCHITECTURE A: WIDESCREEN LANDSCAPE (16:9 · 1920 × 1080) */}
       {/* ============================================================== */}
       {isLandscape && (
         <g transform={`translate(${paddingX}, ${paddingY})`}>
-          {/* Header Bar Across Full Width */}
+          {/* Header Row: Official Logo Glass Pill + Category Badge */}
           <g>
-            {/* Church Logo */}
             <g transform="translate(0, 0)">
-              <circle cx="26" cy="26" r="26" fill={template.badgeBg} stroke={template.primaryAccent} strokeWidth="2" />
-              <image
-                href={effectiveLogoUrl}
-                x="2"
-                y="2"
-                width="48"
-                height="48"
-                preserveAspectRatio="xMidYMid slice"
-                clipPath="url(#logo-circle-clip)"
+              {/* Logo Pill Container */}
+              <rect
+                width="420"
+                height="62"
+                rx="31"
+                fill="url(#glass-card-bg)"
+                stroke="url(#glass-card-border)"
+                strokeWidth="1.2"
+                filter="url(#card-shadow)"
               />
-            </g>
+              {/* Official Church Logo */}
+              <g transform="translate(4, 3)">
+                <circle cx="28" cy="28" r="28" fill={template.badgeBg} stroke={template.primaryAccent} strokeWidth="2" />
+                <image
+                  href={effectiveLogoUrl}
+                  x="2"
+                  y="2"
+                  width="52"
+                  height="52"
+                  preserveAspectRatio="xMidYMid slice"
+                  clipPath="url(#logo-circle-clip)"
+                />
+              </g>
 
-            {/* Church Name & Title */}
-            <text
-              x="64"
-              y="22"
-              fill={template.textColor}
-              fontSize="20"
-              fontWeight="900"
-              letterSpacing="2.5"
-              fontFamily="system-ui, -apple-system, sans-serif"
-            >
-              {data.churchName || "GRACE OF GOD MISSION ASABA"}
-            </text>
-            <text
-              x="64"
-              y="42"
-              fill={template.mutedColor}
-              fontSize="12"
-              fontWeight="600"
-              letterSpacing="1.2"
-              opacity="0.8"
-              fontFamily="system-ui, -apple-system, sans-serif"
-            >
-              SANCTUARY OF GRACE & TRUTH · ASABA, DELTA STATE
-            </text>
+              {/* Church Typography in Pill */}
+              <text x="72" y="27" fill="#FFFFFF" fontSize="15" fontWeight="900" letterSpacing="2">
+                GRACE OF GOD MISSION
+              </text>
+              <text x="72" y="46" fill={template.primaryAccent} fontSize="11" fontWeight="700" letterSpacing="1.2">
+                ASABA · SANCTUARY OF GRACE & TRUTH
+              </text>
+            </g>
 
             {/* Category Tag on the far right */}
             {data.category && (
-              <g transform={`translate(${contentWidth - 320}, 4)`}>
-                <rect width="320" height="38" rx="19" fill={template.badgeBg} stroke={template.borderColor} strokeWidth="1" />
+              <g transform={`translate(${contentWidth - 340}, 10)`}>
+                <rect width="340" height="42" rx="21" fill={template.badgeBg} stroke="url(#glass-card-border)" strokeWidth="1" />
+                <circle cx="20" cy="21" r="5" fill="#22C55E" />
                 <text
-                  x="160"
-                  y="24"
+                  x="180"
+                  y="26"
                   fill={template.badgeText}
                   fontSize="12"
-                  fontWeight="800"
-                  letterSpacing="1.8"
+                  fontWeight="900"
+                  letterSpacing="2.2"
                   textAnchor="middle"
-                  fontFamily="system-ui, -apple-system, sans-serif"
                 >
                   {data.category.toUpperCase()}
                 </text>
@@ -322,48 +363,45 @@ export function FlyerRenderer({
             )}
           </g>
 
-          {/* Left Column (Width: 1040px) -> Main Theme, Subtitle, Scripture */}
-          <g transform="translate(0, 84)">
-            {/* Badge */}
+          {/* Left Column (Width: 1040px) -> Dynamic Headline Stack */}
+          <g transform="translate(0, 96)">
+            {/* Feature Highlight Pill */}
             {data.badgeText && (
               <g transform="translate(0, 0)">
                 <rect
-                  x="0"
-                  y="0"
                   width={Math.min(500, data.badgeText.length * 11 + 44)}
                   height="34"
                   rx="17"
-                  fill="url(#card-glass)"
+                  fill="url(#glass-card-bg)"
                   stroke={template.borderColor}
                   strokeWidth="1"
                 />
-                <circle cx="16" cy="17" r="4" fill={template.secondaryAccent} />
+                <circle cx="16" cy="17" r="4.5" fill={template.secondaryAccent} />
                 <text
                   x="28"
                   y="22"
                   fill={template.secondaryAccent}
-                  fontSize="12"
-                  fontWeight="800"
-                  letterSpacing="2"
-                  fontFamily="system-ui, -apple-system, sans-serif"
+                  fontSize="11.5"
+                  fontWeight="900"
+                  letterSpacing="2.5"
                 >
                   {data.badgeText.toUpperCase()}
                 </text>
               </g>
             )}
 
-            {/* Title */}
+            {/* Main Theme Headline */}
             <g transform={`translate(0, ${data.badgeText ? 44 : 8})`}>
               {titleLines.map((line, idx) => (
                 <text
                   key={idx}
                   x="0"
                   y={idx * (titleFontSize * 1.08) + titleFontSize * 0.9}
-                  fill="url(#gold-metallic)"
+                  fill="url(#liquid-metallic)"
                   fontSize={titleFontSize}
                   fontWeight="900"
-                  letterSpacing="0.5"
-                  filter="url(#shadow-drop)"
+                  letterSpacing="0.8"
+                  filter="url(#shadow-deep)"
                 >
                   {line}
                 </text>
@@ -383,10 +421,9 @@ export function FlyerRenderer({
                     x="0"
                     y={idx * 26 + 18}
                     fill={template.mutedColor}
-                    fontSize={18}
+                    fontSize={17}
                     fontWeight="500"
                     opacity="0.95"
-                    fontFamily="system-ui, -apple-system, sans-serif"
                   >
                     {subLine}
                   </text>
@@ -394,7 +431,7 @@ export function FlyerRenderer({
               </g>
             )}
 
-            {/* Scripture Box */}
+            {/* Scripture Bento Card */}
             {data.scriptureText && (
               <g
                 transform={`translate(0, ${
@@ -404,45 +441,20 @@ export function FlyerRenderer({
                 })`}
               >
                 <rect
-                  x="0"
-                  y="0"
-                  width="1020"
+                  width="1000"
                   height={scriptureLines.length > 1 ? 92 : 76}
-                  rx="16"
-                  fill={template.badgeBg}
-                  stroke={template.borderColor}
+                  rx="18"
+                  fill="url(#glass-card-bg)"
+                  stroke="url(#glass-card-border)"
                   strokeWidth="1"
+                  filter="url(#card-shadow)"
                 />
-                <line
-                  x1="0"
-                  y1="10"
-                  x2="0"
-                  y2={scriptureLines.length > 1 ? 82 : 66}
-                  stroke={template.primaryAccent}
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                />
-                <text
-                  x="20"
-                  y="24"
-                  fill={template.primaryAccent}
-                  fontSize="12"
-                  fontWeight="800"
-                  letterSpacing="1.5"
-                  fontFamily="system-ui, -apple-system, sans-serif"
-                >
-                  {data.scriptureRef || "SCRIPTURE FOCUS"}
+                <line x1="0" y1="12" x2="0" y2={scriptureLines.length > 1 ? 80 : 64} stroke={template.primaryAccent} strokeWidth="5" strokeLinecap="round" />
+                <text x="24" y="26" fill={template.primaryAccent} fontSize="12" fontWeight="900" letterSpacing="2">
+                  // {data.scriptureRef || "SCRIPTURE FOCUS"}
                 </text>
                 {scriptureLines.map((sLine, idx) => (
-                  <text
-                    key={idx}
-                    x="20"
-                    y={idx * 20 + 48}
-                    fill={template.textColor}
-                    fontSize={14}
-                    fontStyle="italic"
-                    fontFamily="system-ui, -apple-system, sans-serif"
-                  >
+                  <text key={idx} x="24" y={idx * 20 + 50} fill="#FFFFFF" fontSize="14" fontStyle="italic">
                     {idx === 0 ? `“${sLine}` : sLine}
                     {idx === scriptureLines.length - 1 ? "”" : ""}
                   </text>
@@ -451,133 +463,136 @@ export function FlyerRenderer({
             )}
           </g>
 
-          {/* Right Column (Width: 680px) -> Logistics, Ministers, Broadcast Badge, Crest */}
-          <g transform={`translate(${contentWidth - 680}, 84)`}>
-            {/* Feature Halo Crest or Speaker Photo */}
-            <g transform="translate(240, 0)">
-              <circle cx="100" cy="100" r="100" fill={template.badgeBg} stroke={template.primaryAccent} strokeWidth="3" filter="url(#glow-gold)" />
-              <image
-                href={data.speakerPhotoUrl || effectiveLogoUrl}
-                x="5"
-                y="5"
-                width="190"
-                height="190"
-                preserveAspectRatio="xMidYMid slice"
-                clipPath="url(#feature-circle-clip)"
-              />
-            </g>
-
-            {/* Date & Time Card */}
-            <g transform="translate(0, 226)">
-              <rect width="680" height="88" rx="16" fill="url(#card-glass)" stroke={template.borderColor} strokeWidth="1" />
-              <g transform="translate(20, 22)">
-                <rect width="24" height="24" rx="4" fill="none" stroke={template.primaryAccent} strokeWidth="2" />
-                <line x1="0" y1="8" x2="24" y2="8" stroke={template.primaryAccent} strokeWidth="1.5" />
+          {/* Right Column (Width: 680px) -> 2026 Bento Logistics Modules */}
+          <g transform={`translate(${contentWidth - 680}, 96)`}>
+            {/* Bento Module 1: 2026 Bold Date Module */}
+            <g>
+              <rect width="680" height="120" rx="20" fill="url(#glass-card-bg)" stroke="url(#glass-card-border)" strokeWidth="1.2" filter="url(#card-shadow)" />
+              {/* Massive Day Number */}
+              <text x="28" y="88" fill="url(#liquid-metallic)" fontSize="72" fontWeight="900" letterSpacing="-1">
+                {bentoDate.day}
+              </text>
+              <g transform="translate(140, 28)">
+                <text x="0" y="22" fill={template.primaryAccent} fontSize="13" fontWeight="900" letterSpacing="2">
+                  {bentoDate.weekday}
+                </text>
+                <text x="0" y="44" fill="#FFFFFF" fontSize="18" fontWeight="800" letterSpacing="0.8">
+                  {bentoDate.month}
+                </text>
+                <text x="0" y="66" fill={template.secondaryAccent} fontSize="13" fontWeight="700">
+                  {data.time || "TIME TBA"}
+                </text>
               </g>
-              <text x="56" y="32" fill={template.textColor} fontSize="16" fontWeight="800" letterSpacing="0.8">
-                {data.date || "DATE TBA"}
-              </text>
-              <text x="56" y="58" fill={template.secondaryAccent} fontSize="14" fontWeight="700">
-                {data.time || "TIME TBA"}
-              </text>
             </g>
 
-            {/* Venue Card */}
-            <g transform="translate(0, 326)">
-              <rect width="680" height="88" rx="16" fill="url(#card-glass)" stroke={template.borderColor} strokeWidth="1" />
-              <g transform="translate(20, 22)">
-                <path d="M 12,2 C 7,2 3,6 3,11 C 3,18 12,26 12,26 C 12,26 21,18 21,11 C 21,6 17,2 12,2 Z" fill="none" stroke={template.primaryAccent} strokeWidth="2" />
-                <circle cx="12" cy="11" r="3" fill={template.primaryAccent} />
+            {/* Bento Module 2: Venue & Location */}
+            <g transform="translate(0, 134)">
+              <rect width="680" height="96" rx="20" fill="url(#glass-card-bg)" stroke="url(#glass-card-border)" strokeWidth="1.2" filter="url(#card-shadow)" />
+              <g transform="translate(24, 26)">
+                <circle cx="22" cy="22" r="22" fill={template.badgeBg} stroke={template.primaryAccent} strokeWidth="1" />
+                <path d="M 22,12 C 18,12 15,15 15,19 C 15,24 22,30 22,30 C 22,30 29,24 29,19 C 29,15 26,12 22,12 Z" fill="none" stroke={template.primaryAccent} strokeWidth="2" />
+                <circle cx="22" cy="19" r="2.5" fill={template.primaryAccent} />
               </g>
-              <text x="56" y="32" fill={template.textColor} fontSize="14" fontWeight="800" letterSpacing="0.5">
-                LOCATION / SANCTUARY
+              <text x="82" y="38" fill={template.primaryAccent} fontSize="11.5" fontWeight="900" letterSpacing="1.8">
+                SANCTUARY LOCATION
               </text>
-              <text x="56" y="58" fill={template.mutedColor} fontSize="13" fontWeight="500">
-                {data.venue && data.venue.length > 55 ? data.venue.slice(0, 52) + "..." : data.venue || "Auditorium of Grace, 12 Jesus Saves Road, Asaba"}
+              <text x="82" y="62" fill="#FFFFFF" fontSize="14" fontWeight="600">
+                {data.venue && data.venue.length > 50 ? data.venue.slice(0, 47) + "..." : data.venue || "Auditorium of Grace, 12 Jesus Saves Road, Asaba"}
               </text>
             </g>
 
-            {/* Ministers & Broadcast */}
-            <g transform="translate(0, 426)">
-              <text x="0" y="24" fill={template.primaryAccent} fontSize="16" fontWeight="800" letterSpacing="1">
+            {/* Bento Module 3: Minister Leadership */}
+            <g transform="translate(0, 244)">
+              <rect width="680" height="88" rx="20" fill="url(#glass-card-bg)" stroke="url(#glass-card-border)" strokeWidth="1.2" filter="url(#card-shadow)" />
+              <g transform="translate(24, 20)">
+                <circle cx="24" cy="24" r="24" fill={template.badgeBg} stroke={template.primaryAccent} strokeWidth="1.5" />
+                <image
+                  href={data.speakerPhotoUrl || effectiveLogoUrl}
+                  x="2"
+                  y="2"
+                  width="44"
+                  height="44"
+                  preserveAspectRatio="xMidYMid slice"
+                  clipPath="url(#logo-circle-clip)"
+                />
+              </g>
+              <text x="86" y="36" fill={template.primaryAccent} fontSize="11.5" fontWeight="900" letterSpacing="1.5">
+                MINISTERING
+              </text>
+              <text x="86" y="58" fill="#FFFFFF" fontSize="15" fontWeight="800">
                 {data.minister || "HOST: PASTOR CHUKWUDI EZE"}
               </text>
               {data.guestMinister && (
-                <text x="0" y="48" fill={template.secondaryAccent} fontSize="14" fontWeight="700">
+                <text x="86" y="78" fill={template.secondaryAccent} fontSize="13" fontWeight="700">
                   {data.guestMinister}
                 </text>
               )}
-
-              {data.broadcastBadge && (
-                <g transform="translate(0, 68)">
-                  <rect width="680" height="36" rx="18" fill={template.badgeBg} stroke={template.borderColor} strokeWidth="1" />
-                  <circle cx="18" cy="18" r="4.5" fill="#EF4444" />
-                  <text x="32" y="23" fill={template.textColor} fontSize="11" fontWeight="800" letterSpacing="1.2">
-                    {data.broadcastBadge.toUpperCase()}
-                  </text>
-                </g>
-              )}
             </g>
+
+            {/* Bento Module 4: Broadcast Banner */}
+            {data.broadcastBadge && (
+              <g transform="translate(0, 344)">
+                <rect width="680" height="42" rx="21" fill={template.badgeBg} stroke="url(#glass-card-border)" strokeWidth="1.2" />
+                <circle cx="22" cy="21" r="5" fill="#EF4444" />
+                <text x="36" y="26" fill="#FFFFFF" fontSize="11" fontWeight="900" letterSpacing="1.8">
+                  {data.broadcastBadge.toUpperCase()}
+                </text>
+              </g>
+            )}
           </g>
         </g>
       )}
 
       {/* ============================================================== */}
-      {/* LAYOUT B: SQUARE (1:1) & STORY (9:16) (Vertical Dynamic Flow)  */}
+      {/* 2026 ARCHITECTURE B: SQUARE (1:1) & STORY (9:16) (Bento Stack) */}
       {/* ============================================================== */}
       {!isLandscape && (
         <g transform={`translate(${paddingX}, ${paddingY})`}>
-          {/* Top Row: Church Emblem & Name */}
+          {/* Header Bar: Official Logo Glass Pill + Category Badge */}
           <g>
             <g transform="translate(0, 0)">
-              <circle cx="26" cy="26" r="26" fill={template.badgeBg} stroke={template.primaryAccent} strokeWidth="2" />
-              <image
-                href={effectiveLogoUrl}
-                x="2"
-                y="2"
-                width="48"
-                height="48"
-                preserveAspectRatio="xMidYMid slice"
-                clipPath="url(#logo-circle-clip)"
+              <rect
+                width={isStory ? 440 : 390}
+                height="58"
+                rx="29"
+                fill="url(#glass-card-bg)"
+                stroke="url(#glass-card-border)"
+                strokeWidth="1.2"
+                filter="url(#card-shadow)"
               />
+              <g transform="translate(4, 3)">
+                <circle cx="26" cy="26" r="26" fill={template.badgeBg} stroke={template.primaryAccent} strokeWidth="2" />
+                <image
+                  href={effectiveLogoUrl}
+                  x="2"
+                  y="2"
+                  width="48"
+                  height="48"
+                  preserveAspectRatio="xMidYMid slice"
+                  clipPath="url(#logo-circle-clip)"
+                />
+              </g>
+
+              <text x="68" y="25" fill="#FFFFFF" fontSize="13.5" fontWeight="900" letterSpacing="1.8">
+                GRACE OF GOD MISSION
+              </text>
+              <text x="68" y="44" fill={template.primaryAccent} fontSize="10" fontWeight="700" letterSpacing="1">
+                ASABA · SANCTUARY OF GRACE
+              </text>
             </g>
 
-            <text
-              x="62"
-              y="22"
-              fill={template.textColor}
-              fontSize={isStory ? 20 : 18}
-              fontWeight="900"
-              letterSpacing="2.5"
-              fontFamily="system-ui, -apple-system, sans-serif"
-            >
-              {data.churchName || "GRACE OF GOD MISSION ASABA"}
-            </text>
-            <text
-              x="62"
-              y="41"
-              fill={template.mutedColor}
-              fontSize="11"
-              fontWeight="600"
-              letterSpacing="1.2"
-              opacity="0.8"
-              fontFamily="system-ui, -apple-system, sans-serif"
-            >
-              SANCTUARY OF GRACE & TRUTH · ASABA, DELTA STATE
-            </text>
-
             {data.category && (
-              <g transform={`translate(${contentWidth - (isStory ? 280 : 250)}, 6)`}>
-                <rect width={isStory ? 280 : 250} height="36" rx="18" fill={template.badgeBg} stroke={template.borderColor} strokeWidth="1" />
+              <g transform={`translate(${contentWidth - (isStory ? 290 : 250)}, 8)`}>
+                <rect width={isStory ? 290 : 250} height="40" rx="20" fill={template.badgeBg} stroke="url(#glass-card-border)" strokeWidth="1" />
+                <circle cx="16" cy="20" r="4.5" fill="#22C55E" />
                 <text
-                  x={isStory ? 140 : 125}
-                  y="23"
+                  x={isStory ? 152 : 132}
+                  y="25"
                   fill={template.badgeText}
-                  fontSize="11"
-                  fontWeight="800"
-                  letterSpacing="1.5"
+                  fontSize="10.5"
+                  fontWeight="900"
+                  letterSpacing="1.8"
                   textAnchor="middle"
-                  fontFamily="system-ui, -apple-system, sans-serif"
                 >
                   {data.category.toUpperCase()}
                 </text>
@@ -587,7 +602,7 @@ export function FlyerRenderer({
 
           {/* DYNAMIC MIDDLE CONTENT STACK */}
           {(() => {
-            const startY = isStory ? 100 : 76;
+            const startY = isStory ? 104 : 78;
             let currentY = startY;
 
             const badgeY = currentY;
@@ -604,46 +619,43 @@ export function FlyerRenderer({
 
             return (
               <g>
-                {/* Badge */}
+                {/* Highlight Badge */}
                 {data.badgeText && (
                   <g transform={`translate(0, ${badgeY})`}>
                     <rect
-                      x="0"
-                      y="0"
                       width={Math.min(contentWidth, data.badgeText.length * 11 + 44)}
                       height="32"
                       rx="16"
-                      fill="url(#card-glass)"
+                      fill="url(#glass-card-bg)"
                       stroke={template.borderColor}
                       strokeWidth="1"
                     />
-                    <circle cx="16" cy="16" r="4" fill={template.secondaryAccent} />
+                    <circle cx="16" cy="16" r="4.5" fill={template.secondaryAccent} />
                     <text
                       x="28"
                       y="21"
                       fill={template.secondaryAccent}
                       fontSize="11"
-                      fontWeight="800"
-                      letterSpacing="2"
-                      fontFamily="system-ui, -apple-system, sans-serif"
+                      fontWeight="900"
+                      letterSpacing="2.2"
                     >
                       {data.badgeText.toUpperCase()}
                     </text>
                   </g>
                 )}
 
-                {/* Title */}
+                {/* Main Theme Headline */}
                 <g transform={`translate(0, ${titleY})`}>
                   {titleLines.map((line, idx) => (
                     <text
                       key={idx}
                       x="0"
                       y={idx * (titleFontSize * 1.08) + titleFontSize * 0.9}
-                      fill="url(#gold-metallic)"
+                      fill="url(#liquid-metallic)"
                       fontSize={titleFontSize}
                       fontWeight="900"
                       letterSpacing="0.5"
-                      filter="url(#shadow-drop)"
+                      filter="url(#shadow-deep)"
                     >
                       {line}
                     </text>
@@ -662,7 +674,6 @@ export function FlyerRenderer({
                         fontSize={isStory ? 20 : 17}
                         fontWeight="500"
                         opacity="0.95"
-                        fontFamily="system-ui, -apple-system, sans-serif"
                       >
                         {subLine}
                       </text>
@@ -670,49 +681,24 @@ export function FlyerRenderer({
                   </g>
                 )}
 
-                {/* Scripture Box */}
+                {/* Scripture Bento Card */}
                 {data.scriptureText && (
                   <g transform={`translate(0, ${scriptureY})`}>
                     <rect
-                      x="0"
-                      y="0"
                       width={contentWidth}
                       height={scriptureLines.length > 1 ? 84 : 70}
-                      rx="16"
-                      fill={template.badgeBg}
-                      stroke={template.borderColor}
+                      rx="18"
+                      fill="url(#glass-card-bg)"
+                      stroke="url(#glass-card-border)"
                       strokeWidth="1"
+                      filter="url(#card-shadow)"
                     />
-                    <line
-                      x1="0"
-                      y1="8"
-                      x2="0"
-                      y2={scriptureLines.length > 1 ? 76 : 62}
-                      stroke={template.primaryAccent}
-                      strokeWidth="5"
-                      strokeLinecap="round"
-                    />
-                    <text
-                      x="20"
-                      y="24"
-                      fill={template.primaryAccent}
-                      fontSize="12"
-                      fontWeight="800"
-                      letterSpacing="1.5"
-                      fontFamily="system-ui, -apple-system, sans-serif"
-                    >
-                      {data.scriptureRef || "SCRIPTURE FOCUS"}
+                    <line x1="0" y1="8" x2="0" y2={scriptureLines.length > 1 ? 76 : 62} stroke={template.primaryAccent} strokeWidth="5" strokeLinecap="round" />
+                    <text x="22" y="24" fill={template.primaryAccent} fontSize="11" fontWeight="900" letterSpacing="1.8">
+                      // {data.scriptureRef || "SCRIPTURE FOCUS"}
                     </text>
                     {scriptureLines.map((sLine, idx) => (
-                      <text
-                        key={idx}
-                        x="20"
-                        y={idx * 20 + 46}
-                        fill={template.textColor}
-                        fontSize={14}
-                        fontStyle="italic"
-                        fontFamily="system-ui, -apple-system, sans-serif"
-                      >
+                      <text key={idx} x="22" y={idx * 20 + 46} fill="#FFFFFF" fontSize="13.5" fontStyle="italic">
                         {idx === 0 ? `“${sLine}` : sLine}
                         {idx === scriptureLines.length - 1 ? "”" : ""}
                       </text>
@@ -723,95 +709,100 @@ export function FlyerRenderer({
             );
           })()}
 
-          {/* Speaker Photo / Church Emblem in Story Mode */}
+          {/* Featured Speaker Halo in Story Mode */}
           {isStory && (
-            <g transform={`translate(${contentWidth / 2 - 100}, 840)`}>
-              <circle cx="100" cy="100" r="100" fill={template.badgeBg} stroke={template.primaryAccent} strokeWidth="3" filter="url(#glow-gold)" />
+            <g transform={`translate(${contentWidth / 2 - 110}, 840)`}>
+              <circle cx="110" cy="110" r="110" fill={template.badgeBg} stroke="url(#glass-card-border)" strokeWidth="3" filter="url(#glow-volumetric)" />
               <image
                 href={data.speakerPhotoUrl || effectiveLogoUrl}
-                x="5"
-                y="5"
-                width="190"
-                height="190"
+                x="8"
+                y="8"
+                width="204"
+                height="204"
                 preserveAspectRatio="xMidYMid slice"
-                clipPath="url(#feature-circle-clip)"
+                clipPath="url(#speaker-halo-clip)"
               />
             </g>
           )}
 
-          {/* BOTTOM LOGISTICS ROW */}
-          <g transform={`translate(0, ${height - paddingY * 2 - (isStory ? 290 : 170)})`}>
-            {/* Date & Time Card */}
+          {/* 2026 BENTO LOGISTICS DOCK (At Bottom) */}
+          <g transform={`translate(0, ${height - paddingY * 2 - (isStory ? 300 : 185)})`}>
+            {/* Bento Row 1: Big Date Card & Location Card */}
             <g>
-              <rect
-                x="0"
-                y="0"
-                width={contentWidth * 0.48}
-                height="78"
-                rx="16"
-                fill="url(#card-glass)"
-                stroke={template.borderColor}
-                strokeWidth="1"
-              />
-              <g transform="translate(16, 16)">
-                <rect width="20" height="20" rx="4" fill="none" stroke={template.primaryAccent} strokeWidth="2" />
-                <line x1="0" y1="7" x2="20" y2="7" stroke={template.primaryAccent} strokeWidth="1.5" />
+              {/* Bento Card: Date */}
+              <g>
+                <rect
+                  width={contentWidth * 0.48}
+                  height="88"
+                  rx="18"
+                  fill="url(#glass-card-bg)"
+                  stroke="url(#glass-card-border)"
+                  strokeWidth="1.2"
+                  filter="url(#card-shadow)"
+                />
+                <text x="18" y="60" fill="url(#liquid-metallic)" fontSize="48" fontWeight="900">
+                  {bentoDate.day}
+                </text>
+                <g transform="translate(84, 18)">
+                  <text x="0" y="16" fill={template.primaryAccent} fontSize="11" fontWeight="900" letterSpacing="1.5">
+                    {bentoDate.weekday}
+                  </text>
+                  <text x="0" y="34" fill="#FFFFFF" fontSize="13" fontWeight="800">
+                    {bentoDate.month}
+                  </text>
+                  <text x="0" y="52" fill={template.secondaryAccent} fontSize="11.5" fontWeight="700">
+                    {data.time || "TIME TBA"}
+                  </text>
+                </g>
               </g>
-              <text x="46" y="27" fill={template.textColor} fontSize="13" fontWeight="800" letterSpacing="0.8">
-                {data.date || "DATE TBA"}
-              </text>
-              <text x="46" y="52" fill={template.secondaryAccent} fontSize="12" fontWeight="700">
-                {data.time || "TIME TBA"}
-              </text>
+
+              {/* Bento Card: Location */}
+              <g transform={`translate(${contentWidth * 0.52}, 0)`}>
+                <rect
+                  width={contentWidth * 0.48}
+                  height="88"
+                  rx="18"
+                  fill="url(#glass-card-bg)"
+                  stroke="url(#glass-card-border)"
+                  strokeWidth="1.2"
+                  filter="url(#card-shadow)"
+                />
+                <g transform="translate(18, 18)">
+                  <circle cx="16" cy="16" r="16" fill={template.badgeBg} stroke={template.primaryAccent} strokeWidth="1" />
+                  <path d="M 16,9 C 13,9 11,11 11,14 C 11,18 16,23 16,23 C 16,23 21,18 21,14 C 21,11 19,9 16,9 Z" fill="none" stroke={template.primaryAccent} strokeWidth="1.8" />
+                </g>
+                <text x="60" y="34" fill={template.primaryAccent} fontSize="11" fontWeight="900" letterSpacing="1.5">
+                  SANCTUARY
+                </text>
+                <text x="60" y="56" fill="#FFFFFF" fontSize="12" fontWeight="600">
+                  {data.venue && data.venue.length > 36 ? data.venue.slice(0, 33) + "..." : data.venue || "12 Jesus Saves Road, Asaba"}
+                </text>
+              </g>
             </g>
 
-            {/* Venue Card */}
-            <g transform={`translate(${contentWidth * 0.52}, 0)`}>
-              <rect
-                x="0"
-                y="0"
-                width={contentWidth * 0.48}
-                height="78"
-                rx="16"
-                fill="url(#card-glass)"
-                stroke={template.borderColor}
-                strokeWidth="1"
-              />
-              <g transform="translate(16, 16)">
-                <path d="M 10,2 C 6,2 2,6 2,10 C 2,16 10,23 10,23 C 10,23 18,16 18,10 C 18,6 14,2 10,2 Z" fill="none" stroke={template.primaryAccent} strokeWidth="2" />
-                <circle cx="10" cy="10" r="2.5" fill={template.primaryAccent} />
-              </g>
-              <text x="44" y="27" fill={template.textColor} fontSize="12" fontWeight="800" letterSpacing="0.5">
-                LOCATION / SANCTUARY
-              </text>
-              <text x="44" y="52" fill={template.mutedColor} fontSize="11" fontWeight="500">
-                {data.venue && data.venue.length > 38 ? data.venue.slice(0, 35) + "..." : data.venue || "12 Jesus Saves Road, Asaba"}
-              </text>
-            </g>
-
-            {/* Ministers & Broadcast Footer */}
-            <g transform="translate(0, 92)">
-              <text x="0" y="16" fill={template.primaryAccent} fontSize="13" fontWeight="800" letterSpacing="1">
+            {/* Bento Row 2: Minister & Broadcast Pill */}
+            <g transform="translate(0, 102)">
+              <text x="0" y="18" fill={template.primaryAccent} fontSize="13.5" fontWeight="900" letterSpacing="1.2">
                 {data.minister || "HOST: PASTOR CHUKWUDI EZE"}
               </text>
               {data.guestMinister && (
-                <text x="0" y="36" fill={template.secondaryAccent} fontSize="12" fontWeight="700">
+                <text x="0" y="38" fill={template.secondaryAccent} fontSize="12.5" fontWeight="700">
                   {data.guestMinister}
                 </text>
               )}
 
               {data.broadcastBadge && (
-                <g transform={`translate(${contentWidth - (isStory ? 420 : 360)}, 2)`}>
+                <g transform={`translate(${contentWidth - (isStory ? 440 : 380)}, 2)`}>
                   <rect
-                    width={isStory ? 420 : 360}
-                    height="30"
-                    rx="15"
+                    width={isStory ? 440 : 380}
+                    height="32"
+                    rx="16"
                     fill={template.badgeBg}
-                    stroke={template.borderColor}
+                    stroke="url(#glass-card-border)"
                     strokeWidth="1"
                   />
-                  <circle cx="15" cy="15" r="4" fill="#EF4444" />
-                  <text x="26" y="20" fill={template.textColor} fontSize="9.5" fontWeight="800" letterSpacing="1.2">
+                  <circle cx="16" cy="16" r="4.5" fill="#EF4444" />
+                  <text x="28" y="21" fill="#FFFFFF" fontSize="10" fontWeight="900" letterSpacing="1.8">
                     {data.broadcastBadge.toUpperCase()}
                   </text>
                 </g>
