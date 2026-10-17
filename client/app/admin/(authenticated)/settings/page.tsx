@@ -28,6 +28,7 @@ export default function SiteSettingsPage() {
     accountNumber: "",
     googleMapsUrl: "",
     facebookUrl: "",
+    tiktokUrl: "",
     youtubeUrl: "",
     instagramUrl: "",
   });
@@ -49,6 +50,7 @@ export default function SiteSettingsPage() {
             accountNumber: data.accountNumber || "",
             googleMapsUrl: data.googleMapsUrl || "",
             facebookUrl: data.facebookUrl || "",
+            tiktokUrl: data.tiktokUrl || "",
             youtubeUrl: data.youtubeUrl || "",
             instagramUrl: data.instagramUrl || "",
           });
@@ -63,6 +65,23 @@ export default function SiteSettingsPage() {
       cancelled = true;
     };
   }, []);
+
+  const normalizeUrl = (val: string | null | undefined): string => {
+    if (!val) return "";
+    const trimmed = val.trim();
+    if (!trimmed) return "";
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  };
+
+  const handleUrlBlur = (field: keyof UpdateSiteSettingsDto) => {
+    const raw = formData[field];
+    if (typeof raw === "string") {
+      const normalized = normalizeUrl(raw);
+      if (normalized !== raw) {
+        setFormData((prev) => ({ ...prev, [field]: normalized }));
+      }
+    }
+  };
 
   if (user && user.role !== "SUPER_ADMIN") {
     return (
@@ -86,7 +105,15 @@ export default function SiteSettingsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.settings.update(formData);
+      const payload: UpdateSiteSettingsDto = {
+        ...formData,
+        googleMapsUrl: normalizeUrl(formData.googleMapsUrl),
+        facebookUrl: normalizeUrl(formData.facebookUrl),
+        tiktokUrl: normalizeUrl(formData.tiktokUrl),
+        youtubeUrl: normalizeUrl(formData.youtubeUrl),
+        instagramUrl: normalizeUrl(formData.instagramUrl),
+      };
+      await api.settings.update(payload);
       toast.success("Site settings updated successfully.");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to update site settings.");
@@ -201,10 +228,12 @@ export default function SiteSettingsPage() {
               <Label htmlFor="googleMapsUrl">Google Maps Directions URL</Label>
               <Input
                 id="googleMapsUrl"
-                type="url"
-                placeholder="https://maps.google.com/..."
+                type="text"
+                inputMode="url"
+                placeholder="e.g. google.com/maps/place/... or https://maps.google.com/..."
                 value={formData.googleMapsUrl || ""}
                 onChange={(e) => handleChange("googleMapsUrl", e.target.value)}
+                onBlur={() => handleUrlBlur("googleMapsUrl")}
               />
             </div>
           </div>
@@ -277,37 +306,56 @@ export default function SiteSettingsPage() {
             </div>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="facebookUrl">Facebook URL</Label>
               <Input
                 id="facebookUrl"
-                type="url"
-                placeholder="https://facebook.com/..."
+                type="text"
+                inputMode="url"
+                placeholder="e.g. facebook.com/... or https://..."
                 value={formData.facebookUrl || ""}
                 onChange={(e) => handleChange("facebookUrl", e.target.value)}
+                onBlur={() => handleUrlBlur("facebookUrl")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="youtubeUrl">YouTube URL</Label>
+              <Label htmlFor="tiktokUrl">TikTok URL</Label>
+              <Input
+                id="tiktokUrl"
+                type="text"
+                inputMode="url"
+                placeholder="e.g. tiktok.com/@... or https://..."
+                value={formData.tiktokUrl || ""}
+                onChange={(e) => handleChange("tiktokUrl", e.target.value)}
+                onBlur={() => handleUrlBlur("tiktokUrl")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="youtubeUrl">YouTube URL (Optional)</Label>
               <Input
                 id="youtubeUrl"
-                type="url"
-                placeholder="https://youtube.com/..."
+                type="text"
+                inputMode="url"
+                placeholder="e.g. youtube.com/... or https://..."
                 value={formData.youtubeUrl || ""}
                 onChange={(e) => handleChange("youtubeUrl", e.target.value)}
+                onBlur={() => handleUrlBlur("youtubeUrl")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="instagramUrl">Instagram URL</Label>
+              <Label htmlFor="instagramUrl">Instagram URL (Optional)</Label>
               <Input
                 id="instagramUrl"
-                type="url"
-                placeholder="https://instagram.com/..."
+                type="text"
+                inputMode="url"
+                placeholder="e.g. instagram.com/... or https://..."
                 value={formData.instagramUrl || ""}
                 onChange={(e) => handleChange("instagramUrl", e.target.value)}
+                onBlur={() => handleUrlBlur("instagramUrl")}
               />
             </div>
           </div>

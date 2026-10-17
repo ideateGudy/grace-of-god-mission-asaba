@@ -32,8 +32,9 @@ export class SettingsService {
           bankName: 'Zenith Bank',
           accountName: 'Grace of God Mission Asaba',
           accountNumber: '1010101010',
-          googleMapsUrl: 'https://maps.google.com',
-          facebookUrl: 'https://www.facebook.com/people/Grace-of-God-mission-Asaba-Division/61594831403921/',
+          googleMapsUrl: 'https://www.google.com/maps/place/Grace+of+God+Mission+Asaba+Hq/@6.1763103,6.7464769,17.38z/data=!4m6!3m5!1s0x1043ed616ce913ef:0x5cda51b288ccb076!8m2!3d6.1764146!4d6.748862!16s%2Fg%2F11tf999ctn?entry=ttu',
+          facebookUrl: 'https://www.facebook.com/profile.php?id=61594831403921',
+          tiktokUrl: 'https://www.tiktok.com/@graceofgodmissionasaba?_r=1&_t=ZS-9AcSfnQD7yO',
         },
       });
     }
@@ -55,6 +56,7 @@ export class SettingsService {
         accountNumber: dto.accountNumber,
         googleMapsUrl: dto.googleMapsUrl || null,
         facebookUrl: dto.facebookUrl || null,
+        tiktokUrl: dto.tiktokUrl || null,
         youtubeUrl: dto.youtubeUrl || null,
         instagramUrl: dto.instagramUrl || null,
       },
@@ -70,6 +72,7 @@ export class SettingsService {
         accountNumber: dto.accountNumber,
         googleMapsUrl: dto.googleMapsUrl || null,
         facebookUrl: dto.facebookUrl || null,
+        tiktokUrl: dto.tiktokUrl || null,
         youtubeUrl: dto.youtubeUrl || null,
         instagramUrl: dto.instagramUrl || null,
       },

@@ -281,6 +281,7 @@ model SiteSetting {
   accountNumber String   @default("1010101010")
   googleMapsUrl String?
   facebookUrl   String?
+  tiktokUrl     String?
   youtubeUrl    String?
   instagramUrl  String?
   updatedAt     DateTime @updatedAt

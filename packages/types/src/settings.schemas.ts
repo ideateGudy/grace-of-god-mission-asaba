@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+const optionalUrlSchema = z.preprocess((val) => {
+  if (typeof val !== 'string') return val;
+  const trimmed = val.trim();
+  if (!trimmed) return '';
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}, z.string().url().nullable().optional().or(z.literal('')));
+
 export const updateSiteSettingsSchema = z.object({
   churchName: z.string().trim().min(1).max(160),
   phone: z.string().trim().min(1).max(40),
@@ -9,10 +16,11 @@ export const updateSiteSettingsSchema = z.object({
   bankName: z.string().trim().min(1).max(80),
   accountName: z.string().trim().min(1).max(120),
   accountNumber: z.string().trim().min(1).max(40),
-  googleMapsUrl: z.string().trim().url().nullable().optional().or(z.literal('')),
-  facebookUrl: z.string().trim().url().nullable().optional().or(z.literal('')),
-  youtubeUrl: z.string().trim().url().nullable().optional().or(z.literal('')),
-  instagramUrl: z.string().trim().url().nullable().optional().or(z.literal('')),
+  googleMapsUrl: optionalUrlSchema,
+  facebookUrl: optionalUrlSchema,
+  tiktokUrl: optionalUrlSchema,
+  youtubeUrl: optionalUrlSchema,
+  instagramUrl: optionalUrlSchema,
 }).strict();
 
 export type UpdateSiteSettingsDto = z.infer<typeof updateSiteSettingsSchema>;

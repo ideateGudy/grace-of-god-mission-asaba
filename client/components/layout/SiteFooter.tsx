@@ -1,7 +1,7 @@
 import { Logo } from "@/components/shared/Logo";
 import Link from "next/link";
 import { MapPin, Phone, Mail } from "lucide-react";
-import { FaFacebook, FaYoutube, FaWhatsapp, FaInstagram } from "react-icons/fa6";
+import { FaFacebook, FaYoutube, FaWhatsapp, FaInstagram, FaTiktok } from "react-icons/fa6";
 import { siteConfig } from "@/config/site";
 
 export function SiteFooter() {
@@ -12,10 +12,11 @@ export function SiteFooter() {
           <Logo className="text-white" />
           <p className="text-white/70 text-balance max-w-sm">{siteConfig.name}</p>
           <div className="flex gap-4">
-            {siteConfig.facebookUrl && <a href={siteConfig.facebookUrl} className="min-h-11 min-w-11 flex items-center justify-center text-white/70 hover:text-white transition-colors" aria-label="Facebook" rel="noreferrer"><FaFacebook className="w-6 h-6" /></a>}
-            {siteConfig.youtubeUrl && <a href={siteConfig.youtubeUrl} className="min-h-11 min-w-11 flex items-center justify-center text-white/70 hover:text-white transition-colors" aria-label="YouTube" rel="noreferrer"><FaYoutube className="w-6 h-6" /></a>}
-            {siteConfig.whatsapp && <a href={`https://wa.me/${siteConfig.whatsapp}`} className="min-h-11 min-w-11 flex items-center justify-center text-white/70 hover:text-white transition-colors" aria-label="WhatsApp" rel="noreferrer"><FaWhatsapp className="w-6 h-6" /></a>}
-            {siteConfig.instagramUrl && <a href={siteConfig.instagramUrl} className="min-h-11 min-w-11 flex items-center justify-center text-white/70 hover:text-white transition-colors" aria-label="Instagram" rel="noreferrer"><FaInstagram className="w-6 h-6" /></a>}
+            {siteConfig.facebookUrl && <a href={siteConfig.facebookUrl} target="_blank" className="min-h-11 min-w-11 flex items-center justify-center text-white/70 hover:text-white transition-colors" aria-label="Facebook" rel="noreferrer"><FaFacebook className="w-6 h-6" /></a>}
+            {siteConfig.tiktokUrl && <a href={siteConfig.tiktokUrl} target="_blank" className="min-h-11 min-w-11 flex items-center justify-center text-white/70 hover:text-white transition-colors" aria-label="TikTok" rel="noreferrer"><FaTiktok className="w-6 h-6" /></a>}
+            {siteConfig.youtubeUrl && <a href={siteConfig.youtubeUrl} target="_blank" className="min-h-11 min-w-11 flex items-center justify-center text-white/70 hover:text-white transition-colors" aria-label="YouTube" rel="noreferrer"><FaYoutube className="w-6 h-6" /></a>}
+            {siteConfig.whatsapp && <a href={`https://wa.me/${siteConfig.whatsapp}`} target="_blank" className="min-h-11 min-w-11 flex items-center justify-center text-white/70 hover:text-white transition-colors" aria-label="WhatsApp" rel="noreferrer"><FaWhatsapp className="w-6 h-6" /></a>}
+            {siteConfig.instagramUrl && <a href={siteConfig.instagramUrl} target="_blank" className="min-h-11 min-w-11 flex items-center justify-center text-white/70 hover:text-white transition-colors" aria-label="Instagram" rel="noreferrer"><FaInstagram className="w-6 h-6" /></a>}
           </div>
         </div>
         <div className="space-y-4">

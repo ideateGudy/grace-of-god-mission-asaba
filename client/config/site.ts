@@ -33,9 +33,10 @@ export const siteConfig = {
   accountNumber: "1214552398",
 
   // Social
-  facebook: "[FACEBOOK PAGE URL - CONFIRM WITH CHURCH]",
-  youtube: "[YOUTUBE CHANNEL URL - CONFIRM WITH CHURCH]",
-  instagram: "[INSTAGRAM URL - CONFIRM WITH CHURCH]",
+  facebook: "https://www.facebook.com/profile.php?id=61594831403921",
+  tiktok: "https://www.tiktok.com/@graceofgodmissionasaba?_r=1&_t=ZS-9AcSfnQD7yO",
+  youtube: "",
+  instagram: "",
 
   // Leadership (array, can be empty)
   leadership: [] as Array<{ name: string; title: string; bio?: string; imageUrl?: string }>,
@@ -54,6 +55,9 @@ export const siteConfig = {
   },
   get facebookUrl() {
     return this.facebook;
+  },
+  get tiktokUrl() {
+    return this.tiktok;
   },
   get youtubeUrl() {
     return this.youtube;

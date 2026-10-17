@@ -77,6 +77,7 @@ describe('SettingsService', () => {
       accountNumber: '0011223344',
       googleMapsUrl: 'https://maps.google.com',
       facebookUrl: null,
+      tiktokUrl: null,
       youtubeUrl: null,
       instagramUrl: null,
     };
