@@ -111,9 +111,7 @@ export function ChurchCountdownLive() {
           const { state, remainingSeconds: remoteSecs, isRunning: remoteRunning } = event.data;
           setConfig(state);
           setIsRunning(remoteRunning);
-          if (state.mode === "duration") {
-            setRemainingSeconds(remoteSecs);
-          }
+          setRemainingSeconds(remoteSecs);
         }
       };
     } catch {

@@ -110,6 +110,11 @@ export function ChurchCountdown() {
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
   const [controlsOpen, setControlsOpen] = useState<boolean>(false);
+  const [customTimerOpen, setCustomTimerOpen] = useState<boolean>(false);
+  const [customMinutes, setCustomMinutes] = useState<string>("10");
+  const [customSeconds, setCustomSeconds] = useState<string>("0");
+  const [customTargetTime, setCustomTargetTime] = useState<string>("08:00");
+  const [timerDialogTab, setTimerDialogTab] = useState<"duration" | "target">("duration");
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chimePlayedRef = useRef<boolean>(false);
@@ -249,6 +254,9 @@ export function ChurchCountdown() {
         e.target instanceof HTMLTextAreaElement ||
         isEditingTitle
       ) {
+        if (e.key === "Escape" && customTimerOpen) {
+          setCustomTimerOpen(false);
+        }
         return;
       }
 
@@ -256,6 +264,12 @@ export function ChurchCountdown() {
         e.preventDefault();
         setIsRunning((prev) => !prev);
         toast.info(isRunning ? "Timer Paused" : "Timer Resumed");
+      } else if (e.code === "KeyZ" || e.code === "Digit0") {
+        e.preventDefault();
+        handleResetToZero();
+      } else if (e.code === "KeyT") {
+        e.preventDefault();
+        setCustomTimerOpen((prev) => !prev);
       } else if (e.code === "KeyR") {
         e.preventDefault();
         handleReset();
@@ -283,7 +297,7 @@ export function ChurchCountdown() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isRunning, isEditingTitle]);
+  }, [isRunning, isEditingTitle, customTimerOpen]);
 
   const toggleFullscreen = async () => {
     try {
@@ -307,11 +321,61 @@ export function ChurchCountdown() {
     if (config.mode === "target-time") {
       const secs = calculateSecondsUntilTarget(config.targetTimeString);
       setRemainingSeconds(secs);
+      setInitialTotalSeconds(Math.max(secs, 1));
     } else {
       setRemainingSeconds(config.durationSeconds);
+      setInitialTotalSeconds(Math.max(config.durationSeconds, 1));
     }
     setIsRunning(true);
     toast.info("Timer Reset to Initial Time");
+  };
+
+  const handleResetToZero = () => {
+    chimePlayedRef.current = true;
+    lastSecondRef.current = -1;
+    setRemainingSeconds(0);
+    setInitialTotalSeconds(0);
+    setIsRunning(false);
+    setConfig((prev) => ({
+      ...prev,
+      mode: "duration",
+      durationSeconds: 0,
+    }));
+    toast.info("Timer Reset to 00:00:00 (Paused)");
+  };
+
+  const handleSetCustomDuration = (minutes: number, seconds: number = 0, autoStart: boolean = true) => {
+    const totalSecs = Math.max(0, Math.floor(minutes) * 60 + Math.floor(seconds));
+    chimePlayedRef.current = false;
+    lastSecondRef.current = -1;
+    setRemainingSeconds(totalSecs);
+    setInitialTotalSeconds(Math.max(totalSecs, 1));
+    setIsRunning(autoStart);
+    setConfig((prev) => ({
+      ...prev,
+      mode: "duration",
+      durationSeconds: totalSecs,
+    }));
+    setCustomTimerOpen(false);
+    toast.success(
+      `Custom Timer Set: ${minutes}m ${seconds > 0 ? `${seconds}s` : ""} ${autoStart ? "(Running)" : "(Ready)"}`
+    );
+  };
+
+  const handleSetCustomTargetTime = (targetHHMM: string, autoStart: boolean = true) => {
+    const secs = calculateSecondsUntilTarget(targetHHMM);
+    chimePlayedRef.current = secs <= 0;
+    lastSecondRef.current = -1;
+    setRemainingSeconds(secs);
+    setInitialTotalSeconds(Math.max(secs, 1));
+    setIsRunning(autoStart);
+    setConfig((prev) => ({
+      ...prev,
+      mode: "target-time",
+      targetTimeString: targetHHMM,
+    }));
+    setCustomTimerOpen(false);
+    toast.success(`Target Clock: ${targetHHMM} ${autoStart ? "(Running)" : "(Ready)"}`);
   };
 
   const handleAdjustMinutes = (deltaMinutes: number) => {
@@ -644,15 +708,31 @@ export function ChurchCountdown() {
         )}
 
         {/* ============================================================== */}
-        {/* MASSIVE 2026 ARCHITECTURAL TIME CARDS                          */}
+        {/* MASSIVE 2026 ARCHITECTURAL TIME CARDS (Click to Edit Timer)    */}
         {/* ============================================================== */}
+        {!config.stageMode && (
+          <button
+            type="button"
+            onClick={() => setCustomTimerOpen(true)}
+            title="Click any card or press 'T' to set custom timer"
+            className="group mb-2 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.05] hover:bg-white/10 border border-white/10 text-xs font-semibold text-white/70 hover:text-white transition shadow-sm cursor-pointer"
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+            <span>Click time cards or press &apos;T&apos; to set custom timer · &apos;Z&apos; for 00:00</span>
+          </button>
+        )}
+
         <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 my-2">
           {/* Hours Card (only shown if > 0 or in target time mode) */}
           {(hours > 0 || config.mode === "target-time") && (
             <>
-              <div className="flex flex-col items-center">
+              <div
+                onClick={() => setCustomTimerOpen(true)}
+                title="Click to set custom timer (Press T)"
+                className="flex flex-col items-center cursor-pointer group"
+              >
                 <div
-                  className="w-24 sm:w-36 md:w-48 lg:w-56 h-32 sm:h-44 md:h-56 lg:h-64 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] relative overflow-hidden"
+                  className="w-24 sm:w-36 md:w-48 lg:w-56 h-32 sm:h-44 md:h-56 lg:h-64 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] group-hover:scale-[1.02] group-hover:border-amber-400/60 relative overflow-hidden"
                   style={{
                     backgroundColor: "rgba(255, 255, 255, 0.04)",
                     borderColor: currentTheme.borderColor,
@@ -686,9 +766,13 @@ export function ChurchCountdown() {
           )}
 
           {/* Minutes Card */}
-          <div className="flex flex-col items-center">
+          <div
+            onClick={() => setCustomTimerOpen(true)}
+            title="Click to set custom timer (Press T)"
+            className="flex flex-col items-center cursor-pointer group"
+          >
             <div
-              className="w-24 sm:w-36 md:w-48 lg:w-56 h-32 sm:h-44 md:h-56 lg:h-64 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] relative overflow-hidden"
+              className="w-24 sm:w-36 md:w-48 lg:w-56 h-32 sm:h-44 md:h-56 lg:h-64 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] group-hover:scale-[1.02] group-hover:border-amber-400/60 relative overflow-hidden"
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderColor: currentTheme.borderColor,
@@ -720,9 +804,13 @@ export function ChurchCountdown() {
           </div>
 
           {/* Seconds Card */}
-          <div className="flex flex-col items-center">
+          <div
+            onClick={() => setCustomTimerOpen(true)}
+            title="Click to set custom timer (Press T)"
+            className="flex flex-col items-center cursor-pointer group"
+          >
             <div
-              className="w-24 sm:w-36 md:w-48 lg:w-56 h-32 sm:h-44 md:h-56 lg:h-64 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] relative overflow-hidden"
+              className="w-24 sm:w-36 md:w-48 lg:w-56 h-32 sm:h-44 md:h-56 lg:h-64 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] group-hover:scale-[1.02] group-hover:border-amber-400/60 relative overflow-hidden"
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderColor:
@@ -805,8 +893,8 @@ export function ChurchCountdown() {
         ) : (
           /* Full Media Desk Controls Dock */
           <div className="flex flex-wrap items-center justify-between gap-4 p-3.5 rounded-3xl bg-white/[0.06] border border-white/10 backdrop-blur-xl shadow-2xl">
-            {/* Play, Pause, Reset Buttons */}
-            <div className="flex items-center gap-2">
+            {/* Play, Pause, Zero, Reset, Bumps & Custom Timer */}
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsRunning((p) => !p)}
@@ -820,10 +908,22 @@ export function ChurchCountdown() {
                 <span>{isRunning ? "Pause" : "Start"}</span>
               </button>
 
+              {/* Zero to 00:00 Button */}
+              <button
+                type="button"
+                onClick={handleResetToZero}
+                title="Reset time directly to 00:00:00 (Press Z or 0)"
+                className="px-3 py-2 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-bold text-xs flex items-center gap-1.5 transition shadow-sm"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+                <span>00:00 (Zero)</span>
+              </button>
+
+              {/* Reset to Initial Target */}
               <button
                 type="button"
                 onClick={handleReset}
-                title="Reset timer (R)"
+                title="Reset to initial programmed time (Press R)"
                 className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white transition"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -856,6 +956,35 @@ export function ChurchCountdown() {
                   <span>5m</span>
                 </button>
               </div>
+
+              {/* Quick Duration Chips Bar */}
+              <div className="hidden lg:flex items-center gap-1 pl-2 border-l border-white/15">
+                {[3, 5, 10, 15, 20, 30].map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => handleSetCustomDuration(mins, 0, true)}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition ${
+                      config.mode === "duration" && config.durationSeconds === mins * 60
+                        ? "bg-amber-400 text-black border-amber-400 shadow-sm"
+                        : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {mins}m
+                  </button>
+                ))}
+              </div>
+
+              {/* Set Custom Timer Trigger Button */}
+              <button
+                type="button"
+                onClick={() => setCustomTimerOpen(true)}
+                title="Set custom timer or target clock (Press T)"
+                className="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-400/20 to-amber-500/20 hover:from-amber-400/30 hover:to-amber-500/30 border border-amber-400/40 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition shadow-sm ml-1"
+              >
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <span>Custom Timer</span>
+              </button>
             </div>
 
             {/* Quick Mode Status & Target Info */}
@@ -1133,6 +1262,205 @@ export function ChurchCountdown() {
                 className="px-5 py-2 rounded-xl text-xs font-black bg-amber-400 text-black hover:bg-amber-300"
               >
                 Apply & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* 6. MODAL: FAST CUSTOM TIMER & ZERO OUT POPUP (Press T)          */}
+      {/* ============================================================== */}
+      {customTimerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-[#0D0F1F] border border-amber-400/30 rounded-3xl p-6 text-white shadow-2xl relative space-y-5">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-400/15 border border-amber-400/30">
+                  <Clock className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg text-white">Set Custom Timer</h3>
+                  <p className="text-xs text-white/60">Quick church service presets or enter exact duration</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCustomTimerOpen(false)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 hover:text-white font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Mode Tabs */}
+            <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-white/5 border border-white/10">
+              <button
+                type="button"
+                onClick={() => setTimerDialogTab("duration")}
+                className={`py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 ${
+                  timerDialogTab === "duration"
+                    ? "bg-amber-400 text-black shadow-md"
+                    : "text-white/70 hover:text-white"
+                }`}
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>Fixed Duration (Minutes)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimerDialogTab("target")}
+                className={`py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 ${
+                  timerDialogTab === "target"
+                    ? "bg-amber-400 text-black shadow-md"
+                    : "text-white/70 hover:text-white"
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Target Service Clock</span>
+              </button>
+            </div>
+
+            {timerDialogTab === "duration" ? (
+              <div className="space-y-4">
+                {/* Quick Minute Chips (One-Click Launch) */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-amber-400/90 block">
+                    Instant Launch Chips (One-Click Start):
+                  </label>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {[1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 40, 45, 60, 75, 90].map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => handleSetCustomDuration(m, 0, true)}
+                        className="py-2 rounded-xl text-xs font-black bg-white/[0.06] hover:bg-amber-400 hover:text-black border border-white/10 hover:border-amber-400 transition"
+                      >
+                        {m}m
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Exact Minutes & Seconds Custom Input */}
+                <div className="space-y-2 pt-2 border-t border-white/10">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block">
+                    Custom Duration:
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <div className="text-[10px] font-bold text-white/50 mb-1">MINUTES</div>
+                      <input
+                        type="number"
+                        min="0"
+                        max="300"
+                        value={customMinutes}
+                        onChange={(e) => setCustomMinutes(e.target.value)}
+                        placeholder="10"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.07] border border-white/15 text-white font-mono font-bold text-lg text-center focus:border-amber-400 outline-none"
+                      />
+                    </div>
+                    <span className="text-xl font-bold text-white/40 pt-4">:</span>
+                    <div className="flex-1">
+                      <div className="text-[10px] font-bold text-white/50 mb-1">SECONDS</div>
+                      <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        value={customSeconds}
+                        onChange={(e) => setCustomSeconds(e.target.value)}
+                        placeholder="00"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.07] border border-white/15 text-white font-mono font-bold text-lg text-center focus:border-amber-400 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Primary Action Buttons */}
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const mins = Number(customMinutes) || 0;
+                      const secs = Number(customSeconds) || 0;
+                      handleSetCustomDuration(mins, secs, true);
+                    }}
+                    className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-black text-sm flex items-center justify-center gap-2 transition shadow-lg cursor-pointer"
+                  >
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>Start Timer Now</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const mins = Number(customMinutes) || 0;
+                      const secs = Number(customSeconds) || 0;
+                      handleSetCustomDuration(mins, secs, false);
+                    }}
+                    className="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition cursor-pointer"
+                  >
+                    Set & Ready
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Target Clock Time Input */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-amber-400/90 block">
+                    Target Service Time (Today):
+                  </label>
+                  <input
+                    type="time"
+                    value={customTargetTime}
+                    onChange={(e) => setCustomTargetTime(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl bg-white/[0.08] border border-white/20 text-white font-mono font-black text-2xl text-center focus:border-amber-400 outline-none"
+                  />
+                </div>
+
+                {/* Quick Service Clock Times */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-white/50 block">Quick Service Hours:</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {["08:00", "09:00", "10:00", "11:00", "17:30", "18:00", "22:00", "23:00"].map((clock) => (
+                      <button
+                        key={clock}
+                        type="button"
+                        onClick={() => handleSetCustomTargetTime(clock, true)}
+                        className="py-2 rounded-xl text-xs font-mono font-bold bg-white/[0.06] hover:bg-amber-400 hover:text-black border border-white/10 hover:border-amber-400 transition cursor-pointer"
+                      >
+                        {clock}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleSetCustomTargetTime(customTargetTime, true)}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-black text-sm flex items-center justify-center gap-2 transition shadow-lg cursor-pointer"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Set Clock & Start</span>
+                </button>
+              </div>
+            )}
+
+            {/* Modal Bottom Bar: Reset to Zero */}
+            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+              <span className="text-white/40">Shortcuts: Esc to exit · Z for 00:00</span>
+              <button
+                type="button"
+                onClick={() => {
+                  handleResetToZero();
+                  setCustomTimerOpen(false);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset to 00:00 (Zero Out)</span>
               </button>
             </div>
           </div>

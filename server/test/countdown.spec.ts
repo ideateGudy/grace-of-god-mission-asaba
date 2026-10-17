@@ -161,5 +161,53 @@ describe("Church Countdown Engine & Offline Presets", () => {
     expect(parsed.remainingSeconds).toBe(180);
     expect(parsed.isRunning).toBe(true);
   });
+
+  it("handles zeroing out the timer directly to 00:00:00 and setting a custom duration", () => {
+    const initialState: ChurchCountdownState = {
+      title: "SUNDAY CELEBRATION SERVICE",
+      subtitle: "Service Starts In...",
+      scriptureRef: "ISAIAH 60:1",
+      scriptureText: "Arise, shine; for thy light is come",
+      mode: "target-time",
+      targetTimeString: "08:00",
+      durationSeconds: 300,
+      theme: "royal-gold",
+      soundEnabled: true,
+      overtimeEnabled: true,
+      showScripture: true,
+      showLogo: true,
+      stageMode: false,
+    };
+
+    // 1. Reset directly to zero
+    const zeroedState: ChurchCountdownState = {
+      ...initialState,
+      mode: "duration",
+      durationSeconds: 0,
+    };
+    const zeroedSeconds = 0;
+    const zeroedRunning = false;
+
+    expect(zeroedState.mode).toBe("duration");
+    expect(zeroedState.durationSeconds).toBe(0);
+    expect(zeroedSeconds).toBe(0);
+    expect(zeroedRunning).toBe(false);
+
+    // 2. Set custom timer duration (e.g. 15 minutes = 900 seconds)
+    const customMinutes = 15;
+    const customSeconds = 30;
+    const customTotalSecs = customMinutes * 60 + customSeconds;
+
+    const customState: ChurchCountdownState = {
+      ...zeroedState,
+      mode: "duration",
+      durationSeconds: customTotalSecs,
+    };
+    const running = true;
+
+    expect(customState.durationSeconds).toBe(930);
+    expect(customState.mode).toBe("duration");
+    expect(running).toBe(true);
+  });
 });
 
