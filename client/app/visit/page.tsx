@@ -16,7 +16,7 @@ import { FaWhatsapp } from "react-icons/fa6";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { ChurchMap } from "@/components/shared/ChurchMap";
-import { siteConfig } from "@/config/site";
+import { getLiveSiteSettings, resolveSiteConfig } from "@/config/site";
 
 export const revalidate = 300;
 
@@ -27,7 +27,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/visit" },
 };
 
-export default function PlanaVisitPage() {
+export default async function PlanaVisitPage() {
+  const liveSettings = await getLiveSiteSettings();
+  const siteConfig = resolveSiteConfig(liveSettings);
+
   const phoneAvailable = !siteConfig.phone.startsWith("[") && Boolean(siteConfig.phone);
   const whatsappAvailable =
     !siteConfig.whatsapp.startsWith("[") && Boolean(siteConfig.whatsapp);

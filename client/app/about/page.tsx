@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
-import { siteConfig } from "@/config/site";
+import { getLiveSiteSettings, resolveSiteConfig } from "@/config/site";
 import {
   Flame,
   BookOpen,
@@ -48,7 +48,9 @@ const defaultBeliefs = [
   },
 ];
 
-export default function AboutUsPage() {
+export default async function AboutUsPage() {
+  const liveSettings = await getLiveSiteSettings();
+  const siteConfig = resolveSiteConfig(liveSettings);
   const hasLeadership = siteConfig.leadership && siteConfig.leadership.length > 0;
   const hasCustomBeliefs = siteConfig.beliefs && siteConfig.beliefs.length > 0;
 

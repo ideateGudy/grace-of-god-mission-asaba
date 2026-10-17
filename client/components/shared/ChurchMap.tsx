@@ -1,5 +1,7 @@
+"use client";
+
 import { MapPin, ExternalLink } from "lucide-react";
-import { siteConfig } from "@/config/site";
+import { useSiteConfig } from "@/lib/settings-store";
 import { cn } from "@/lib/utils";
 
 interface ChurchMapProps {
@@ -13,6 +15,8 @@ export function ChurchMap({
   height,
   showCardHeader = false,
 }: ChurchMapProps) {
+  const siteConfig = useSiteConfig();
+
   return (
     <div
       className={cn(
@@ -25,7 +29,7 @@ export function ChurchMap({
           <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 font-semibold text-foreground">
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-gold shrink-0" />
-              <span>Grace of God Mission Asaba Hq</span>
+              <span>{siteConfig.name}</span>
             </div>
             <span className="hidden sm:inline text-muted-foreground">·</span>
             <span className="text-[11px] font-normal text-muted-foreground">{siteConfig.address}</span>
@@ -56,7 +60,7 @@ export function ChurchMap({
           allowFullScreen
           loading="lazy"
           referrerPolicy="strict-origin-when-cross-origin"
-          title="Grace of God Mission Asaba Hq Map Location"
+          title={`${siteConfig.name} Map Location`}
           className="absolute inset-0 h-full w-full"
         />
       </div>

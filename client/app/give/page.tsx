@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { CopyButton } from "@/components/shared/CopyButton";
-import { siteConfig } from "@/config/site";
+import { getLiveSiteSettings, resolveSiteConfig } from "@/config/site";
 import { HandHeart, Sparkles, ShieldCheck, Heart, Building2, CheckCircle2, CreditCard, ArrowRight } from "lucide-react";
 import { OnlineGivingForm } from "@/components/giving/OnlineGivingForm";
 import Link from "next/link";
@@ -37,7 +37,11 @@ export default async function GivePage({
   searchParams?: Promise<{ project?: string }>;
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : {};
-  const projects = await getActiveProjects();
+  const [projects, liveSettings] = await Promise.all([
+    getActiveProjects(),
+    getLiveSiteSettings(),
+  ]);
+  const siteConfig = resolveSiteConfig(liveSettings);
   const selectedProjectId = resolvedSearchParams?.project;
 
   const hasRealAccount =

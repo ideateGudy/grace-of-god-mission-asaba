@@ -16,7 +16,7 @@ import Link from "next/link";
 import { MapPin, Phone, Mail, Clock, MessageSquare, CheckCircle2 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa6";
 import { ChurchMap } from "@/components/shared/ChurchMap";
-import { siteConfig } from "@/config/site";
+import { useSiteConfig } from "@/lib/settings-store";
 
 const contactSchema = z
   .object({
@@ -35,6 +35,7 @@ const contactSchema = z
   });
 
 export default function ContactPage() {
+  const siteConfig = useSiteConfig();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 

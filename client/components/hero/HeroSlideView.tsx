@@ -7,7 +7,7 @@ import { MapPin, PlayCircle, Sparkles, ExternalLink } from "lucide-react";
 import type { HeroSlideDto } from "@ggm/types";
 import { cn } from "@/lib/utils";
 import { HeroSequence } from "@/components/motion/HeroSequence";
-import { siteConfig } from "@/config/site";
+import { useSiteConfig } from "@/lib/settings-store";
 import { useUiStore } from "@/store/useUiStore";
 import { resolveHeroSlideTextTone } from "@/lib/hero-tone";
 
@@ -53,6 +53,7 @@ export function HeroSlideView({
   isFirst?: boolean;
   animate?: boolean;
 }) {
+  const siteConfig = useSiteConfig();
   const isSplit = slide.layout === "SPLIT";
   const isImageBg = slide.bgType === "IMAGE" && !isSplit && Boolean(slide.imageUrl);
   const resolvedTone = resolveHeroSlideTextTone(slide);

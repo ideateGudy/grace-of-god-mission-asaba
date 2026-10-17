@@ -4,7 +4,7 @@ import { CalendarDays, MapPin, Clock, ArrowRight, Sparkles } from "lucide-react"
 import { api } from "@/lib/api/client";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
-import { siteConfig } from "@/config/site";
+import { getLiveSiteSettings, resolveSiteConfig } from "@/config/site";
 
 export const revalidate = 60;
 
@@ -30,7 +30,11 @@ export default async function EventsPage({
 }: {
   searchParams: Promise<{ scope?: "upcoming" | "past" }>;
 }) {
-  const { scope = "upcoming" } = await searchParams;
+  const [{ scope = "upcoming" }, liveSettings] = await Promise.all([
+    searchParams,
+    getLiveSiteSettings(),
+  ]);
+  const siteConfig = resolveSiteConfig(liveSettings);
   let events: EventItem[] = [];
   try {
     const res = await api.public.events(

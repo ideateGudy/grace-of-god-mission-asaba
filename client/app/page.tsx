@@ -20,7 +20,7 @@ import {
   Camera,
 } from "lucide-react";
 import { api } from "@/lib/api/client";
-import { siteConfig } from "@/config/site";
+import { getLiveSiteSettings, resolveSiteConfig } from "@/config/site";
 import { HeroRenderer } from "@/components/hero/HeroRenderer";
 import { SunriseBackdrop } from "@/components/motion/SunriseBackdrop";
 import { MobileNav } from "@/components/layout/MobileNav";
@@ -82,7 +82,7 @@ async function safe<T>(load: () => Promise<T>, fallback: T): Promise<T> {
 }
 
 export default async function HomePage() {
-  const [heroResult, sermonResult, eventResult, announcementResult, galleryResult] = await Promise.all([
+  const [heroResult, sermonResult, eventResult, announcementResult, galleryResult, liveSettings] = await Promise.all([
     safe(() => api.hero.getPublic(), { data: null }),
     safe(() => api.public.sermons("?page=1&limit=4"), {
       data: [],
@@ -97,7 +97,9 @@ export default async function HomePage() {
       data: [],
       meta: { page: 1, limit: 6, total: 0 },
     }),
+    safe(() => getLiveSiteSettings(), null),
   ]);
+  const siteConfig = resolveSiteConfig(liveSettings);
 
   const sermons = sermonResult.data as ContentItem[];
   const events = eventResult.data as ContentItem[];
@@ -697,7 +699,7 @@ export default async function HomePage() {
                 Sanctuary Location & Map
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                No. 33 Arthur Richard Street, Akwuebulu (Cable Point), Asaba, Delta State
+                {siteConfig.address}
               </p>
             </div>
             <a

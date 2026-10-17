@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api/client";
 import { useSessionStore } from "@/store/useSessionStore";
+import { useSettingsStore } from "@/lib/settings-store";
 import type { UpdateSiteSettingsDto } from "@ggm/types";
 
 export default function SiteSettingsPage() {
@@ -113,7 +114,10 @@ export default function SiteSettingsPage() {
         youtubeUrl: normalizeUrl(formData.youtubeUrl),
         instagramUrl: normalizeUrl(formData.instagramUrl),
       };
-      await api.settings.update(payload);
+      const res = await api.settings.update(payload);
+      if (res?.data) {
+        useSettingsStore.getState().setSettings(res.data);
+      }
       toast.success("Site settings updated successfully.");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to update site settings.");
