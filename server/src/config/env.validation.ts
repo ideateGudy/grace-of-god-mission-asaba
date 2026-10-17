@@ -92,6 +92,10 @@ class EnvironmentVariables {
   @IsOptional()
   NOTIFICATION_EMAIL?: string;
 
+  @IsString()
+  @IsOptional()
+  REDIS_URL?: string;
+
   @IsNumber()
   @IsOptional()
   THROTTLE_LIMIT?: number = 2000;

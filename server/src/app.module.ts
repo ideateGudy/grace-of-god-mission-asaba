@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { validate } from './config/env.validation.js';
@@ -27,6 +27,8 @@ import { TestimoniesModule } from './testimonies/testimonies.module.js';
 import { DevotionsModule } from './devotions/devotions.module.js';
 import { LivestreamModule } from './livestream/livestream.module.js';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import Redis from 'ioredis';
 
 @Module({
   imports: [
@@ -37,15 +39,44 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => [
-        {
-          name: 'default',
-          ttl: 60000,
-          limit: config.get<number>('THROTTLE_LIMIT') ?? 2000,
-        },
-        { name: 'short', ttl: 60000, limit: 20 },
-        { name: 'long', ttl: 3600000, limit: 100 },
-      ],
+      useFactory: (config: ConfigService) => {
+        const logger = new Logger('Throttler');
+        const redisUrl = config.get<string>('REDIS_URL')?.trim();
+        let storage;
+
+        if (redisUrl) {
+          try {
+            const redis = new (Redis as any)(redisUrl, {
+              maxRetriesPerRequest: 3,
+              enableReadyCheck: false,
+              retryStrategy(times: number) {
+                if (times > 3) return null;
+                return Math.min(times * 200, 1000);
+              },
+            });
+            redis.on('error', (err: Error) => {
+              logger.warn(`Redis connection error in rate limiter: ${err.message}`);
+            });
+            storage = new ThrottlerStorageRedisService(redis);
+            logger.log('Distributed rate limiting enabled via Redis.');
+          } catch (err: any) {
+            logger.warn(`Failed to initialize Redis storage: ${err.message}. Falling back to in-memory.`);
+          }
+        }
+
+        return {
+          throttlers: [
+            {
+              name: 'default',
+              ttl: 60000,
+              limit: config.get<number>('THROTTLE_LIMIT') ?? 2000,
+            },
+            { name: 'short', ttl: 60000, limit: 20 },
+            { name: 'long', ttl: 3600000, limit: 100 },
+          ],
+          storage,
+        };
+      },
     }),
     PrismaModule,
     AuditModule,
