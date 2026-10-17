@@ -1,0 +1,1064 @@
+"use client";
+
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import Image from "next/image";
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Maximize2,
+  Minimize2,
+  Volume2,
+  VolumeX,
+  Sliders,
+  Settings2,
+  Eye,
+  EyeOff,
+  Sparkles,
+  Clock,
+  Calendar,
+  Church,
+  Flame,
+  BookOpen,
+  Crown,
+  Plus,
+  Minus,
+  Check,
+  Wifi,
+  WifiOff,
+  Tv,
+  Share2,
+} from "lucide-react";
+import {
+  type CountdownMode,
+  type CountdownThemeId,
+  type ChurchCountdownState,
+  COUNTDOWN_THEMES,
+  PROGRAMME_PRESETS,
+} from "@/lib/countdown/countdown-types";
+import { audioSynth } from "@/lib/countdown/audio-synth";
+import { CHURCH_LOGO_PATH } from "@/lib/flyer/church-logo";
+import { toast } from "sonner";
+
+const STORAGE_KEY = "ggm_church_countdown_v1";
+
+const DEFAULT_STATE: ChurchCountdownState = {
+  title: "SUNDAY CELEBRATION SERVICE",
+  subtitle: "Service Starts In...",
+  scriptureRef: "ISAIAH 60:1",
+  scriptureText: "Arise, shine; for thy light is come, and the glory of the LORD is risen upon thee.",
+  mode: "target-time",
+  targetTimeString: "08:00",
+  durationSeconds: 300,
+  theme: "royal-gold",
+  soundEnabled: true,
+  overtimeEnabled: true,
+  showScripture: true,
+  showLogo: true,
+  stageMode: false,
+};
+
+function formatTwoDigits(n: number): string {
+  return Math.max(0, Math.floor(n)).toString().padStart(2, "0");
+}
+
+/**
+ * Calculates remaining seconds until a target "HH:MM" clock time today (or tomorrow if passed).
+ */
+function calculateSecondsUntilTarget(targetHHMM: string): number {
+  const [targetH, targetM] = targetHHMM.split(":").map(Number);
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(targetH || 0, targetM || 0, 0, 0);
+
+  let diffMs = target.getTime() - now.getTime();
+
+  // If the target time passed earlier today by more than 2 hours, roll forward to tomorrow
+  if (diffMs < -2 * 60 * 60 * 1000) {
+    target.setDate(target.getDate() + 1);
+    diffMs = target.getTime() - now.getTime();
+  }
+
+  return Math.round(diffMs / 1000);
+}
+
+export function ChurchCountdown() {
+  const [config, setConfig] = useState<ChurchCountdownState>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          return { ...DEFAULT_STATE, ...JSON.parse(saved) };
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    return DEFAULT_STATE;
+  });
+
+  const [isRunning, setIsRunning] = useState<boolean>(true);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(300);
+  const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(300);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
+  const [controlsOpen, setControlsOpen] = useState<boolean>(false);
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const chimePlayedRef = useRef<boolean>(false);
+  const lastSecondRef = useRef<number>(-1);
+
+  const currentTheme = COUNTDOWN_THEMES[config.theme] || COUNTDOWN_THEMES["royal-gold"];
+
+  // Save config to localStorage for 100% offline persistence
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    } catch {
+      // Ignore
+    }
+  }, [config]);
+
+  // Monitor network status
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setIsOnline(navigator.onLine);
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success("Online connected. Timer remains synchronized offline.");
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.info("Offline mode active. All countdown features work 100% offline.");
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  // Sync initial countdown target when mode or parameters change
+  useEffect(() => {
+    if (config.mode === "target-time") {
+      const secs = calculateSecondsUntilTarget(config.targetTimeString);
+      setRemainingSeconds(secs);
+      setInitialTotalSeconds(Math.max(secs, 1));
+      chimePlayedRef.current = secs <= 0;
+    } else {
+      setRemainingSeconds(config.durationSeconds);
+      setInitialTotalSeconds(config.durationSeconds);
+      chimePlayedRef.current = false;
+    }
+  }, [config.mode, config.targetTimeString, config.durationSeconds]);
+
+  // 1-second interval ticker
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const interval = setInterval(() => {
+      if (config.mode === "target-time") {
+        const secs = calculateSecondsUntilTarget(config.targetTimeString);
+        setRemainingSeconds(secs);
+
+        // Sound triggers
+        if (config.soundEnabled) {
+          if (secs > 0 && secs <= 5 && lastSecondRef.current !== secs) {
+            audioSynth.playUrgentTick();
+            lastSecondRef.current = secs;
+          } else if (secs <= 0 && !chimePlayedRef.current) {
+            audioSynth.playServiceGong();
+            chimePlayedRef.current = true;
+          }
+        }
+      } else {
+        // Duration mode
+        setRemainingSeconds((prev) => {
+          const next = prev - 1;
+
+          if (config.soundEnabled) {
+            if (next > 0 && next <= 5 && lastSecondRef.current !== next) {
+              audioSynth.playUrgentTick();
+              lastSecondRef.current = next;
+            } else if (next === 0 && !chimePlayedRef.current) {
+              audioSynth.playServiceGong();
+              chimePlayedRef.current = true;
+            }
+          }
+
+          if (!config.overtimeEnabled && next <= 0) {
+            return 0;
+          }
+          return next;
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRunning, config.mode, config.targetTimeString, config.soundEnabled, config.overtimeEnabled]);
+
+  // Fullscreen event listener
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
+
+  // Keyboard shortcuts (Space = Play/Pause, R = Reset, F = Fullscreen, H = Hide Controls/Stage Mode, M = Mute)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts if user is typing in an input
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        isEditingTitle
+      ) {
+        return;
+      }
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        setIsRunning((prev) => !prev);
+        toast.info(isRunning ? "Timer Paused" : "Timer Resumed");
+      } else if (e.code === "KeyR") {
+        e.preventDefault();
+        handleReset();
+      } else if (e.code === "KeyF") {
+        e.preventDefault();
+        void toggleFullscreen();
+      } else if (e.code === "KeyH") {
+        e.preventDefault();
+        setConfig((p) => ({ ...p, stageMode: !p.stageMode }));
+      } else if (e.code === "KeyM") {
+        e.preventDefault();
+        setConfig((p) => {
+          const next = !p.soundEnabled;
+          toast.info(next ? "Chimes Enabled" : "Chimes Muted");
+          return { ...p, soundEnabled: next };
+        });
+      } else if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        handleAdjustMinutes(1);
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        handleAdjustMinutes(-1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isRunning, isEditingTitle]);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (containerRef.current) {
+          await containerRef.current.requestFullscreen();
+        } else {
+          await document.documentElement.requestFullscreen();
+        }
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {
+      // Fallback
+    }
+  };
+
+  const handleReset = () => {
+    chimePlayedRef.current = false;
+    lastSecondRef.current = -1;
+    if (config.mode === "target-time") {
+      const secs = calculateSecondsUntilTarget(config.targetTimeString);
+      setRemainingSeconds(secs);
+    } else {
+      setRemainingSeconds(config.durationSeconds);
+    }
+    setIsRunning(true);
+    toast.info("Timer Reset to Initial Time");
+  };
+
+  const handleAdjustMinutes = (deltaMinutes: number) => {
+    setRemainingSeconds((prev) => {
+      const next = prev + deltaMinutes * 60;
+      return next;
+    });
+    toast.info(`${deltaMinutes > 0 ? "+" : ""}${deltaMinutes} min adjusted`);
+  };
+
+  const handleApplyPreset = (preset: (typeof PROGRAMME_PRESETS)[0]) => {
+    setConfig((prev) => ({
+      ...prev,
+      ...preset.data,
+    }));
+    toast.success(`Preset Applied: ${preset.name}`);
+  };
+
+  // Compute breakdown: hours, minutes, seconds, overtime
+  const isOvertime = remainingSeconds < 0;
+  const absSeconds = Math.abs(remainingSeconds);
+  const hours = Math.floor(absSeconds / 3600);
+  const minutes = Math.floor((absSeconds % 3600) / 60);
+  const seconds = absSeconds % 60;
+
+  // Percentage for circular progress ring (0 to 1)
+  const progressRatio = useMemo(() => {
+    if (initialTotalSeconds <= 0) return 0;
+    if (remainingSeconds <= 0) return 1;
+    return 1 - remainingSeconds / initialTotalSeconds;
+  }, [remainingSeconds, initialTotalSeconds]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`relative w-full min-h-screen flex flex-col justify-between select-none overflow-hidden transition-colors duration-700 ${
+        isFullscreen ? "p-4 sm:p-8" : "p-4 sm:p-6 md:p-8"
+      }`}
+      style={{
+        background: currentTheme.bgDark,
+        color: currentTheme.digitColor,
+      }}
+    >
+      {/* Dynamic Ambient Glow Backdrop */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 transition-opacity duration-1000"
+        style={{
+          background: currentTheme.bgGradient,
+          opacity: 0.95,
+        }}
+      />
+
+      {/* Volumetric Radial Aura Orb */}
+      <div
+        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full blur-[140px] -z-10 transition-all duration-1000"
+        style={{
+          backgroundColor: isOvertime
+            ? "rgba(239, 68, 68, 0.22)"
+            : remainingSeconds <= 60
+            ? "rgba(245, 158, 11, 0.25)"
+            : currentTheme.accentGlow,
+        }}
+      />
+
+      {/* Modern Sacred Grid Lines in Background */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.035]"
+        style={{
+          backgroundImage: `radial-gradient(circle, #FFFFFF 1px, transparent 1px)`,
+          backgroundSize: "36px 36px",
+        }}
+      />
+
+      {/* ============================================================== */}
+      {/* 1. TOP HEADER BAR: Church Logo, Live Status & Media HUD Controls */}
+      {/* ============================================================== */}
+      <header className="relative z-20 flex flex-wrap items-center justify-between gap-4 max-w-7xl mx-auto w-full">
+        {/* Church Brand Pill */}
+        {config.showLogo && (
+          <div className="flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-white/[0.05] border border-white/10 backdrop-blur-md shadow-lg">
+            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-amber-400/50 bg-black/40">
+              <Image
+                src={CHURCH_LOGO_PATH}
+                alt="Grace of God Mission Logo"
+                fill
+                className="object-contain p-0.5"
+                priority
+              />
+            </div>
+            <div>
+              <span className="text-xs font-black tracking-wider block text-white">
+                GRACE OF GOD MISSION
+              </span>
+              <span
+                className="text-[10px] font-bold tracking-widest block uppercase"
+                style={{ color: currentTheme.primaryAccent }}
+              >
+                ASABA · SANCTUARY COUNTDOWN
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Status Indicators & Media Quick Actions */}
+        <div className="flex items-center gap-2">
+          {/* Offline Ready Badge */}
+          <div
+            className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold border backdrop-blur-md transition ${
+              isOnline
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                : "bg-amber-500/10 border-amber-500/30 text-amber-400"
+            }`}
+          >
+            {isOnline ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
+            <span>{isOnline ? "⚡ Offline Ready" : "Offline Active"}</span>
+          </div>
+
+          {/* Sound Toggle */}
+          <button
+            type="button"
+            onClick={() => {
+              const next = !config.soundEnabled;
+              setConfig((p) => ({ ...p, soundEnabled: next }));
+              toast.info(next ? "Cathedral Chime Enabled" : "Audio Muted");
+            }}
+            title={config.soundEnabled ? "Chimes enabled (Press M to mute)" : "Chimes muted"}
+            className="p-2 sm:px-3 sm:py-2 rounded-xl bg-white/[0.06] border border-white/10 text-white hover:bg-white/15 transition flex items-center gap-1.5 text-xs font-semibold"
+          >
+            {config.soundEnabled ? (
+              <Volume2 className="w-4 h-4 text-emerald-400" />
+            ) : (
+              <VolumeX className="w-4 h-4 text-muted-foreground" />
+            )}
+            <span className="hidden sm:inline">{config.soundEnabled ? "Chime On" : "Muted"}</span>
+          </button>
+
+          {/* Stage Mode (Hide UI) Toggle */}
+          <button
+            type="button"
+            onClick={() => setConfig((p) => ({ ...p, stageMode: !p.stageMode }))}
+            title={config.stageMode ? "Show controls (Press H)" : "Hide controls for projector (Press H)"}
+            className={`p-2 sm:px-3 sm:py-2 rounded-xl border transition flex items-center gap-1.5 text-xs font-semibold ${
+              config.stageMode
+                ? "bg-primary/20 border-primary text-primary"
+                : "bg-white/[0.06] border-white/10 text-white hover:bg-white/15"
+            }`}
+          >
+            {config.stageMode ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            <span className="hidden sm:inline">
+              {config.stageMode ? "Exit Stage View" : "Stage View"}
+            </span>
+          </button>
+
+          {/* Fullscreen Button */}
+          <button
+            type="button"
+            onClick={() => void toggleFullscreen()}
+            title="Toggle Sanctuary Fullscreen (Press F)"
+            className="p-2 sm:px-3 sm:py-2 rounded-xl bg-white/[0.06] border border-white/10 text-white hover:bg-white/15 transition flex items-center gap-1.5 text-xs font-semibold"
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            <span className="hidden sm:inline">{isFullscreen ? "Exit Full" : "Fullscreen"}</span>
+          </button>
+
+          {/* Settings Drawer Toggle */}
+          <button
+            type="button"
+            onClick={() => setControlsOpen((prev) => !prev)}
+            title="Configure Programme Title, Target Time, and Theme"
+            className="p-2 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 transition flex items-center gap-1.5 text-xs font-bold"
+          >
+            <Settings2 className="w-4 h-4 text-amber-400" />
+            <span>Edit Programme</span>
+          </button>
+        </div>
+      </header>
+
+      {/* ============================================================== */}
+      {/* 2. PROGRAMME PRESETS QUICK BAR (Visible when not in Stage Mode) */}
+      {/* ============================================================== */}
+      {!config.stageMode && (
+        <div className="relative z-10 max-w-6xl mx-auto w-full pt-4 pb-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider shrink-0 flex items-center gap-1 pr-1">
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Presets:</span>
+            </span>
+            {PROGRAMME_PRESETS.map((p) => {
+              const isSelected = config.title === p.data.title;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => handleApplyPreset(p)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 border transition flex items-center gap-1.5 ${
+                    isSelected
+                      ? "bg-amber-400/20 border-amber-400 text-amber-300 shadow-sm"
+                      : "bg-white/[0.04] border-white/10 text-white/80 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  {p.id === "sunday-service" && <Church className="w-3 h-3 text-amber-400" />}
+                  {p.id === "midweek-service" && <BookOpen className="w-3 h-3 text-emerald-400" />}
+                  {p.id === "miracle-vigil" && <Flame className="w-3 h-3 text-orange-400" />}
+                  {p.id === "youth-awakening" && <Sparkles className="w-3 h-3 text-sky-400" />}
+                  {p.id === "word-of-the-month" && <Crown className="w-3 h-3 text-purple-400" />}
+                  {p.category === "Quick Timer" && <Clock className="w-3 h-3 text-muted-foreground" />}
+                  <span>{p.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* 3. CORE COUNTDOWN STAGE: Editable Title, Massive Time, Scripture */}
+      {/* ============================================================== */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center my-auto py-6 sm:py-10 max-w-6xl mx-auto w-full">
+        {/* Editable Programme Title (Click to edit inline or via drawer) */}
+        <div className="max-w-4xl mx-auto space-y-2 mb-6 sm:mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/[0.07] border border-white/10 backdrop-blur-md">
+            <span
+              className="w-2 h-2 rounded-full animate-pulse"
+              style={{
+                backgroundColor: isOvertime
+                  ? "#EF4444"
+                  : remainingSeconds <= 60
+                  ? "#F59E0B"
+                  : currentTheme.primaryAccent,
+              }}
+            />
+            <span
+              className="text-xs font-black tracking-widest uppercase"
+              style={{ color: currentTheme.primaryAccent }}
+            >
+              {config.subtitle}
+            </span>
+          </div>
+
+          {/* INLINE EDITABLE PROGRAMME TITLE */}
+          {isEditingTitle ? (
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <input
+                type="text"
+                value={config.title}
+                onChange={(e) => setConfig((p) => ({ ...p, title: e.target.value.toUpperCase() }))}
+                onBlur={() => setIsEditingTitle(false)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") setIsEditingTitle(false);
+                }}
+                autoFocus
+                className="w-full max-w-2xl px-4 py-2 text-2xl sm:text-4xl font-black text-center text-white bg-black/60 border-2 rounded-2xl outline-none"
+                style={{ borderColor: currentTheme.primaryAccent }}
+              />
+              <button
+                type="button"
+                onClick={() => setIsEditingTitle(false)}
+                className="p-3 rounded-2xl bg-primary text-black font-bold"
+              >
+                <Check className="w-5 h-5" />
+              </button>
+            </div>
+          ) : (
+            <h1
+              onClick={() => setIsEditingTitle(true)}
+              title="Click to edit programme title"
+              className="group cursor-pointer font-black tracking-tight text-3xl sm:text-5xl md:text-6xl lg:text-7xl leading-tight text-white transition hover:opacity-90 flex items-center justify-center gap-3"
+            >
+              <span className="drop-shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                {config.title || "UNTITLED CHURCH PROGRAMME"}
+              </span>
+              {!config.stageMode && (
+                <span className="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground font-normal border border-white/20 rounded-md px-2 py-0.5 transition">
+                  Edit ✏️
+                </span>
+              )}
+            </h1>
+          )}
+        </div>
+
+        {/* OVERTIME BADGE ALERT */}
+        {isOvertime && (
+          <div className="mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/20 border border-rose-500/50 text-rose-300 font-extrabold text-sm sm:text-base animate-pulse">
+            <span>⚠️ SERVICE IN SESSION / OVERTIME</span>
+          </div>
+        )}
+
+        {/* TIME'S UP CELEBRATORY BANNER (When 00:00:00 and overtime disabled) */}
+        {!config.overtimeEnabled && remainingSeconds <= 0 && (
+          <div className="mb-6 px-6 py-3 rounded-2xl bg-amber-500/20 border border-amber-400 text-amber-200 font-black text-xl sm:text-2xl animate-bounce">
+            ✨ WELCOME TO CHURCH · SERVICE HAS BEGUN ✨
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* MASSIVE 2026 ARCHITECTURAL TIME CARDS                          */}
+        {/* ============================================================== */}
+        <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 my-2">
+          {/* Hours Card (only shown if > 0 or in target time mode) */}
+          {(hours > 0 || config.mode === "target-time") && (
+            <>
+              <div className="flex flex-col items-center">
+                <div
+                  className="w-24 sm:w-36 md:w-48 lg:w-56 h-32 sm:h-44 md:h-56 lg:h-64 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] relative overflow-hidden"
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.04)",
+                    borderColor: currentTheme.borderColor,
+                  }}
+                >
+                  <div
+                    className="absolute inset-x-0 top-0 h-1/2 bg-white/[0.03] border-b"
+                    style={{ borderColor: "rgba(255, 255, 255, 0.06)" }}
+                  />
+                  <span
+                    className="font-black text-5xl sm:text-7xl md:text-8xl lg:text-9xl tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)]"
+                    style={{ color: currentTheme.digitColor }}
+                  >
+                    {formatTwoDigits(hours)}
+                  </span>
+                </div>
+                <span
+                  className="mt-3 text-xs sm:text-sm md:text-base font-black tracking-widest uppercase"
+                  style={{ color: currentTheme.labelColor }}
+                >
+                  HOURS
+                </span>
+              </div>
+
+              {/* Colon Separator */}
+              <div className="flex flex-col justify-center items-center gap-3 sm:gap-4 pb-8 sm:pb-12 text-2xl sm:text-4xl md:text-6xl text-white/40 font-black">
+                <div className="w-2 sm:w-3.5 h-2 sm:h-3.5 rounded-full bg-white/60 animate-pulse" />
+                <div className="w-2 sm:w-3.5 h-2 sm:h-3.5 rounded-full bg-white/60 animate-pulse" />
+              </div>
+            </>
+          )}
+
+          {/* Minutes Card */}
+          <div className="flex flex-col items-center">
+            <div
+              className="w-24 sm:w-36 md:w-48 lg:w-56 h-32 sm:h-44 md:h-56 lg:h-64 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] relative overflow-hidden"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.04)",
+                borderColor: currentTheme.borderColor,
+              }}
+            >
+              <div
+                className="absolute inset-x-0 top-0 h-1/2 bg-white/[0.03] border-b"
+                style={{ borderColor: "rgba(255, 255, 255, 0.06)" }}
+              />
+              <span
+                className="font-black text-5xl sm:text-7xl md:text-8xl lg:text-9xl tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)]"
+                style={{ color: currentTheme.digitColor }}
+              >
+                {formatTwoDigits(minutes)}
+              </span>
+            </div>
+            <span
+              className="mt-3 text-xs sm:text-sm md:text-base font-black tracking-widest uppercase"
+              style={{ color: currentTheme.labelColor }}
+            >
+              MINUTES
+            </span>
+          </div>
+
+          {/* Colon Separator */}
+          <div className="flex flex-col justify-center items-center gap-3 sm:gap-4 pb-8 sm:pb-12 text-2xl sm:text-4xl md:text-6xl text-white/40 font-black">
+            <div className="w-2 sm:w-3.5 h-2 sm:h-3.5 rounded-full bg-white/60 animate-pulse" />
+            <div className="w-2 sm:w-3.5 h-2 sm:h-3.5 rounded-full bg-white/60 animate-pulse" />
+          </div>
+
+          {/* Seconds Card */}
+          <div className="flex flex-col items-center">
+            <div
+              className="w-24 sm:w-36 md:w-48 lg:w-56 h-32 sm:h-44 md:h-56 lg:h-64 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] relative overflow-hidden"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.04)",
+                borderColor:
+                  remainingSeconds <= 10 && remainingSeconds > 0
+                    ? "#F59E0B"
+                    : currentTheme.borderColor,
+              }}
+            >
+              <div
+                className="absolute inset-x-0 top-0 h-1/2 bg-white/[0.03] border-b"
+                style={{ borderColor: "rgba(255, 255, 255, 0.06)" }}
+              />
+              <span
+                className="font-black text-5xl sm:text-7xl md:text-8xl lg:text-9xl tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)]"
+                style={{
+                  color:
+                    remainingSeconds <= 10 && remainingSeconds > 0
+                      ? "#FDE047"
+                      : currentTheme.digitColor,
+                }}
+              >
+                {formatTwoDigits(seconds)}
+              </span>
+            </div>
+            <span
+              className="mt-3 text-xs sm:text-sm md:text-base font-black tracking-widest uppercase"
+              style={{ color: currentTheme.labelColor }}
+            >
+              SECONDS
+            </span>
+          </div>
+        </div>
+
+        {/* PROGRESS BAR (Clean thin glowing sanctuary progress bar) */}
+        <div className="w-full max-w-xl mx-auto my-6 px-4">
+          <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden relative">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${Math.min(100, Math.max(0, progressRatio * 100))}%`,
+                background: `linear-gradient(90deg, ${currentTheme.primaryAccent}, ${currentTheme.secondaryAccent})`,
+                boxShadow: `0 0 12px ${currentTheme.accentGlow}`,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Scripture Card (Sanctuary Inspiration) */}
+        {config.showScripture && config.scriptureText && (
+          <div className="max-w-2xl mx-auto mt-2 px-6 py-3.5 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md">
+            <span
+              className="text-xs font-black tracking-widest block uppercase mb-1"
+              style={{ color: currentTheme.primaryAccent }}
+            >
+              // {config.scriptureRef || "SCRIPTURE FOCUS"}
+            </span>
+            <p className="text-sm sm:text-base font-medium italic text-white/90 leading-relaxed">
+              &ldquo;{config.scriptureText}&rdquo;
+            </p>
+          </div>
+        )}
+      </main>
+
+      {/* ============================================================== */}
+      {/* 4. BOTTOM CONTROLS DOCK (Hidden in Stage View for Clean Look)  */}
+      {/* ============================================================== */}
+      <footer className="relative z-20 max-w-5xl mx-auto w-full pt-4">
+        {config.stageMode ? (
+          /* Discreet floating toggle in bottom-right corner when in Stage View */
+          <div className="flex justify-between items-center text-[11px] text-white/40 px-2 opacity-30 hover:opacity-100 transition">
+            <span>Press &apos;H&apos; to show controls · &apos;F&apos; for fullscreen · &apos;Space&apos; to pause</span>
+            <button
+              type="button"
+              onClick={() => setConfig((p) => ({ ...p, stageMode: false }))}
+              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold transition"
+            >
+              Show Controls
+            </button>
+          </div>
+        ) : (
+          /* Full Media Desk Controls Dock */
+          <div className="flex flex-wrap items-center justify-between gap-4 p-3.5 rounded-3xl bg-white/[0.06] border border-white/10 backdrop-blur-xl shadow-2xl">
+            {/* Play, Pause, Reset Buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsRunning((p) => !p)}
+                className={`px-5 py-2.5 rounded-2xl font-black text-sm flex items-center gap-2 transition shadow-lg ${
+                  isRunning
+                    ? "bg-amber-400 text-black hover:bg-amber-300"
+                    : "bg-emerald-500 text-black hover:bg-emerald-400"
+                }`}
+              >
+                {isRunning ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+                <span>{isRunning ? "Pause" : "Start"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleReset}
+                title="Reset timer (R)"
+                className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white transition"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+
+              {/* Quick Time Bumps (+1m, +5m, -1m) */}
+              <div className="hidden sm:flex items-center gap-1 pl-2 border-l border-white/15">
+                <button
+                  type="button"
+                  onClick={() => handleAdjustMinutes(-1)}
+                  className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 text-xs font-bold transition flex items-center gap-1"
+                >
+                  <Minus className="w-3 h-3" />
+                  <span>1m</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAdjustMinutes(1)}
+                  className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 text-xs font-bold transition flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>1m</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAdjustMinutes(5)}
+                  className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 text-xs font-bold transition flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>5m</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Mode Status & Target Info */}
+            <div className="hidden md:flex items-center gap-3 text-xs text-white/70">
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <span>
+                  {config.mode === "target-time"
+                    ? `Target: ${config.targetTimeString} Prompt`
+                    : `Duration: ${Math.floor(config.durationSeconds / 60)} min`}
+                </span>
+              </span>
+              <span>·</span>
+              <span className="flex items-center gap-1.5">
+                <span
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: currentTheme.primaryAccent }}
+                />
+                <span>{currentTheme.name}</span>
+              </span>
+            </div>
+
+            {/* Stage View & Shortcuts Help */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setConfig((p) => ({ ...p, stageMode: true }))}
+                className="px-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition flex items-center gap-1.5"
+              >
+                <Tv className="w-3.5 h-3.5 text-amber-400" />
+                <span>Sanctuary Stage View (H)</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </footer>
+
+      {/* ============================================================== */}
+      {/* 5. SLIDE-OVER SETTINGS DRAWER: Custom Title, Target & Theme     */}
+      {/* ============================================================== */}
+      {controlsOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md h-full bg-[#0D0F1F] border-l border-white/10 p-6 flex flex-col justify-between overflow-y-auto text-white shadow-2xl">
+            <div className="space-y-6">
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <Settings2 className="w-5 h-5 text-amber-400" />
+                  <h3 className="font-black text-lg text-white">Programme Settings</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setControlsOpen(false)}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* 1. Programme Title */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-amber-400 block">
+                  Programme Title (Edited for Current Service)
+                </label>
+                <input
+                  type="text"
+                  value={config.title}
+                  onChange={(e) => setConfig((p) => ({ ...p, title: e.target.value.toUpperCase() }))}
+                  placeholder="e.g. SUNDAY CELEBRATION SERVICE"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/15 text-white font-bold text-sm focus:border-amber-400 outline-none"
+                />
+              </div>
+
+              {/* 2. Subtitle / Eyebrow */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-white/70 block">
+                  Subtitle Banner
+                </label>
+                <input
+                  type="text"
+                  value={config.subtitle}
+                  onChange={(e) => setConfig((p) => ({ ...p, subtitle: e.target.value }))}
+                  placeholder="e.g. Service Starts In..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/15 text-white text-sm focus:border-amber-400 outline-none"
+                />
+              </div>
+
+              {/* 3. Timer Mode & Parameters */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-white/70 block">
+                  Countdown Method
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setConfig((p) => ({ ...p, mode: "target-time" }))}
+                    className={`p-3 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1 ${
+                      config.mode === "target-time"
+                        ? "bg-amber-400/20 border-amber-400 text-amber-300"
+                        : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
+                    }`}
+                  >
+                    <Clock className="w-4 h-4" />
+                    <span>Target Clock Time</span>
+                    <span className="text-[10px] opacity-75">e.g. 8:00 AM Today</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setConfig((p) => ({ ...p, mode: "duration" }))}
+                    className={`p-3 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1 ${
+                      config.mode === "duration"
+                        ? "bg-amber-400/20 border-amber-400 text-amber-300"
+                        : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
+                    }`}
+                  >
+                    <Sliders className="w-4 h-4" />
+                    <span>Fixed Duration</span>
+                    <span className="text-[10px] opacity-75">e.g. 5 or 10 min timer</span>
+                  </button>
+                </div>
+
+                {/* Target Time Picker */}
+                {config.mode === "target-time" ? (
+                  <div className="pt-2">
+                    <label className="text-[11px] font-bold text-white/60 block mb-1">
+                      Set Service Start Clock (24-hour HH:MM)
+                    </label>
+                    <input
+                      type="time"
+                      value={config.targetTimeString}
+                      onChange={(e) => setConfig((p) => ({ ...p, targetTimeString: e.target.value }))}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/15 text-white font-mono text-base focus:border-amber-400 outline-none"
+                    />
+                  </div>
+                ) : (
+                  /* Duration Slider / Chips */
+                  <div className="pt-2 space-y-2">
+                    <label className="text-[11px] font-bold text-white/60 block">
+                      Quick Duration Presets:
+                    </label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[3, 5, 10, 15, 20, 30, 45, 60].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => {
+                            setConfig((p) => ({ ...p, durationSeconds: m * 60 }));
+                            setRemainingSeconds(m * 60);
+                            setInitialTotalSeconds(m * 60);
+                          }}
+                          className={`py-1.5 rounded-lg text-xs font-bold border transition ${
+                            config.durationSeconds === m * 60
+                              ? "bg-amber-400 text-black border-amber-400"
+                              : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10"
+                          }`}
+                        >
+                          {m}m
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Visual Themes */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-white/70 block">
+                  Sacred Visual Archetype
+                </label>
+                <div className="grid grid-cols-1 gap-2">
+                  {(Object.keys(COUNTDOWN_THEMES) as CountdownThemeId[]).map((themeKey) => {
+                    const th = COUNTDOWN_THEMES[themeKey];
+                    const isSelected = config.theme === themeKey;
+                    return (
+                      <button
+                        key={themeKey}
+                        type="button"
+                        onClick={() => setConfig((p) => ({ ...p, theme: themeKey }))}
+                        className={`p-2.5 rounded-xl border text-left transition flex items-center justify-between ${
+                          isSelected
+                            ? "bg-white/10 border-amber-400 ring-1 ring-amber-400/50"
+                            : "bg-white/[0.03] border-white/10 hover:bg-white/[0.08]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-7 h-7 rounded-lg border border-white/20 flex items-center justify-center"
+                            style={{ background: th.bgGradient }}
+                          >
+                            <div
+                              className="w-2.5 h-2.5 rounded-full"
+                              style={{ backgroundColor: th.primaryAccent }}
+                            />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold block text-white">{th.name}</span>
+                            <span className="text-[10px] text-white/50 block">{th.tagline}</span>
+                          </div>
+                        </div>
+                        {isSelected && <Check className="w-4 h-4 text-amber-400 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 5. Scripture Reference & Text */}
+              <div className="space-y-2 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-white/70">
+                    Display Scripture
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setConfig((p) => ({ ...p, showScripture: !p.showScripture }))}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition ${
+                      config.showScripture
+                        ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                        : "bg-white/10 border-white/20 text-white/50"
+                    }`}
+                  >
+                    {config.showScripture ? "Enabled" : "Disabled"}
+                  </button>
+                </div>
+
+                {config.showScripture && (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={config.scriptureRef}
+                      onChange={(e) => setConfig((p) => ({ ...p, scriptureRef: e.target.value }))}
+                      placeholder="e.g. ISAIAH 60:1"
+                      className="w-full px-3 py-2 rounded-xl bg-white/[0.06] border border-white/15 text-xs text-white outline-none focus:border-amber-400"
+                    />
+                    <textarea
+                      value={config.scriptureText}
+                      onChange={(e) => setConfig((p) => ({ ...p, scriptureText: e.target.value }))}
+                      placeholder="Scripture passage text..."
+                      rows={2}
+                      className="w-full px-3 py-2 rounded-xl bg-white/[0.06] border border-white/15 text-xs text-white outline-none focus:border-amber-400"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Drawer Footer Actions */}
+            <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setConfig(DEFAULT_STATE);
+                  toast.info("Reset to Default Sunday Service");
+                }}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-white/70"
+              >
+                Reset Defaults
+              </button>
+              <button
+                type="button"
+                onClick={() => setControlsOpen(false)}
+                className="px-5 py-2 rounded-xl text-xs font-black bg-amber-400 text-black hover:bg-amber-300"
+              >
+                Apply & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

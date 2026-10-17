@@ -80,6 +80,7 @@ export function SiteFooter() {
             <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
             <li><Link href="/visit" className="hover:text-white transition-colors">Visit</Link></li>
             <li><Link href="/live" className="hover:text-white transition-colors">Live Broadcast</Link></li>
+            <li><Link href="/countdown" className="hover:text-white transition-colors">Service Countdown</Link></li>
             <li><Link href="/sermons" className="hover:text-white transition-colors">Sermons</Link></li>
             <li><Link href="/devotion" className="hover:text-white transition-colors">Daily Devotion</Link></li>
             <li><Link href="/testimonies" className="hover:text-white transition-colors">Testimonies</Link></li>
