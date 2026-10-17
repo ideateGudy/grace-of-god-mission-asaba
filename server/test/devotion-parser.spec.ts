@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseRawDevotion, extractDate } from '../../client/lib/devotion/devotion-parser.js';
+import { parseRawDevotion, extractDate } from '@ggm/types';
 
 describe('Smart Devotion Parser', () => {
   const sampleText = `DAILY GRACE, FRIDAY, OCTOBER 16, 2026. 

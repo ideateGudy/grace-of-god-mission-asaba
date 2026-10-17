@@ -124,6 +124,8 @@ describe('DevotionsService', () => {
       service.create(actor as any, {
         date: '2026-10-18',
         title: 'Duplicate Devotion',
+        series: 'Daily Grace',
+        published: true,
         scriptureRef: 'John 3:16',
         scriptureText: 'For God so loved the world...',
         content: 'Content...',

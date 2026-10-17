@@ -3,13 +3,13 @@ import {
   FLYER_TEMPLATES,
   FLYER_DIMENSIONS,
   DEFAULT_PRESETS,
+  CURATED_ASSETS,
   type FlyerAspectRatio,
   type FlyerTemplateId,
   type FlyerImageLayer,
   type LayerBlendMode,
   type LayerMaskShape,
-} from "../../client/lib/flyer/flyer-types.js";
-import { CURATED_ASSETS } from "../../client/lib/flyer/flyer-assets.js";
+} from "@ggm/types";
 
 describe("Church Flyer Generator Engine", () => {
   it("provides valid dimension definitions for all 3 aspect ratios", () => {

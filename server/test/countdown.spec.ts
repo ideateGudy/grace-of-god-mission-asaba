@@ -2,10 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   COUNTDOWN_THEMES,
   PROGRAMME_PRESETS,
-  type CountdownMode,
   type CountdownThemeId,
   type ChurchCountdownState,
-} from "../../client/lib/countdown/countdown-types.js";
+} from "@ggm/types";
 
 describe("Church Countdown Engine & Offline Presets", () => {
   it("provides complete design tokens for all 5 sacred countdown themes", () => {
