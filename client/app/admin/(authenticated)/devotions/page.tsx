@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, type FormEvent } from "react";
+import Link from "next/link";
 import {
   BookOpen,
   Calendar,
@@ -14,6 +15,7 @@ import {
   Clock,
   AlertCircle,
   Info,
+  Palette,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -401,6 +403,17 @@ export default function AdminDevotionsPage() {
                 </Button>
 
                 <div className="flex items-center gap-1">
+                  <Link href={`/admin/flyers?date=${encodeURIComponent(row.date)}`}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-gold/80 hover:text-gold hover:bg-gold/10"
+                      title="Create Flyer for this Devotion"
+                    >
+                      <Palette className="w-4 h-4" />
+                      <span className="sr-only">Create Flyer</span>
+                    </Button>
+                  </Link>
                   <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(row)}>
                     <Pencil className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                     <span className="sr-only">Edit</span>

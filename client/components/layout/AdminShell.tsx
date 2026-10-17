@@ -24,6 +24,7 @@ import {
   Radio,
   BookOpen,
   Sparkles,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { href: "/admin/live", label: "Livestream", icon: Radio, permission: "LIVESTREAM_MANAGE" },
   { href: "/admin/sermons", label: "Sermons", icon: Video, permission: "SERMONS_MANAGE" },
   { href: "/admin/devotions", label: "Devotions", icon: BookOpen, permission: "DEVOTIONS_MANAGE" },
+  { href: "/admin/flyers", label: "Flyer Studio", icon: Palette },
   { href: "/admin/testimonies", label: "Testimonies", icon: Sparkles, permission: "TESTIMONIES_MANAGE" },
   { href: "/admin/events", label: "Events", icon: Calendar, permission: "EVENTS_MANAGE" },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone, permission: "ANNOUNCEMENTS_MANAGE" },
