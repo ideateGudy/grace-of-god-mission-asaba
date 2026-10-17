@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   COUNTDOWN_THEMES,
   PROGRAMME_PRESETS,
+  COUNTDOWN_COLOR_PRESETS,
   type CountdownThemeId,
   type ChurchCountdownState,
 } from "@ggm/types";
@@ -162,52 +163,81 @@ describe("Church Countdown Engine & Offline Presets", () => {
     expect(parsed.isRunning).toBe(true);
   });
 
-  it("handles zeroing out the timer directly to 00:00:00 and setting a custom duration", () => {
-    const initialState: ChurchCountdownState = {
-      title: "SUNDAY CELEBRATION SERVICE",
-      subtitle: "Service Starts In...",
-      scriptureRef: "ISAIAH 60:1",
-      scriptureText: "Arise, shine; for thy light is come",
-      mode: "target-time",
-      targetTimeString: "08:00",
-      durationSeconds: 300,
-      theme: "royal-gold",
-      soundEnabled: true,
-      overtimeEnabled: true,
-      showScripture: true,
-      showLogo: true,
-      stageMode: false,
-    };
+  it("provides color presets with genuine color preset names", () => {
+    expect(COUNTDOWN_COLOR_PRESETS).toHaveLength(5);
+    const names = COUNTDOWN_COLOR_PRESETS.map((p) => p.name);
+    expect(names).toEqual([
+      "Royal Gold",
+      "Pentecost Fire",
+      "Celestial Blue",
+      "Emerald Grace",
+      "Obsidian Glow",
+    ]);
 
-    // 1. Reset directly to zero
-    const zeroedState: ChurchCountdownState = {
-      ...initialState,
-      mode: "duration",
-      durationSeconds: 0,
-    };
-    const zeroedSeconds = 0;
-    const zeroedRunning = false;
+    const themeIds = COUNTDOWN_COLOR_PRESETS.map((p) => p.theme);
+    expect(themeIds).toEqual([
+      "royal-gold",
+      "pentecost-fire",
+      "celestial-blue",
+      "emerald-grace",
+      "obs-transparent",
+    ]);
+  });
 
-    expect(zeroedState.mode).toBe("duration");
-    expect(zeroedState.durationSeconds).toBe(0);
-    expect(zeroedSeconds).toBe(0);
-    expect(zeroedRunning).toBe(false);
+  it("turns off display scripture by default across presets", () => {
+    PROGRAMME_PRESETS.forEach((preset) => {
+      expect(preset.data.showScripture).toBe(false);
+    });
+  });
 
-    // 2. Set custom timer duration (e.g. 15 minutes = 900 seconds)
-    const customMinutes = 15;
-    const customSeconds = 30;
-    const customTotalSecs = customMinutes * 60 + customSeconds;
+  it("resets directly to 00:00:00, halts the counter, and retains paused stopped state across simulated refresh", () => {
+    // Simulated localStorage
+    const storage: Record<string, string> = {};
 
-    const customState: ChurchCountdownState = {
-      ...zeroedState,
-      mode: "duration",
-      durationSeconds: customTotalSecs,
-    };
-    const running = true;
+    // 1. User resets to zero
+    const RUNNING_KEY = "ggm_church_countdown_running_v1";
+    const SECS_KEY = "ggm_church_countdown_secs_v1";
+    const ZEROED_KEY = "ggm_church_countdown_zeroed_v1";
 
-    expect(customState.durationSeconds).toBe(930);
-    expect(customState.mode).toBe("duration");
-    expect(running).toBe(true);
+    // Action: handleResetToZero()
+    let isRunning = false;
+    let remainingSeconds = 0;
+    storage[RUNNING_KEY] = JSON.stringify(isRunning);
+    storage[SECS_KEY] = JSON.stringify(remainingSeconds);
+    storage[ZEROED_KEY] = "true";
+
+    expect(storage[ZEROED_KEY]).toBe("true");
+    expect(JSON.parse(storage[RUNNING_KEY])).toBe(false);
+    expect(JSON.parse(storage[SECS_KEY])).toBe(0);
+
+    // 2. Simulated page refresh / remount
+    const restoredIsZeroed = storage[ZEROED_KEY] === "true";
+    const restoredRunning = restoredIsZeroed ? false : JSON.parse(storage[RUNNING_KEY] ?? "false");
+    const restoredSeconds = restoredIsZeroed ? 0 : Number(JSON.parse(storage[SECS_KEY] ?? "300"));
+
+    // Timer must stay stopped at 0 and NOT start automatically
+    expect(restoredRunning).toBe(false);
+    expect(restoredSeconds).toBe(0);
+  });
+
+  it("preserves paused state and remaining seconds so refreshing the page does not start the timer", () => {
+    const storage: Record<string, string> = {};
+    const RUNNING_KEY = "ggm_church_countdown_running_v1";
+    const SECS_KEY = "ggm_church_countdown_secs_v1";
+    const ZEROED_KEY = "ggm_church_countdown_zeroed_v1";
+
+    // User was at 145 seconds remaining and paused the timer
+    storage[RUNNING_KEY] = JSON.stringify(false);
+    storage[SECS_KEY] = JSON.stringify(145);
+    delete storage[ZEROED_KEY];
+
+    // Simulated page refresh / remount
+    const restoredIsZeroed = storage[ZEROED_KEY] === "true";
+    const restoredRunning = restoredIsZeroed ? false : JSON.parse(storage[RUNNING_KEY]);
+    const restoredSeconds = restoredIsZeroed ? 0 : Number(JSON.parse(storage[SECS_KEY]));
+
+    expect(restoredRunning).toBe(false);
+    expect(restoredSeconds).toBe(145);
   });
 });
 

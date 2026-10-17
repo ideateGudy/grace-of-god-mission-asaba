@@ -1,6 +1,9 @@
 import type { ChurchCountdownState } from "./countdown-types";
 
 export const COUNTDOWN_STORAGE_KEY = "ggm_church_countdown_v1";
+export const COUNTDOWN_RUNNING_KEY = "ggm_church_countdown_running_v1";
+export const COUNTDOWN_SECS_KEY = "ggm_church_countdown_secs_v1";
+export const COUNTDOWN_ZEROED_KEY = "ggm_church_countdown_zeroed_v1";
 export const COUNTDOWN_SYNC_CHANNEL = "ggm_church_countdown_sync";
 
 export interface CountdownSyncPayload {
@@ -12,7 +15,8 @@ export interface CountdownSyncPayload {
 }
 
 /**
- * Broadcast an updated countdown state to all open windows/tabs (e.g. /countdown/live).
+ * Broadcast an updated countdown state to all open windows/tabs (e.g. /countdown/live)
+ * and persist runtime execution state to localStorage so refresh never starts unexpectedly.
  */
 export function broadcastCountdownState(
   channel: BroadcastChannel | null,
@@ -37,6 +41,14 @@ export function broadcastCountdownState(
   // 2. Persist to localStorage for cross-window & offline recovery
   try {
     localStorage.setItem(COUNTDOWN_STORAGE_KEY, JSON.stringify(fullPayload.state));
+    localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(fullPayload.isRunning));
+    localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(fullPayload.remainingSeconds));
+
+    if (fullPayload.remainingSeconds === 0 && !fullPayload.isRunning) {
+      localStorage.setItem(COUNTDOWN_ZEROED_KEY, "true");
+    } else if (fullPayload.remainingSeconds > 0 || fullPayload.isRunning) {
+      localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
+    }
   } catch {
     // Ignore localStorage quota errors
   }

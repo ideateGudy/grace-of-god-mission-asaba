@@ -113,6 +113,20 @@ export interface ProgrammePreset {
   data: Partial<ChurchCountdownState>;
 }
 
+export interface CountdownColorPreset {
+  id: CountdownThemeId;
+  name: string;
+  theme: CountdownThemeId;
+}
+
+export const COUNTDOWN_COLOR_PRESETS: CountdownColorPreset[] = [
+  { id: "royal-gold", name: "Royal Gold", theme: "royal-gold" },
+  { id: "pentecost-fire", name: "Pentecost Fire", theme: "pentecost-fire" },
+  { id: "celestial-blue", name: "Celestial Blue", theme: "celestial-blue" },
+  { id: "emerald-grace", name: "Emerald Grace", theme: "emerald-grace" },
+  { id: "obs-transparent", name: "Obsidian Glow", theme: "obs-transparent" },
+];
+
 export const PROGRAMME_PRESETS: ProgrammePreset[] = [
   {
     id: "sunday-service",
@@ -129,7 +143,7 @@ export const PROGRAMME_PRESETS: ProgrammePreset[] = [
       theme: "royal-gold",
       soundEnabled: true,
       overtimeEnabled: true,
-      showScripture: true,
+      showScripture: false,
       showLogo: true,
     },
   },
@@ -148,7 +162,7 @@ export const PROGRAMME_PRESETS: ProgrammePreset[] = [
       theme: "emerald-grace",
       soundEnabled: true,
       overtimeEnabled: true,
-      showScripture: true,
+      showScripture: false,
       showLogo: true,
     },
   },
@@ -167,7 +181,7 @@ export const PROGRAMME_PRESETS: ProgrammePreset[] = [
       theme: "pentecost-fire",
       soundEnabled: true,
       overtimeEnabled: true,
-      showScripture: true,
+      showScripture: false,
       showLogo: true,
     },
   },
@@ -186,7 +200,7 @@ export const PROGRAMME_PRESETS: ProgrammePreset[] = [
       theme: "celestial-blue",
       soundEnabled: true,
       overtimeEnabled: true,
-      showScripture: true,
+      showScripture: false,
       showLogo: true,
     },
   },
@@ -205,7 +219,7 @@ export const PROGRAMME_PRESETS: ProgrammePreset[] = [
       theme: "royal-gold",
       soundEnabled: true,
       overtimeEnabled: false,
-      showScripture: true,
+      showScripture: false,
       showLogo: true,
     },
   },
@@ -224,7 +238,7 @@ export const PROGRAMME_PRESETS: ProgrammePreset[] = [
       theme: "royal-gold",
       soundEnabled: true,
       overtimeEnabled: false,
-      showScripture: true,
+      showScripture: false,
       showLogo: true,
     },
   },
@@ -243,7 +257,7 @@ export const PROGRAMME_PRESETS: ProgrammePreset[] = [
       theme: "royal-gold",
       soundEnabled: true,
       overtimeEnabled: false,
-      showScripture: true,
+      showScripture: false,
       showLogo: true,
     },
   },
@@ -262,7 +276,7 @@ export const PROGRAMME_PRESETS: ProgrammePreset[] = [
       theme: "royal-gold",
       soundEnabled: true,
       overtimeEnabled: false,
-      showScripture: true,
+      showScripture: false,
       showLogo: true,
     },
   },

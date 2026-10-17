@@ -9,6 +9,9 @@ import {
 } from "@/lib/countdown/countdown-types";
 import {
   COUNTDOWN_STORAGE_KEY,
+  COUNTDOWN_RUNNING_KEY,
+  COUNTDOWN_SECS_KEY,
+  COUNTDOWN_ZEROED_KEY,
   COUNTDOWN_SYNC_CHANNEL,
   type CountdownSyncPayload,
 } from "@/lib/countdown/countdown-sync";
@@ -27,7 +30,7 @@ const DEFAULT_STATE: ChurchCountdownState = {
   theme: "royal-gold",
   soundEnabled: true,
   overtimeEnabled: true,
-  showScripture: true,
+  showScripture: false,
   showLogo: true,
   stageMode: false,
 };
@@ -67,9 +70,56 @@ export function ChurchCountdownLive() {
     return DEFAULT_STATE;
   });
 
-  const [isRunning, setIsRunning] = useState<boolean>(true);
-  const [remainingSeconds, setRemainingSeconds] = useState<number>(300);
-  const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(300);
+  const [isRunning, setIsRunning] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
+        if (isZeroed === "true") return false;
+
+        const savedRunning = localStorage.getItem(COUNTDOWN_RUNNING_KEY);
+        if (savedRunning !== null) {
+          return JSON.parse(savedRunning);
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    return false;
+  });
+
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
+        if (isZeroed === "true") return 0;
+
+        const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
+        if (savedSecs !== null) {
+          return Number(JSON.parse(savedSecs));
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    return 300;
+  });
+
+  const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
+        if (isZeroed === "true") return 0;
+
+        const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
+        if (savedSecs !== null) {
+          return Math.max(Number(JSON.parse(savedSecs)), 1);
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    return 300;
+  });
   const [showHint, setShowHint] = useState<boolean>(true);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -126,6 +176,23 @@ export function ChurchCountdownLive() {
         } catch {
           // Ignore
         }
+      } else if (e.key === COUNTDOWN_RUNNING_KEY && e.newValue !== null) {
+        try {
+          setIsRunning(JSON.parse(e.newValue));
+        } catch {
+          // Ignore
+        }
+      } else if (e.key === COUNTDOWN_SECS_KEY && e.newValue !== null) {
+        try {
+          setRemainingSeconds(Number(JSON.parse(e.newValue)));
+        } catch {
+          // Ignore
+        }
+      } else if (e.key === COUNTDOWN_ZEROED_KEY) {
+        if (e.newValue === "true") {
+          setRemainingSeconds(0);
+          setIsRunning(false);
+        }
       }
     };
 
@@ -137,8 +204,34 @@ export function ChurchCountdownLive() {
     };
   }, []);
 
+  const isInitialMountRef = useRef<boolean>(true);
+
   // Compute countdown target when mode or parameters change
   useEffect(() => {
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      if (typeof window !== "undefined") {
+        try {
+          const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
+          if (isZeroed === "true") {
+            setRemainingSeconds(0);
+            setInitialTotalSeconds(0);
+            chimePlayedRef.current = true;
+            return;
+          }
+          const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
+          if (savedSecs !== null) {
+            const parsed = Number(JSON.parse(savedSecs));
+            setRemainingSeconds(parsed);
+            setInitialTotalSeconds(Math.max(parsed, 1));
+            return;
+          }
+        } catch {
+          // Fallback to calculation
+        }
+      }
+    }
+
     if (config.mode === "target-time") {
       const secs = calculateSecondsUntilTarget(config.targetTimeString);
       setRemainingSeconds(secs);
@@ -146,7 +239,7 @@ export function ChurchCountdownLive() {
       chimePlayedRef.current = secs <= 0;
     } else {
       setRemainingSeconds(config.durationSeconds);
-      setInitialTotalSeconds(config.durationSeconds);
+      setInitialTotalSeconds(Math.max(config.durationSeconds, 1));
       chimePlayedRef.current = false;
     }
   }, [config.mode, config.targetTimeString, config.durationSeconds]);
@@ -158,7 +251,6 @@ export function ChurchCountdownLive() {
     const interval = setInterval(() => {
       if (config.mode === "target-time") {
         const secs = calculateSecondsUntilTarget(config.targetTimeString);
-        setRemainingSeconds(secs);
 
         // Sound triggers
         if (config.soundEnabled) {
@@ -169,6 +261,13 @@ export function ChurchCountdownLive() {
             audioSynth.playServiceGong();
             chimePlayedRef.current = true;
           }
+        }
+
+        if (!config.overtimeEnabled && secs <= 0) {
+          setRemainingSeconds(0);
+          setIsRunning(false);
+        } else {
+          setRemainingSeconds(secs);
         }
       } else {
         // Duration mode
@@ -186,6 +285,7 @@ export function ChurchCountdownLive() {
           }
 
           if (!config.overtimeEnabled && next <= 0) {
+            setIsRunning(false);
             return 0;
           }
           return next;

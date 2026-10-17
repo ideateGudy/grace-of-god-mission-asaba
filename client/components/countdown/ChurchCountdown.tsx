@@ -35,10 +35,14 @@ import {
   type CountdownThemeId,
   type ChurchCountdownState,
   COUNTDOWN_THEMES,
+  COUNTDOWN_COLOR_PRESETS,
   PROGRAMME_PRESETS,
 } from "@/lib/countdown/countdown-types";
 import {
   COUNTDOWN_STORAGE_KEY,
+  COUNTDOWN_RUNNING_KEY,
+  COUNTDOWN_SECS_KEY,
+  COUNTDOWN_ZEROED_KEY,
   COUNTDOWN_SYNC_CHANNEL,
   broadcastCountdownState,
 } from "@/lib/countdown/countdown-sync";
@@ -59,7 +63,7 @@ const DEFAULT_STATE: ChurchCountdownState = {
   theme: "royal-gold",
   soundEnabled: true,
   overtimeEnabled: true,
-  showScripture: true,
+  showScripture: false,
   showLogo: true,
   stageMode: false,
 };
@@ -103,9 +107,56 @@ export function ChurchCountdown() {
     return DEFAULT_STATE;
   });
 
-  const [isRunning, setIsRunning] = useState<boolean>(true);
-  const [remainingSeconds, setRemainingSeconds] = useState<number>(300);
-  const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(300);
+  const [isRunning, setIsRunning] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
+        if (isZeroed === "true") return false;
+
+        const savedRunning = localStorage.getItem(COUNTDOWN_RUNNING_KEY);
+        if (savedRunning !== null) {
+          return JSON.parse(savedRunning);
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    return false;
+  });
+
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
+        if (isZeroed === "true") return 0;
+
+        const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
+        if (savedSecs !== null) {
+          return Number(JSON.parse(savedSecs));
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    return 300;
+  });
+
+  const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
+        if (isZeroed === "true") return 0;
+
+        const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
+        if (savedSecs !== null) {
+          return Math.max(Number(JSON.parse(savedSecs)), 1);
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    return 300;
+  });
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
@@ -177,8 +228,34 @@ export function ChurchCountdown() {
     };
   }, []);
 
+  const isInitialMountRef = useRef<boolean>(true);
+
   // Sync initial countdown target when mode or parameters change
   useEffect(() => {
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      if (typeof window !== "undefined") {
+        try {
+          const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY);
+          if (isZeroed === "true") {
+            setRemainingSeconds(0);
+            setInitialTotalSeconds(0);
+            chimePlayedRef.current = true;
+            return;
+          }
+          const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
+          if (savedSecs !== null) {
+            const parsed = Number(JSON.parse(savedSecs));
+            setRemainingSeconds(parsed);
+            setInitialTotalSeconds(Math.max(parsed, 1));
+            return;
+          }
+        } catch {
+          // Fallback to recalculation
+        }
+      }
+    }
+
     if (config.mode === "target-time") {
       const secs = calculateSecondsUntilTarget(config.targetTimeString);
       setRemainingSeconds(secs);
@@ -186,7 +263,7 @@ export function ChurchCountdown() {
       chimePlayedRef.current = secs <= 0;
     } else {
       setRemainingSeconds(config.durationSeconds);
-      setInitialTotalSeconds(config.durationSeconds);
+      setInitialTotalSeconds(Math.max(config.durationSeconds, 1));
       chimePlayedRef.current = false;
     }
   }, [config.mode, config.targetTimeString, config.durationSeconds]);
@@ -198,7 +275,6 @@ export function ChurchCountdown() {
     const interval = setInterval(() => {
       if (config.mode === "target-time") {
         const secs = calculateSecondsUntilTarget(config.targetTimeString);
-        setRemainingSeconds(secs);
 
         // Sound triggers
         if (config.soundEnabled) {
@@ -209,6 +285,13 @@ export function ChurchCountdown() {
             audioSynth.playServiceGong();
             chimePlayedRef.current = true;
           }
+        }
+
+        if (!config.overtimeEnabled && secs <= 0) {
+          setRemainingSeconds(0);
+          setIsRunning(false);
+        } else {
+          setRemainingSeconds(secs);
         }
       } else {
         // Duration mode
@@ -226,6 +309,7 @@ export function ChurchCountdown() {
           }
 
           if (!config.overtimeEnabled && next <= 0) {
+            setIsRunning(false);
             return 0;
           }
           return next;
@@ -262,8 +346,7 @@ export function ChurchCountdown() {
 
       if (e.code === "Space") {
         e.preventDefault();
-        setIsRunning((prev) => !prev);
-        toast.info(isRunning ? "Timer Paused" : "Timer Resumed");
+        togglePlayPause();
       } else if (e.code === "KeyZ" || e.code === "Digit0") {
         e.preventDefault();
         handleResetToZero();
@@ -315,9 +398,35 @@ export function ChurchCountdown() {
     }
   };
 
+  const togglePlayPause = () => {
+    setIsRunning((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(next));
+          if (next) {
+            localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
+          }
+        } catch {
+          // Ignore
+        }
+      }
+      toast.info(next ? "Timer Resumed" : "Timer Paused");
+      return next;
+    });
+  };
+
   const handleReset = () => {
     chimePlayedRef.current = false;
     lastSecondRef.current = -1;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
+        localStorage.setItem(COUNTDOWN_RUNNING_KEY, "true");
+      } catch {
+        // Ignore
+      }
+    }
     if (config.mode === "target-time") {
       const secs = calculateSecondsUntilTarget(config.targetTimeString);
       setRemainingSeconds(secs);
@@ -336,18 +445,38 @@ export function ChurchCountdown() {
     setRemainingSeconds(0);
     setInitialTotalSeconds(0);
     setIsRunning(false);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(COUNTDOWN_RUNNING_KEY, "false");
+        localStorage.setItem(COUNTDOWN_SECS_KEY, "0");
+        localStorage.setItem(COUNTDOWN_ZEROED_KEY, "true");
+      } catch {
+        // Ignore
+      }
+    }
     setConfig((prev) => ({
       ...prev,
       mode: "duration",
       durationSeconds: 0,
     }));
-    toast.info("Timer Reset to 00:00:00 (Paused)");
+    toast.info("Timer Reset to 00:00:00 (Stopped)");
   };
 
   const handleSetCustomDuration = (minutes: number, seconds: number = 0, autoStart: boolean = true) => {
     const totalSecs = Math.max(0, Math.floor(minutes) * 60 + Math.floor(seconds));
     chimePlayedRef.current = false;
     lastSecondRef.current = -1;
+    if (typeof window !== "undefined") {
+      try {
+        if (totalSecs > 0 || autoStart) {
+          localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
+        }
+        localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(autoStart));
+        localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(totalSecs));
+      } catch {
+        // Ignore
+      }
+    }
     setRemainingSeconds(totalSecs);
     setInitialTotalSeconds(Math.max(totalSecs, 1));
     setIsRunning(autoStart);
@@ -366,6 +495,15 @@ export function ChurchCountdown() {
     const secs = calculateSecondsUntilTarget(targetHHMM);
     chimePlayedRef.current = secs <= 0;
     lastSecondRef.current = -1;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
+        localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(autoStart));
+        localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(secs));
+      } catch {
+        // Ignore
+      }
+    }
     setRemainingSeconds(secs);
     setInitialTotalSeconds(Math.max(secs, 1));
     setIsRunning(autoStart);
@@ -386,14 +524,12 @@ export function ChurchCountdown() {
     toast.info(`${deltaMinutes > 0 ? "+" : ""}${deltaMinutes} min adjusted`);
   };
 
-  const handleApplyPreset = (preset: (typeof PROGRAMME_PRESETS)[0]) => {
-    if (!preset.data.theme) return;
-    const nextTheme = preset.data.theme;
+  const handleApplyColorTheme = (themeId: CountdownThemeId, themeName: string) => {
     setConfig((prev) => ({
       ...prev,
-      theme: nextTheme, // Only change page color / theme, preserve title and time!
+      theme: themeId, // Only change page color / theme, preserve title and time!
     }));
-    toast.success(`Color Theme Applied: ${preset.name}`);
+    toast.success(`Color Theme Applied: ${themeName}`);
   };
 
   // Compute breakdown: hours, minutes, seconds, overtime
@@ -598,16 +734,15 @@ export function ChurchCountdown() {
               <Sliders className="w-3.5 h-3.5" />
               <span>Color Presets:</span>
             </span>
-            {PROGRAMME_PRESETS.map((p) => {
-              const themeId = p.data.theme;
-              if (!themeId) return null;
+            {COUNTDOWN_COLOR_PRESETS.map((p) => {
+              const themeId = p.theme;
               const isSelected = config.theme === themeId;
               const themeAccent = COUNTDOWN_THEMES[themeId]?.primaryAccent || "#D9A441";
               return (
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => handleApplyPreset(p)}
+                  onClick={() => handleApplyColorTheme(p.theme, p.name)}
                   title={`Apply ${p.name} theme colors (keeps time and title)`}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 border transition flex items-center gap-1.5 ${
                     isSelected
@@ -897,7 +1032,7 @@ export function ChurchCountdown() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setIsRunning((p) => !p)}
+                onClick={togglePlayPause}
                 className={`px-5 py-2.5 rounded-2xl font-black text-sm flex items-center gap-2 transition shadow-lg ${
                   isRunning
                     ? "bg-amber-400 text-black hover:bg-amber-300"
