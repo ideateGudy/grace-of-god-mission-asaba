@@ -55,10 +55,28 @@ grace-of-god-mission-asaba/
   - Anonymity toggle to protect donor identity on public feeds.
   - `/give/thanks`: Digital receipt confirmation screen with real-time Paystack transaction status verification.
   - Direct verified bank account details alongside online giving with one-click copy buttons.
-- **Prayer Requests (`/prayer`)**: Confidential prayer request form with honeypot spam protection.
-- **Contact & Inquiries (`/contact`)**: Interactive inquiry form, WhatsApp direct chat link, phone dialing, and full sanctuary street address.
-- **Privacy Notice (`/privacy`)**: Transparent privacy policy compliant with NDPR and international data protection standards.
-- **Navigation & Mobile Experience**: Fixed header with church emblem, mobile navigation drawer, and floating quick action bar.
+- **Live Broadcast & Sanctuary Stream (`/live`)**:
+  - Live broadcast hub supporting responsive 16:9 YouTube and Facebook video streams.
+  - Automatic stream URL normalizer (converting watch URLs, short links, and live URLs to privacy-enhanced embeds).
+  - Site-wide pulsating **"Live Now"** indicator in both desktop and mobile headers.
+  - Interactive service notes, bulletin scripture references, weekly schedule, and quick giving/prayer actions.
+  - Graceful offline fallback displaying next service countdown and recent sermons archive.
+- **Moderated Community Prayer Wall (`/prayer/wall`)**:
+  - Public petitions wall with interactive, debounced **"I Prayed"** counter cached in local storage.
+  - Opt-in toggle on the prayer submission form (`/prayer`) allowing members to share anonymized petitions.
+  - Privacy-by-design: Public APIs strip all names, phone numbers, and emails at the SQL query level.
+- **Praise Reports & Testimonies (`/testimonies`)**:
+  - Filterable community testimony gallery with featured cards and author anonymity support.
+  - Accessible submission modal (`TestimonyDialog.tsx`) with honeypot bot trap for members to share what God has done.
+- **Daily Devotion & Verse of the Day (`/devotion`)**:
+  - Today's devotional reading with Scripture anchor, pastoral reflection, closing prayer/faith confession, and past devotion archive.
+  - Dynamic daily devotion highlight card on the homepage (`/`).
+  - One-click Web Share and clipboard copy for WhatsApp, Facebook, and messaging.
+  - Normalized to West Africa Time (`Africa/Lagos`, UTC+1) so devotions strictly align with local congregation calendar days.
+- **Prayer Requests (`/prayer`)**: Confidential prayer petition submission with optional public wall sharing and honeypot spam protection.
+- **Contact & Inquiries (`/contact`)**: Interactive inquiry form with honeypot trap, WhatsApp direct chat link, click-to-call phone dialing, and sanctuary address.
+- **Privacy Notice (`/privacy`)**: Transparent privacy policy compliant with the Nigeria Data Protection Act (NDPA 2023).
+- **Navigation & Mobile Experience**: Fixed header with church emblem, live streaming pulse badge, categorized dropdown navigation, mobile drawer, and floating quick action bar.
 - **Production Error Boundaries**:
   - `app/error.tsx`: Sacred recovery card with "Try again", "Return Home", and error reference tracking.
   - `app/global-error.tsx`: Root-level recovery UI ensuring the application never crashes to a white screen.
@@ -67,28 +85,33 @@ grace-of-god-mission-asaba/
 ### 2. Administrative Portal (`/admin`)
 - **Protected Network Boundary ([`client/proxy.ts`](./client/proxy.ts))**: Next.js 16 proxy guarding all `/admin/*` routes before rendering.
 - **Authentication (`/admin/login`)**: Cookie-based JWT sessions with `httpOnly`, `sameSite=lax`, and `secure` flags.
+- **Two-Factor Authentication (TOTP)**: Super-Admin optional 2FA support using authenticator apps (Google Authenticator, Microsoft Authenticator) with emergency CLI recovery tools.
 - **Enforced First-Time Password Reset**: Newly provisioned admins are required to update their temporary password at `/admin/account` before accessing any admin tools.
-- **Overview Dashboard (`/admin`)**: Real-time KPI statistics for published sermons, upcoming events, active announcements, gallery photos, and unread messages.
+- **Overview Dashboard (`/admin`)**: Real-time KPI statistics for published sermons, upcoming events, active announcements, gallery photos, unread messages, and quick action shortcuts.
 - **Content Management Modules**:
-  - **Sermons Management**: Create, edit, and publish sermons with video URLs, audio links, preacher tags, and scriptures.
-  - **Events Management**: Schedule upcoming events, set locations, and publish calendar items.
-  - **Announcements**: Broadcast pinned bulletin notices with publication schedules.
-  - **Gallery Management**: Upload and organize photo albums with automated Cloudinary CDN delivery.
+  - **Livestream Manager (`/admin/live`)**: Single-toggle **"We Are Live"** instant switch, stream URL configuration, service titles, and bulletin sermon notes (`LIVESTREAM_MANAGE`).
+  - **Devotions Manager (`/admin/devotions`)**: Schedule and publish daily devotions by calendar date with Scripture references and pastoral reflections (`DEVOTIONS_MANAGE`).
+  - **Testimonies Moderation (`/admin/testimonies`)**: Review queue (`PENDING`, `APPROVED`, `REJECTED`) with one-click approval, rejection, and homepage feature toggles (`TESTIMONIES_MANAGE`).
+  - **Sermons Management (`/admin/sermons`)**: Create, edit, and publish sermons with video URLs, audio links, preacher tags, and scriptures.
+  - **Events Management (`/admin/events`)**: Schedule upcoming events, set locations, and publish calendar items with `.ics` exports.
+  - **Announcements (`/admin/announcements`)**: Broadcast pinned bulletin notices with publication schedules.
+  - **Gallery Management (`/admin/gallery`)**: Upload and organize photo albums with automated Cloudinary CDN delivery.
   - **Hero Banner Editor (`/admin/hero`)**: Manage single slide vs. autoplay carousel banners, customize titles, button links, focal points, and overlays.
   - **Church Projects Management (`/admin/projects`)**: Create and edit fundraising campaigns, upload cover imagery, configure targets in ₦, set deadlines, and track real-time progress.
   - **Offline Giving Recording**: Modal workflow allowing administrators to record direct bank transfers, cheques, and cash gifts against specific projects, updating the transparent donor feed.
-  - **Giving & Contributions Ledger (`/admin/contributions`)**: Full audit ledger tracking both Paystack online payments and manual offline contributions, filterable by project and status with financial summary cards.
+  - **Giving & Contributions Ledger (`/admin/contributions`)**: Full audit ledger tracking both Paystack online payments and manual offline contributions, filterable by project and status with financial summary cards and a manual **"Verify with Paystack"** button for resolving dropped webhooks.
   - **Financial CSV Export**: One-click download of the complete contributions journal (`/api/v1/admin/contributions/export`) for external church accounting and financial reconciliation.
+  - **Dynamic Site Settings (`/admin/settings`) — *Super Admin Only***: Edit church name, address, Google Maps directions URL, social handles (Facebook, TikTok, YouTube, Instagram), mission, vision, doctrinal beliefs, and pastoral leadership profiles on `/about` with financial integrity warning banners.
 - **Community Submissions**:
-  - **Contact Messages (`/admin/messages`)**: Review, filter, and archive visitor inquiries.
-  - **Prayer Requests**: Dedicated view for pastoral intercession with read status flags.
+  - **Contact Messages (`/admin/messages`)**: Review, filter, and archive visitor inquiries with instant automated Resend email alerts.
+  - **Prayer Requests**: Dedicated view for pastoral intercession with read status flags and **"Approve for Prayer Wall"** toggle.
 - **User & Role Management (`/admin/users`) — *Super Admin Only***:
   - Create administrative users with temporary passwords.
   - Assign roles: `ADMIN` (content manager) or `SUPER_ADMIN` (full platform authority).
-  - Assign granular permissions: `SERMONS_MANAGE`, `EVENTS_MANAGE`, `ANNOUNCEMENTS_MANAGE`, `GALLERY_MANAGE`, `HERO_MANAGE`, `PROJECTS_MANAGE`, `GIVING_MANAGE`, `CONTACT_INBOX`, `PRAYER_INBOX`.
+  - Assign granular permissions: `SERMONS_MANAGE`, `EVENTS_MANAGE`, `ANNOUNCEMENTS_MANAGE`, `GALLERY_MANAGE`, `HERO_MANAGE`, `PROJECTS_MANAGE`, `GIVING_MANAGE`, `TESTIMONIES_MANAGE`, `DEVOTIONS_MANAGE`, `LIVESTREAM_MANAGE`, `CONTACT_INBOX`, `PRAYER_INBOX`.
   - Deactivate/activate accounts and trigger password resets.
 - **Audit Logging (`/admin/audit`) — *Super Admin Only***:
-  - Immutable audit trail recording actor, action, entity, entity ID, timestamp, and IP.
+  - Immutable audit trail recording actor, action, entity, entity ID, timestamp, and IP with CSV export.
 
 ### 3. Backend REST API (`server`)
 - **Prefix & Documentation**: All endpoints versioned under `/api/v1`. Swagger interactive documentation at `/api/docs` in development.
@@ -259,6 +282,11 @@ flowchart LR
 | `CLOUDINARY_API_SECRET` | *(Your Cloudinary API secret)* | |
 | `PAYSTACK_SECRET_KEY` | `sk_live_...` (or `sk_test_...`) | Secret key for Paystack transaction initialization and verification |
 | `PAYSTACK_PUBLIC_KEY` | `pk_live_...` (or `pk_test_...`) | Public key for Paystack operations |
+| `RESEND_API_KEY` | `re_...` | API key from Resend for email alerts |
+| `RESEND_FROM_EMAIL` | `noreply@graceofgodasaba.org` | Verified sending domain email |
+| `NOTIFICATION_EMAIL` | `office@graceofgodasaba.org` | Church administration inbox to receive member alerts |
+| `REDIS_URL` | `rediss://...` (e.g. Upstash) | Distributed rate limiting across autoscaled instances |
+| `THROTTLE_LIMIT` | `2000` | Rate limiting threshold |
 | `PRISMA_HIDE_UPDATE_MESSAGE` | `true` | Suppresses RC update notice |
 
 5. Under **Advanced Settings**:
@@ -312,12 +340,17 @@ flowchart LR
    - Navigate to `https://your-frontend.vercel.app/admin/login`.
    - Log in with your `SUPER_ADMIN_SEED_EMAIL` and `SUPER_ADMIN_SEED_PASSWORD`.
    - On first login, you will be automatically prompted to set a permanent, secure password at `/admin/account`.
-3. **Emergency Super-Admin Password Reset**:
-   If the super-admin password is ever lost in production, open the **Render Shell** and run:
-   ```bash
-   pnpm --filter @ggm/server cli:reset-super-admin
-   ```
-   This generates a secure temporary password, invalidates previous sessions, and sets `mustChangePassword: true`.
+3. **Emergency Super-Admin Password & 2FA Recovery**:
+   - **Password Reset**: If the super-admin password is ever lost in production, open the **Render Shell** and run:
+     ```bash
+     pnpm --filter @ggm/server cli:reset-super-admin
+     ```
+     This generates a secure temporary password, clears any active 2FA restrictions, invalidates existing sessions, and sets `mustChangePassword: true`.
+   - **2FA Lockout Recovery**: If the administrator loses their authenticator app device, run:
+     ```bash
+     pnpm --filter @ggm/server cli:reset-2fa [optional-email]
+     ```
+     This immediately disables 2FA, invalidates tokens, and allows password-only login.
 4. **Custom Domain & CORS**:
    If you connect a custom domain (e.g., `https://graceofgodasaba.org`):
    - Update `NEXT_PUBLIC_SITE_URL` in Vercel.

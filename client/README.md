@@ -8,22 +8,31 @@ Next.js 16 frontend for Grace of God Mission Asaba, built with Turbopack, App Ro
 
 - **Public Website**:
   - High-impact dawn palette design system with dark/light theme support.
-  - Interactive sermons media catalog with search and series filters.
-  - Events schedule with calendar integration (`.ics` downloads).
-  - Categorized church photo gallery.
-  - Church announcements and visitor planning guide.
-  - Church Projects fundraising showcase (`/projects`, `/projects/[slug]`) with progress bars, goals in ₦, and transparent donor feed.
-  - Paystack online giving (`/give`, `/give/thanks`) with preset amount cards, custom input, fund allocation, anonymity toggle, and digital receipts.
-  - Contact and Prayer Request forms with honeypot spam protection.
+  - **Live Broadcast & Stream Hub (`/live`)**: Responsive 16:9 YouTube and Facebook video player, bulletin notes, countdown, and site-wide pulsating **"Live Now"** indicator in header.
+  - **Daily Devotion & Verse of the Day (`/devotion`)**: Today's devotional reading, Scripture anchor, pastoral reflection, closing prayer, archive, and homepage highlight card (normalized to West Africa Time `Africa/Lagos`).
+  - **Moderated Community Prayer Wall (`/prayer/wall`)**: Public petitions with debounced, local-storage cached **"I Prayed"** counter and privacy-safe API data stripping.
+  - **Praise Reports & Testimonies (`/testimonies`)**: Community praise reports with modal submission dialog (`TestimonyDialog.tsx`).
+  - **Interactive Sermons Library (`/sermons`, `/sermons/[slug]`)**: Media catalog with search, series filter, and video streaming.
+  - **Events Schedule (`/events`)**: Tabbed calendar with `.ics` downloads.
+  - **Church Projects (`/projects`, `/projects/[slug]`)**: Transparent fundraising showcase with live progress bars and donor feed.
+  - **Paystack Online Giving (`/give`, `/give/thanks`)**: Cards, bank transfer, USSD, Apple Pay, fund allocation, and instant digital receipt confirmation.
+  - **About Us (`/about`)**: Foundational beliefs, history, mission, vision, and dynamic pastoral leadership profiles.
+  - **Contact & Prayer Forms**: Interactive forms with honeypot bot trap and WhatsApp resolution.
 - **Admin Portal (`/admin`)**:
   - Next.js 16 Network Boundary Proxy ([`proxy.ts`](./proxy.ts)) protecting admin routes.
-  - Permission-filtered administration shell (`usePermissions`, `<Can>`).
-  - Hero banner manager (single slide vs. autoplay carousel with focal points and overlays).
-  - Church Projects manager (`/admin/projects`) with campaign CRUD and offline contribution modal.
-  - Financial Contributions Ledger (`/admin/contributions`) with project/status filters and CSV export.
+  - **Livestream Manager (`/admin/live`)**: Single-toggle "We Are Live" instant switch, stream URL, and sermon notes.
+  - **Devotions Manager (`/admin/devotions`)**: Author and schedule daily devotions by calendar date.
+  - **Testimonies Moderation (`/admin/testimonies`)**: Review queue with one-click approval, rejection, and homepage feature controls.
+  - **Prayer Wall Moderation (`/admin/messages`)**: Inbox workflow with wall approval/rejection toggle.
+  - **Contributions Ledger (`/admin/contributions`)**: Financial journal with manual "Verify with Paystack" button for recovering dropped webhooks, and CSV export.
+  - **Site Settings (`/admin/settings`)**: Super-Admin configuration of church details, social handles, pastoral leadership, and bank accounts with financial integrity warnings.
+  - **Two-Factor Authentication (TOTP)**: Authenticator app setup in `/admin/account`.
   - Generic resource management tables with sticky save bars and dirty-state guards.
   - Direct Cloudinary image upload with client-side signatures.
   - Compulsory first-time password reset for newly provisioned admins.
+- **Performance & Edge Optimization**:
+  - Incremental Static Regeneration (ISR) with stale-while-revalidate (60s–300s).
+  - Next.js Edge Image Optimization with AVIF/WebP formats and 1-year immutable cache TTL (`minimumCacheTTL: 31536000`).
 
 ---
 
