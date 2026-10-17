@@ -15,6 +15,17 @@ async function bootstrap() {
 
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', 1);
+
+  // Friendly root status endpoint for load balancers and uptime monitors
+  expressApp.get('/', (_req: any, res: any) => {
+    res.status(200).json({
+      name: 'Grace of God Mission Asaba API',
+      status: 'online',
+      version: '1.0.0',
+      health: '/api/v1/health',
+      timestamp: new Date().toISOString(),
+    });
+  });
   
   app.use(helmet());
   app.use(pinoHttp({
