@@ -31,6 +31,7 @@ import {
   Crosshair,
   Blend,
   Maximize2,
+  Crown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -549,6 +550,8 @@ export function FlyerStudio({
             onClick={() => handleApplyPreset(p.id)}
             className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-muted/30 hover:bg-muted/70 text-foreground border border-border/60 shrink-0 transition flex items-center gap-1.5 shadow-2xs"
           >
+            {p.id === "word-of-the-month" && <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+            {p.id === "word-of-the-month-exceeding" && <Crown className="w-3.5 h-3.5 text-purple-400" />}
             {p.id === "sunday-service" && <Church className="w-3.5 h-3.5 text-gold" />}
             {p.id === "miracle-vigil" && <Flame className="w-3.5 h-3.5 text-amber-500" />}
             {p.id === "daily-devotion" && <BookOpen className="w-3.5 h-3.5 text-emerald-500" />}

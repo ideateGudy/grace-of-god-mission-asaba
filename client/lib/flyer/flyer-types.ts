@@ -33,7 +33,9 @@ export type FlyerTemplateId =
   | "midnight-glory"
   | "pentecost-fire"
   | "emerald-grace"
-  | "holy-minimal";
+  | "holy-minimal"
+  | "prophetic-word"
+  | "covenant-glory";
 
 export interface FlyerTemplateStyle {
   id: FlyerTemplateId;
@@ -51,7 +53,14 @@ export interface FlyerTemplateStyle {
   bodyFont: string;
   badgeBg: string;
   badgeText: string;
-  patternType: "radial-rays" | "aurora" | "fire-burst" | "sacred-waves" | "fine-mesh";
+  patternType:
+    | "radial-rays"
+    | "aurora"
+    | "fire-burst"
+    | "sacred-waves"
+    | "fine-mesh"
+    | "prophetic-stars"
+    | "crown-rays";
 }
 
 export type LayerBlendMode =
@@ -201,6 +210,42 @@ export const FLYER_TEMPLATES: Record<FlyerTemplateId, FlyerTemplateStyle> = {
     badgeText: "#E2C485",
     patternType: "fine-mesh",
   },
+  "prophetic-word": {
+    id: "prophetic-word",
+    name: "Prophetic Word & Covenant",
+    tagline: "Deep midnight sapphire, golden halo starburst, and covenant decree",
+    bgDark: "#04091A",
+    bgGradient: "linear-gradient(135deg, #04091A 0%, #0B1E4E 50%, #150F2C 100%)",
+    primaryAccent: "#F59E0B",
+    secondaryAccent: "#38BDF8",
+    accentGlow: "rgba(245, 158, 11, 0.45)",
+    borderColor: "rgba(245, 158, 11, 0.45)",
+    textColor: "#FFFFFF",
+    mutedColor: "#BAE6FD",
+    titleFont: "serif",
+    bodyFont: "sans-serif",
+    badgeBg: "rgba(245, 158, 11, 0.2)",
+    badgeText: "#FCD34D",
+    patternType: "prophetic-stars",
+  },
+  "covenant-glory": {
+    id: "covenant-glory",
+    name: "Covenant Dawn / Prophetic Theme",
+    tagline: "Royal amethyst dawn, radiant solar gold, and monthly decree",
+    bgDark: "#0D0518",
+    bgGradient: "linear-gradient(135deg, #0D0518 0%, #22093C 50%, #301018 100%)",
+    primaryAccent: "#EAB308",
+    secondaryAccent: "#E879F9",
+    accentGlow: "rgba(234, 179, 8, 0.45)",
+    borderColor: "rgba(232, 121, 249, 0.4)",
+    textColor: "#FFFFFF",
+    mutedColor: "#F5D0FE",
+    titleFont: "serif",
+    bodyFont: "sans-serif",
+    badgeBg: "rgba(232, 121, 249, 0.2)",
+    badgeText: "#FDE047",
+    patternType: "crown-rays",
+  },
 };
 
 export const DEFAULT_PRESETS: FlyerPreset[] = [
@@ -321,6 +366,54 @@ export const DEFAULT_PRESETS: FlyerPreset[] = [
       guestMinister: "",
       badgeText: "HOLY COMMUNION TABLE",
       broadcastBadge: "STREAMING LIVE GLOBALLY",
+      showChurchLogo: true,
+    },
+  },
+  {
+    id: "word-of-the-month",
+    name: "Word of the Month (Harvest & Acceleration)",
+    iconName: "Sparkles",
+    description: "Monthly prophetic theme declaration with covenant scripture and pastoral decree",
+    data: {
+      templateId: "prophetic-word",
+      aspectRatio: "square",
+      churchName: "GRACE OF GOD MISSION ASABA",
+      category: "PROPHETIC THEME // OCTOBER 2026",
+      title: "OUR MONTH OF SUPERNATURAL HARVEST & UNCOMMON ACCELERATION",
+      subtitle: "Every closed gate is lifted. Whatever took years to accomplish shall manifest in days by the grace of God.",
+      scriptureRef: "GENESIS 26:12",
+      scriptureText: "Then Isaac sowed in that land, and reaped in the same year a hundredfold; and the LORD blessed him.",
+      date: "OCTOBER 2026 // PROPHETIC THEME",
+      time: "MONTHLY PROPHETIC DECREE",
+      venue: "Grace of God Mission, 12 Jesus Saves Road, Asaba",
+      minister: "DECLARED BY: PASTOR CHUKWUDI EZE",
+      guestMinister: "",
+      badgeText: "WORD FOR THE MONTH",
+      broadcastBadge: "COVENANT BLESSING OF THE MONTH",
+      showChurchLogo: true,
+    },
+  },
+  {
+    id: "word-of-the-month-exceeding",
+    name: "Word of the Month (Open Heavens & Favour)",
+    iconName: "Crown",
+    description: "Prophetic declaration of divine favour, supernatural open doors, and peace",
+    data: {
+      templateId: "covenant-glory",
+      aspectRatio: "story",
+      churchName: "GRACE OF GOD MISSION ASABA",
+      category: "PROPHETIC THEME // NOVEMBER 2026",
+      title: "OUR MONTH OF OPEN HEAVENS & SURPASSING FAVOUR",
+      subtitle: "The hand of the Lord is mighty upon you for good. Kings and nations shall come to the brightness of your rising.",
+      scriptureRef: "EPHESIANS 3:20",
+      scriptureText: "Now unto him that is able to do exceeding abundantly above all that we ask or think, according to the power that worketh in us.",
+      date: "NOVEMBER 2026 // PROPHETIC THEME",
+      time: "MONTHLY THEME & DECLARATION",
+      venue: "Grace of God Mission, 12 Jesus Saves Road, Asaba",
+      minister: "HOST: PASTOR CHUKWUDI EZE",
+      guestMinister: "",
+      badgeText: "PROPHETIC WORD OF THE MONTH",
+      broadcastBadge: "SEASON OF SUPERNATURAL REST",
       showChurchLogo: true,
     },
   },

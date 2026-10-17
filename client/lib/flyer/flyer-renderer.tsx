@@ -320,6 +320,58 @@ export function FlyerRenderer({
         </g>
       )}
 
+      {template.patternType === "prophetic-stars" && (
+        <g opacity="0.25">
+          {/* Concentric Prophetic Covenant Rings */}
+          <circle cx={width / 2} cy={height * 0.38} r={width * 0.38} fill="none" stroke={template.primaryAccent} strokeWidth="1" strokeDasharray="6 6" />
+          <circle cx={width / 2} cy={height * 0.38} r={width * 0.28} fill="none" stroke={template.secondaryAccent} strokeWidth="1.5" opacity="0.6" />
+          <circle cx={width / 2} cy={height * 0.38} r={width * 0.18} fill="none" stroke={template.primaryAccent} strokeWidth="2" strokeDasharray="12 8" />
+          {/* Multi-point Prophetic Star Rays */}
+          {Array.from({ length: 16 }).map((_, i) => {
+            const angle = (i * 360) / 16;
+            const rad = (angle * Math.PI) / 180;
+            const x2 = width / 2 + Math.cos(rad) * (width * 0.45);
+            const y2 = height * 0.38 + Math.sin(rad) * (width * 0.45);
+            return (
+              <line
+                key={i}
+                x1={width / 2}
+                y1={height * 0.38}
+                x2={x2}
+                y2={y2}
+                stroke={template.primaryAccent}
+                strokeWidth={i % 2 === 0 ? "1.5" : "0.75"}
+                opacity={i % 2 === 0 ? "0.4" : "0.2"}
+              />
+            );
+          })}
+        </g>
+      )}
+
+      {template.patternType === "crown-rays" && (
+        <g opacity="0.22">
+          {/* Radiant Dawn Prophetic Fan / Crown */}
+          {Array.from({ length: 24 }).map((_, i) => {
+            const angle = -160 + (i * 140) / 23;
+            const rad = (angle * Math.PI) / 180;
+            const x2 = width / 2 + Math.cos(rad) * Math.max(width, height);
+            const y2 = height * 0.75 + Math.sin(rad) * Math.max(width, height);
+            return (
+              <line
+                key={i}
+                x1={width / 2}
+                y1={height * 0.75}
+                x2={x2}
+                y2={y2}
+                stroke={template.primaryAccent}
+                strokeWidth={i % 3 === 0 ? "2" : "1"}
+                opacity={0.35}
+              />
+            );
+          })}
+        </g>
+      )}
+
       {/* 3. 2026 Architectural Framing & Corner Crosshairs */}
       <rect
         x={20}

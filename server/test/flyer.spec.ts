@@ -45,16 +45,18 @@ describe("Church Flyer Generator Engine", () => {
     });
   });
 
-  it("contains all 5 handcrafted graphic templates with complete design tokens", () => {
+  it("contains all 7 handcrafted graphic templates with complete design tokens", () => {
     const templateIds: FlyerTemplateId[] = [
       "royal-gold",
       "midnight-glory",
       "pentecost-fire",
       "emerald-grace",
       "holy-minimal",
+      "prophetic-word",
+      "covenant-glory",
     ];
 
-    expect(Object.keys(FLYER_TEMPLATES)).toHaveLength(5);
+    expect(Object.keys(FLYER_TEMPLATES)).toHaveLength(7);
 
     templateIds.forEach((id) => {
       const t = FLYER_TEMPLATES[id];
@@ -69,8 +71,8 @@ describe("Church Flyer Generator Engine", () => {
     });
   });
 
-  it("contains pre-populated church presets with ready-to-use content", () => {
-    expect(DEFAULT_PRESETS.length).toBeGreaterThanOrEqual(5);
+  it("contains pre-populated church presets with ready-to-use content including Word for the Month", () => {
+    expect(DEFAULT_PRESETS.length).toBeGreaterThanOrEqual(7);
 
     const sundayPreset = DEFAULT_PRESETS.find((p) => p.id === "sunday-service");
     expect(sundayPreset).toBeDefined();
@@ -87,6 +89,17 @@ describe("Church Flyer Generator Engine", () => {
     expect(vigilPreset).toBeDefined();
     expect(vigilPreset?.data.templateId).toBe("pentecost-fire");
     expect(vigilPreset?.data.aspectRatio).toBe("story");
+
+    const wordMonthPreset = DEFAULT_PRESETS.find((p) => p.id === "word-of-the-month");
+    expect(wordMonthPreset).toBeDefined();
+    expect(wordMonthPreset?.data.badgeText).toBe("WORD FOR THE MONTH");
+    expect(wordMonthPreset?.data.templateId).toBe("prophetic-word");
+    expect(wordMonthPreset?.data.category).toContain("PROPHETIC THEME");
+
+    const exceedingPreset = DEFAULT_PRESETS.find((p) => p.id === "word-of-the-month-exceeding");
+    expect(exceedingPreset).toBeDefined();
+    expect(exceedingPreset?.data.templateId).toBe("covenant-glory");
+    expect(exceedingPreset?.data.aspectRatio).toBe("story");
   });
 
   it("provides curated graphic design assets with appropriate blend modes for instant flyer overlay", () => {
