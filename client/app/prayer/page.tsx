@@ -27,6 +27,7 @@ const prayerSchema = z.object({
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   phone: z.string().optional(),
   request: z.string().min(10, "Request is too short").max(2000),
+  shareOnWall: z.boolean(),
   _honeypot: z.string().max(0),
   consent: z
     .boolean()
@@ -44,6 +45,7 @@ export default function PrayerPage() {
       email: "",
       phone: "",
       request: "",
+      shareOnWall: false,
       _honeypot: "",
       consent: false,
     },
@@ -62,6 +64,7 @@ export default function PrayerPage() {
           email: data.email || undefined,
           phone: data.phone || undefined,
           request: data.request,
+          shareOnWall: data.shareOnWall,
           consent: data.consent,
           honeypot: data._honeypot,
         }),
@@ -135,6 +138,26 @@ export default function PrayerPage() {
               </div>
             </div>
           </GlassCard>
+
+          <GlassCard
+            surface="solid"
+            padding="md"
+            className="border border-primary/20 bg-primary/5 space-y-3"
+          >
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
+              <Sparkles className="h-4 w-4 text-gold" />
+              <span>Community Intercession</span>
+            </div>
+            <h4 className="font-display text-base font-bold text-foreground">
+              Visit the Prayer Wall
+            </h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Stand in faith with other church members and pray over petitions posted by brethren.
+            </p>
+            <Button asChild variant="outline" size="sm" className="w-full rounded-xl">
+              <Link href="/prayer/wall">Go to Prayer Wall →</Link>
+            </Button>
+          </GlassCard>
         </div>
 
         {/* Right Column: Form */}
@@ -152,13 +175,16 @@ export default function PrayerPage() {
                   Our pastoral intercessory team has received your request and will be lifting you
                   before the throne of grace. May the Lord grant you peace and divine intervention.
                 </p>
-                <div className="pt-4">
+                <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
                   <Button
                     onClick={() => setSuccess(false)}
                     variant="outline"
-                    className="rounded-xl"
+                    className="rounded-xl w-full sm:w-auto"
                   >
                     Submit another request
+                  </Button>
+                  <Button asChild className="rounded-xl w-full sm:w-auto">
+                    <Link href="/prayer/wall">View Community Prayer Wall</Link>
                   </Button>
                 </div>
               </div>
@@ -224,6 +250,24 @@ export default function PrayerPage() {
                       <span>
                         Kept strictly private and confidential to pastoral intercessors
                       </span>
+                    </Label>
+                  </div>
+
+                  <div className="flex items-start gap-3 rounded-xl border border-border/80 bg-card p-3.5">
+                    <Checkbox
+                      id="share-wall"
+                      checked={form.watch("shareOnWall")}
+                      onCheckedChange={(checked) =>
+                        form.setValue("shareOnWall", checked === true)
+                      }
+                    />
+                    <Label
+                      htmlFor="share-wall"
+                      className="text-xs leading-relaxed text-muted-foreground cursor-pointer"
+                    >
+                      <strong className="text-foreground font-semibold">Share on the Community Prayer Wall:</strong>{" "}
+                      Allow the church family to agree with you in prayer. Your name, email, and phone number are{" "}
+                      <span className="font-bold underline text-foreground">strictly anonymous</span> and will never be shown.
                     </Label>
                   </div>
 

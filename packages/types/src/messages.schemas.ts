@@ -26,6 +26,7 @@ export const createPrayerSchema = z.object({
   email: z.string().email().nullable().optional(),
   phone: z.string().trim().max(40).nullable().optional(),
   request: z.string().trim().min(1).max(2000),
+  shareOnWall: z.boolean().optional().default(false),
   honeypot: z.string().max(500).optional(),
   consent: z.boolean().refine((value) => value, "Consent is required"),
 }).strict();
@@ -35,6 +36,16 @@ export type CreatePrayerDto = z.infer<typeof createPrayerSchema>;
 export type PrayerRequestDto = CreatePrayerDto & {
   id: string;
   status: 'NEW' | 'READ' | 'ARCHIVED';
+  shareOnWall: boolean;
+  wallApproved: boolean;
+  prayedCount: number;
+  createdAt: string;
+};
+
+export type PrayerWallItemDto = {
+  id: string;
+  request: string;
+  prayedCount: number;
   createdAt: string;
 };
 

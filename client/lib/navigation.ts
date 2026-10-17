@@ -8,6 +8,9 @@ import {
   Building2,
   HeartHandshake,
   Mail,
+  Radio,
+  BookOpen,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -51,10 +54,22 @@ export const NAV_CATEGORIES: NavCategory[] = [
     title: "Word & Worship",
     items: [
       {
+        title: "Live Broadcast",
+        href: "/live",
+        description: "Stream our sanctuary services in real time",
+        icon: Radio,
+      },
+      {
         title: "Sermons",
         href: "/sermons",
         description: "Watch & listen to uplifting gospel messages",
         icon: Video,
+      },
+      {
+        title: "Daily Devotion",
+        href: "/devotion",
+        description: "Start your day with Scripture, reflection & prayer",
+        icon: BookOpen,
       },
       {
         title: "Events",
@@ -78,6 +93,18 @@ export const NAV_CATEGORIES: NavCategory[] = [
         href: "/projects",
         description: "Kingdom building & community outreach",
         icon: Building2,
+      },
+      {
+        title: "Prayer Wall",
+        href: "/prayer/wall",
+        description: "Intercede together as a family of faith",
+        icon: HeartHandshake,
+      },
+      {
+        title: "Testimonies",
+        href: "/testimonies",
+        description: "Stories of God's power and faithfulness",
+        icon: Sparkles,
       },
       {
         title: "Prayer Request",

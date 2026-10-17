@@ -1,4 +1,14 @@
-import type { PublicHero, SiteSettingsDto, UpdateSiteSettingsDto } from "@ggm/types";
+import type {
+  PublicHero,
+  SiteSettingsDto,
+  UpdateSiteSettingsDto,
+  PublicTestimonyDto,
+  CreateTestimonyDto,
+  DevotionDto,
+  LivestreamStatusDto,
+  UpdateLivestreamDto,
+  PrayerWallItemDto,
+} from "@ggm/types";
 
 const IS_SERVER = typeof window === "undefined";
 const MOCK_API = process.env.USE_MOCK_API === "true";
@@ -209,6 +219,24 @@ export const api = {
     projects: (query = "") => fetcher<{ data: any[]; meta: { page: number; limit: number; total: number } }>(`/projects${query}`, { tags: ["projects"] }),
     project: (slug: string) => fetcher<{ data: any }>(`/projects/${encodeURIComponent(slug)}`, { tags: ["projects"] }),
     projectContributions: (slug: string, query = "") => fetcher<{ data: any[]; meta: { page: number; limit: number; total: number } }>(`/projects/${encodeURIComponent(slug)}/contributions${query}`, { tags: ["projects"] }),
+  },
+  testimonies: {
+    list: (query = "") => fetcher<{ data: PublicTestimonyDto[]; meta: { page: number; limit: number; total: number } }>(`/testimonies${query}`, { tags: ["testimonies"] }),
+    submit: (data: CreateTestimonyDto) => fetcher<{ success: boolean }>("/testimonies", { method: "POST", body: JSON.stringify(data), cache: "no-store" }),
+  },
+  devotions: {
+    getToday: () => fetcher<{ data: DevotionDto | null }>("/devotions/today", { tags: ["devotions"] }),
+    list: (query = "") => fetcher<{ data: DevotionDto[]; meta: { page: number; limit: number; total: number } }>(`/devotions${query}`, { tags: ["devotions"] }),
+    get: (id: string) => fetcher<{ data: DevotionDto }>(`/devotions/${encodeURIComponent(id)}`, { tags: ["devotions"] }),
+  },
+  livestream: {
+    get: () => fetcher<{ data: LivestreamStatusDto }>("/livestream", { tags: ["livestream"] }),
+    update: (data: UpdateLivestreamDto) => fetcher<{ data: LivestreamStatusDto }>("/admin/livestream", { method: "PATCH", body: JSON.stringify(data), cache: "no-store" }),
+  },
+  prayerWall: {
+    list: (query = "") => fetcher<{ data: PrayerWallItemDto[]; meta: { page: number; limit: number; total: number } }>(`/prayer-wall${query}`, { tags: ["prayer-wall"] }),
+    pray: (id: string) => fetcher<{ data: { id: string; prayedCount: number } }>(`/prayer-wall/${encodeURIComponent(id)}/pray`, { method: "POST", cache: "no-store" }),
+    updateApproval: (id: string, wallApproved: boolean) => fetcher<{ data: any }>(`/admin/prayer-requests/${encodeURIComponent(id)}/wall`, { method: "PATCH", body: JSON.stringify({ wallApproved }), cache: "no-store" }),
   },
   admin: {
     list: <T>(resource: string, query = "") => fetcher<{ data: T[]; meta?: { page: number; limit: number; total: number } }>(`/admin/${resource}${query}`, { cache: "no-store" }),

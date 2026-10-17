@@ -23,6 +23,9 @@ import { ProjectsModule } from './projects/projects.module.js';
 import { GivingModule } from './giving/giving.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { TestimoniesModule } from './testimonies/testimonies.module.js';
+import { DevotionsModule } from './devotions/devotions.module.js';
+import { LivestreamModule } from './livestream/livestream.module.js';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 @Module({
@@ -60,6 +63,9 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
     GivingModule,
     SettingsModule,
     NotificationsModule,
+    TestimoniesModule,
+    DevotionsModule,
+    LivestreamModule,
   ],
   controllers: [],
   providers: [

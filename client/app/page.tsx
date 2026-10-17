@@ -82,7 +82,16 @@ async function safe<T>(load: () => Promise<T>, fallback: T): Promise<T> {
 }
 
 export default async function HomePage() {
-  const [heroResult, sermonResult, eventResult, announcementResult, galleryResult, liveSettings] = await Promise.all([
+  const [
+    heroResult,
+    sermonResult,
+    eventResult,
+    announcementResult,
+    galleryResult,
+    liveSettings,
+    todayDevotionResult,
+    liveStatusResult,
+  ] = await Promise.all([
     safe(() => api.hero.getPublic(), { data: null }),
     safe(() => api.public.sermons("?page=1&limit=4"), {
       data: [],
@@ -98,6 +107,17 @@ export default async function HomePage() {
       meta: { page: 1, limit: 6, total: 0 },
     }),
     safe(() => getLiveSiteSettings(), null),
+    safe(() => api.devotions.getToday(), { data: null }),
+    safe(() => api.livestream.get(), {
+      data: {
+        isLive: false,
+        liveTitle: null,
+        liveServiceType: null,
+        liveVideoUrl: null,
+        liveNotes: null,
+        updatedAt: "",
+      },
+    }),
   ]);
   const siteConfig = resolveSiteConfig(liveSettings);
 
@@ -106,6 +126,8 @@ export default async function HomePage() {
   const announcements = announcementResult.data as AnnouncementItem[];
   const galleryItems = (galleryResult.data as unknown as GalleryPreviewItem[]) ?? [];
   const pinnedAnnouncement = announcements.find((a: AnnouncementItem) => a.pinned) ?? announcements[0];
+  const todayDevotion = todayDevotionResult.data;
+  const liveStatus = liveStatusResult.data;
 
   const hasRealBankDetails =
     siteConfig.accountNumber &&
@@ -206,6 +228,66 @@ export default async function HomePage() {
             </div>
           </GlassCard>
         </div>
+
+        {/* Live Broadcast Alert Banner (When Live) */}
+        {liveStatus.isLive && (
+          <div className="mx-auto max-w-6xl px-5 mt-6">
+            <Link
+              href="/live"
+              className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl border-2 border-red-500/50 bg-gradient-to-r from-red-500/10 via-card to-card shadow-lg hover:border-red-500 transition group"
+            >
+              <div className="flex items-center gap-3">
+                <span className="relative flex h-3.5 w-3.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-600" />
+                </span>
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+                    Live Sanctuary Broadcast in Progress
+                  </span>
+                  <h4 className="font-display text-lg font-bold text-foreground">
+                    {liveStatus.liveTitle || "Sunday Celebration & Encounter Service"}
+                  </h4>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 text-white px-4 py-2 text-xs font-bold transition shadow-sm group-hover:bg-red-700">
+                <span>Join Live Service</span>
+                <ChevronRight className="h-4 w-4" />
+              </span>
+            </Link>
+          </div>
+        )}
+
+        {/* Today's Devotion Highlight */}
+        {todayDevotion && (
+          <div className="mx-auto max-w-6xl px-5 mt-8">
+            <GlassCard
+              surface="glass"
+              padding="lg"
+              className="border border-border/80 bg-gradient-to-r from-primary/5 via-card/70 to-card shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+            >
+              <div className="space-y-2 max-w-2xl">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-primary">
+                  <Sparkles className="h-3 w-3 text-gold" />
+                  <span>Today's Word of Grace · {todayDevotion.scriptureRef}</span>
+                </div>
+                <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground">
+                  {todayDevotion.title}
+                </h3>
+                <p className="text-xs sm:text-sm italic text-muted-foreground line-clamp-2">
+                  "{todayDevotion.scriptureText}"
+                </p>
+              </div>
+              <Link
+                href="/devotion"
+                className="inline-flex shrink-0 min-h-11 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm transition hover:brightness-110 active:scale-95"
+              >
+                <BookOpen className="h-4 w-4" />
+                <span>Read Full Devotion</span>
+              </Link>
+            </GlassCard>
+          </div>
+        )}
 
         {/* 3. Pinned Announcement Banner (Conditional) */}
         {pinnedAnnouncement && (

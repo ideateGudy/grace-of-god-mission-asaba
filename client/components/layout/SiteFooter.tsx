@@ -79,7 +79,11 @@ export function SiteFooter() {
           <ul className="space-y-2 text-white/70">
             <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
             <li><Link href="/visit" className="hover:text-white transition-colors">Visit</Link></li>
+            <li><Link href="/live" className="hover:text-white transition-colors">Live Broadcast</Link></li>
             <li><Link href="/sermons" className="hover:text-white transition-colors">Sermons</Link></li>
+            <li><Link href="/devotion" className="hover:text-white transition-colors">Daily Devotion</Link></li>
+            <li><Link href="/testimonies" className="hover:text-white transition-colors">Testimonies</Link></li>
+            <li><Link href="/prayer/wall" className="hover:text-white transition-colors">Prayer Wall</Link></li>
             <li><Link href="/events" className="hover:text-white transition-colors">Events</Link></li>
             <li><Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link></li>
             <li><Link href="/projects" className="hover:text-white transition-colors">Projects</Link></li>

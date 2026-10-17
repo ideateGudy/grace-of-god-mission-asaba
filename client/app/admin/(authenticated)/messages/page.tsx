@@ -10,9 +10,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { usePermissions } from "@/components/shared/Can";
 
-import { authFetch } from "@/lib/api/client";
+import { authFetch, api } from "@/lib/api/client";
 
-type InboxMessage = { id: string; name: string | null; email: string | null; phone: string | null; message?: string; request?: string; status: "NEW" | "READ" | "ARCHIVED"; createdAt: string };
+type InboxMessage = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  message?: string;
+  request?: string;
+  status: "NEW" | "READ" | "ARCHIVED";
+  shareOnWall?: boolean;
+  wallApproved?: boolean;
+  prayedCount?: number;
+  createdAt: string;
+};
 type InboxKind = "contact" | "prayer-requests";
 async function inboxRequest(kind: InboxKind, id?: string, status?: string, method = "GET") {
   const url = `/api/v1/admin/${kind}${id ? `/${encodeURIComponent(id)}` : ""}`;
@@ -40,6 +52,15 @@ export default function MessagesPage() {
     try { await inboxRequest(kind, row.id, status, "PATCH"); toast.success(status === "READ" ? "Marked as read." : "Archived."); await load(); }
     catch (error) { toast.error(error instanceof Error ? error.message : "Update failed."); }
   };
+  const toggleWallApproval = async (id: string, wallApproved: boolean) => {
+    try {
+      await api.prayerWall.updateApproval(id, wallApproved);
+      toast.success(wallApproved ? "Approved for Community Prayer Wall." : "Removed from Prayer Wall.");
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Wall update failed.");
+    }
+  };
   const remove = async () => {
     if (!pendingDelete) return;
     try { await inboxRequest(kind, pendingDelete.id, undefined, "DELETE"); toast.success("Message deleted permanently."); setPendingDelete(null); await load(); }
@@ -50,9 +71,33 @@ export default function MessagesPage() {
       <TabsList className="h-auto flex-wrap"><TabsTrigger value="contact" disabled={!can("CONTACT_INBOX")}>Contact inbox</TabsTrigger><TabsTrigger value="prayer-requests" disabled={!can("PRAYER_INBOX")}>Prayer requests</TabsTrigger></TabsList>
       {(["contact", "prayer-requests"] as InboxKind[]).map((tab) => <TabsContent key={tab} value={tab}>
         {!allowed ? <p className="py-10 text-muted-foreground">You do not have permission to view this inbox.</p> : loading ? <p role="status" className="py-10 text-muted-foreground">Loading messages…</p> : rows.length === 0 ? <p className="py-10 text-muted-foreground">This inbox is clear.</p> : <div className="space-y-4">{rows.map((row) => <GlassCard key={row.id} surface="solid" padding="md" className={row.status === "NEW" ? "border-primary/40" : ""}>
-          <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="font-semibold">{row.name || "Anonymous"}</h2><p className="text-sm text-muted-foreground">{[row.email, row.phone].filter(Boolean).join(" · ") || "No reply details provided"}</p></div><span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">{row.status} · {new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lagos" }).format(new Date(row.createdAt))}</span></div>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold">{row.name || "Anonymous"}</h2>
+                {row.shareOnWall && (
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${row.wallApproved ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30" : "bg-purple-500/10 text-purple-400 border border-purple-500/30"}`}>
+                    {row.wallApproved ? "Wall Approved" : "Wall Requested"}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">{[row.email, row.phone].filter(Boolean).join(" · ") || "No reply details provided"}</p>
+            </div>
+            <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">{row.status} · {new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lagos" }).format(new Date(row.createdAt))}</span>
+          </div>
           <p className="mt-4 whitespace-pre-wrap leading-relaxed">{row.message ?? row.request}</p>
-          <div className="mt-4 flex flex-wrap gap-2">{row.status !== "READ" && <Button size="sm" variant="outline" onClick={() => void updateStatus(row, "READ")}><Check className="mr-2 size-4" />Mark read</Button>}{row.status !== "ARCHIVED" && <Button size="sm" variant="outline" onClick={() => void updateStatus(row, "ARCHIVED")}><Archive className="mr-2 size-4" />Archive</Button>}{isSuperAdmin && <Button size="sm" variant="destructive" onClick={() => setPendingDelete(row)}><Trash2 className="mr-2 size-4" />Delete permanently</Button>}</div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {row.status !== "READ" && <Button size="sm" variant="outline" onClick={() => void updateStatus(row, "READ")}><Check className="mr-2 size-4" />Mark read</Button>}
+            {row.status !== "ARCHIVED" && <Button size="sm" variant="outline" onClick={() => void updateStatus(row, "ARCHIVED")}><Archive className="mr-2 size-4" />Archive</Button>}
+            {kind === "prayer-requests" && row.shareOnWall && (
+              row.wallApproved ? (
+                <Button size="sm" variant="secondary" onClick={() => void toggleWallApproval(row.id, false)}>Remove from Wall</Button>
+              ) : (
+                <Button size="sm" variant="outline" className="border-primary/40 text-primary" onClick={() => void toggleWallApproval(row.id, true)}>Approve for Wall</Button>
+              )
+            )}
+            {isSuperAdmin && <Button size="sm" variant="destructive" onClick={() => setPendingDelete(row)}><Trash2 className="mr-2 size-4" />Delete permanently</Button>}
+          </div>
         </GlassCard>)}</div>}
       </TabsContent>)}
     </Tabs>

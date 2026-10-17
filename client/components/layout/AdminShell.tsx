@@ -5,18 +5,40 @@ import { usePathname } from "next/navigation";
 import { Logo } from "@/components/shared/Logo";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { usePermissions } from "@/components/shared/Can";
-import { useSessionStore } from "@/store/useSessionStore";
-import { LogOut, Menu, LayoutDashboard, Video, Calendar, Megaphone, Image as ImageIcon, LayoutTemplate, Inbox, Users, Activity, UserCircle, FolderKanban, HeartHandshake, Settings } from "lucide-react";
+import {
+  LogOut,
+  Menu,
+  LayoutDashboard,
+  Video,
+  Calendar,
+  Megaphone,
+  Image as ImageIcon,
+  LayoutTemplate,
+  Inbox,
+  Users,
+  Activity,
+  UserCircle,
+  FolderKanban,
+  HeartHandshake,
+  Settings,
+  Radio,
+  BookOpen,
+  Sparkles,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api/client";
+import { useSessionStore } from "@/store/useSessionStore";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/live", label: "Livestream", icon: Radio, permission: "LIVESTREAM_MANAGE" },
   { href: "/admin/sermons", label: "Sermons", icon: Video, permission: "SERMONS_MANAGE" },
+  { href: "/admin/devotions", label: "Devotions", icon: BookOpen, permission: "DEVOTIONS_MANAGE" },
+  { href: "/admin/testimonies", label: "Testimonies", icon: Sparkles, permission: "TESTIMONIES_MANAGE" },
   { href: "/admin/events", label: "Events", icon: Calendar, permission: "EVENTS_MANAGE" },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone, permission: "ANNOUNCEMENTS_MANAGE" },
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon, permission: "GALLERY_MANAGE" },

@@ -64,6 +64,7 @@ export class MessagesService {
         email: data.email,
         phone: data.phone,
         request: data.request,
+        shareOnWall: Boolean(data.shareOnWall),
       },
     });
 
@@ -75,6 +76,56 @@ export class MessagesService {
     });
 
     return { success: true };
+  }
+
+  async getPrayerWall(page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+    const where = { shareOnWall: true, wallApproved: true };
+
+    const [total, items] = await Promise.all([
+      this.prisma.prayerRequest.count({ where }),
+      this.prisma.prayerRequest.findMany({
+        where,
+        select: {
+          id: true,
+          request: true,
+          prayedCount: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return { data: items, meta: { page, limit, total } };
+  }
+
+  async incrementPrayedCount(id: string) {
+    const updated = await this.prisma.prayerRequest.update({
+      where: { id },
+      data: { prayedCount: { increment: 1 } },
+      select: { id: true, prayedCount: true },
+    });
+    return { data: updated };
+  }
+
+  async updatePrayerWallApproval(actor: AuthenticatedActor, id: string, wallApproved: boolean) {
+    const updated = await this.prisma.prayerRequest.update({
+      where: { id },
+      data: { wallApproved },
+    });
+
+    await this.audit.log({
+      actorId: actor?.id,
+      actorName: actor?.name,
+      action: 'prayer.wall_approval',
+      entity: 'PrayerRequest',
+      entityId: id,
+      meta: { wallApproved },
+    });
+
+    return updated;
   }
 
   async listContact(status?: MessageStatus, page: number = 1, limit: number = 12) {

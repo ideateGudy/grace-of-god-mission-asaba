@@ -31,6 +31,22 @@ export class MessagesController {
     return this.messagesService.createPrayer(dto);
   }
 
+  @PublicRoute()
+  @Get('prayer-wall')
+  async getPrayerWall(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
+    return this.messagesService.getPrayerWall(page, limit);
+  }
+
+  @PublicRoute()
+  @Throttle({ short: { limit: 15, ttl: 60000 }, long: { limit: 120, ttl: 3600000 } })
+  @Post('prayer-wall/:id/pray')
+  async incrementPrayedCount(@Param('id') id: string) {
+    return this.messagesService.incrementPrayedCount(id);
+  }
+
   @RequirePermissions('CONTACT_INBOX')
   @Get('admin/contact')
   async listContact(
@@ -77,6 +93,21 @@ export class MessagesController {
     @Body('status', new ParseEnumPipe(MessageStatus)) status: MessageStatus,
   ) {
     const data = await this.messagesService.updatePrayerStatus(req.activeUser, id, status);
+    return { data };
+  }
+
+  @RequirePermissions('PRAYER_INBOX')
+  @Patch('admin/prayer-requests/:id/wall')
+  async updatePrayerWallApproval(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body('wallApproved') wallApproved: boolean,
+  ) {
+    const data = await this.messagesService.updatePrayerWallApproval(
+      req.activeUser,
+      id,
+      Boolean(wallApproved),
+    );
     return { data };
   }
 

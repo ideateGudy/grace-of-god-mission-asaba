@@ -8,3 +8,6 @@ export * from './auth.schemas.js';
 export * from './projects.schemas.js';
 export * from './giving.schemas.js';
 export * from './settings.schemas.js';
+export * from './testimonies.schemas.js';
+export * from './devotions.schemas.js';
+export * from './livestream.schemas.js';

@@ -11,10 +11,12 @@ import { Menu, ChevronDown } from "lucide-react";
 import { useUiStore } from "@/store/useUiStore";
 import { Button } from "@/components/ui/button";
 import { NAV_CATEGORIES, NavCategory } from "@/lib/navigation";
+import { api } from "@/lib/api/client";
 
 export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextTone?: "LIGHT" | "DARK" }) {
   const [condensed, setCondensed] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [isLive, setIsLive] = useState(false);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
 
@@ -29,6 +31,20 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
   const isTransparent = !condensed;
   // If on home page over light hero/white background, use dark text with transparent background
   const isLightHero = pathname === "/" && isTransparent && heroTextTone === "DARK";
+
+  // Check live stream status
+  useEffect(() => {
+    let cancelled = false;
+    api.livestream
+      .get()
+      .then((res: { data?: { isLive?: boolean } }) => {
+        if (!cancelled && res?.data?.isLive) setIsLive(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   // Close dropdown on route change
   useEffect(() => {
@@ -229,6 +245,17 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
             );
           })}
 
+          {/* Live Now Indicator */}
+          {isLive && (
+            <Link
+              href="/live"
+              className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm hover:bg-red-700 animate-pulse"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-white" />
+              <span>Live Now</span>
+            </Link>
+          )}
+
           {/* Divider */}
           <div
             className={cn(
@@ -270,6 +297,15 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
 
         {/* Mobile Header Buttons */}
         <div className="flex md:hidden items-center gap-2">
+          {isLive && (
+            <Link
+              href="/live"
+              className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white animate-pulse"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-white" />
+              <span>Live</span>
+            </Link>
+          )}
           <ThemeToggle
             className={cn(
               "transition-colors",

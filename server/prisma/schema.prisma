@@ -21,6 +21,9 @@ enum Permission {
   PRAYER_INBOX
   PROJECTS_MANAGE
   GIVING_MANAGE
+  TESTIMONIES_MANAGE
+  DEVOTIONS_MANAGE
+  LIVESTREAM_MANAGE
 }
 
 enum MessageStatus {
@@ -121,14 +124,54 @@ model ContactMessage {
 }
 
 model PrayerRequest {
-  id        String        @id @default(cuid())
-  name      String?
-  email     String?
-  phone     String?
-  request   String
-  status    MessageStatus @default(NEW)
-  createdAt DateTime      @default(now())
+  id           String        @id @default(cuid())
+  name         String?
+  email        String?
+  phone        String?
+  request      String
+  status       MessageStatus @default(NEW)
+  shareOnWall  Boolean       @default(false)
+  wallApproved Boolean       @default(false)
+  prayedCount  Int           @default(0)
+  createdAt    DateTime      @default(now())
   @@index([status, createdAt])
+  @@index([shareOnWall, wallApproved, createdAt])
+}
+
+enum TestimonyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Testimony {
+  id          String          @id @default(cuid())
+  title       String
+  content     String
+  authorName  String
+  phone       String?
+  email       String?
+  isAnonymous Boolean         @default(false)
+  status      TestimonyStatus @default(PENDING)
+  featured    Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  @@index([status, createdAt])
+  @@index([status, featured])
+}
+
+model Devotion {
+  id            String   @id @default(cuid())
+  date          DateTime @unique
+  title         String
+  scriptureRef  String
+  scriptureText String
+  content       String
+  prayer        String?
+  published     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@index([published, date])
 }
 
 enum HeroMode {
@@ -284,6 +327,11 @@ model SiteSetting {
   tiktokUrl     String?
   youtubeUrl    String?
   instagramUrl  String?
-  leadership    Json?    @default("[]")
-  updatedAt     DateTime @updatedAt
+  leadership      Json?    @default("[]")
+  isLive          Boolean  @default(false)
+  liveTitle       String?
+  liveServiceType String?
+  liveVideoUrl    String?
+  liveNotes       String?
+  updatedAt       DateTime @updatedAt
 }
