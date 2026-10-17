@@ -37,6 +37,7 @@ import {
   COUNTDOWN_THEMES,
   COUNTDOWN_COLOR_PRESETS,
   PROGRAMME_PRESETS,
+  calculateSecondsUntilTarget,
 } from "@/lib/countdown/countdown-types";
 import {
   COUNTDOWN_STORAGE_KEY,
@@ -72,26 +73,6 @@ const DEFAULT_STATE: ChurchCountdownState = {
 
 function formatTwoDigits(n: number): string {
   return Math.max(0, Math.floor(n)).toString().padStart(2, "0");
-}
-
-/**
- * Calculates remaining seconds until a target "HH:MM" clock time today (or tomorrow if passed).
- */
-function calculateSecondsUntilTarget(targetHHMM: string): number {
-  const [targetH, targetM] = targetHHMM.split(":").map(Number);
-  const now = new Date();
-  const target = new Date(now);
-  target.setHours(targetH || 0, targetM || 0, 0, 0);
-
-  let diffMs = target.getTime() - now.getTime();
-
-  // If the target time passed earlier today by more than 2 hours, roll forward to tomorrow
-  if (diffMs < -2 * 60 * 60 * 1000) {
-    target.setDate(target.getDate() + 1);
-    diffMs = target.getTime() - now.getTime();
-  }
-
-  return Math.round(diffMs / 1000);
 }
 
 export function ChurchCountdown() {
@@ -147,16 +128,16 @@ export function ChurchCountdown() {
             setIsRunning(true);
           }
 
-          const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
-          if (savedSecs !== null) {
-            const parsed = Number(JSON.parse(savedSecs));
-            setRemainingSeconds(parsed);
-            setInitialTotalSeconds(Math.max(parsed, 1));
+          if (loadedConfig.mode === "target-time") {
+            const secs = calculateSecondsUntilTarget(loadedConfig.targetTimeString);
+            setRemainingSeconds(secs);
+            setInitialTotalSeconds(Math.max(secs, 1));
           } else {
-            if (loadedConfig.mode === "target-time") {
-              const secs = calculateSecondsUntilTarget(loadedConfig.targetTimeString);
-              setRemainingSeconds(secs);
-              setInitialTotalSeconds(Math.max(secs, 1));
+            const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
+            if (savedSecs !== null) {
+              const parsed = Number(JSON.parse(savedSecs));
+              setRemainingSeconds(parsed);
+              setInitialTotalSeconds(Math.max(parsed, 1));
             } else {
               setRemainingSeconds(loadedConfig.durationSeconds);
               setInitialTotalSeconds(Math.max(loadedConfig.durationSeconds, 1));
@@ -188,18 +169,32 @@ export function ChurchCountdown() {
 
           setConfig(mergedConfig);
           setIsRunning(dbData.isRunning);
-          setRemainingSeconds(dbData.remainingSeconds);
+
+          let authoritativeSecs: number;
+          if (mergedConfig.mode === "target-time") {
+            authoritativeSecs = calculateSecondsUntilTarget(mergedConfig.targetTimeString);
+          } else if (mergedConfig.mode === "duration" && dbData.isRunning && dbData.targetEndTime) {
+            authoritativeSecs = Math.max(0, Math.round((dbData.targetEndTime - Date.now()) / 1000));
+          } else {
+            authoritativeSecs = dbData.remainingSeconds;
+          }
+
+          setRemainingSeconds(authoritativeSecs);
           setInitialTotalSeconds(
-            dbData.mode === "duration"
-              ? Math.max(dbData.durationSeconds, 1)
-              : Math.max(dbData.remainingSeconds, 1)
+            mergedConfig.mode === "duration"
+              ? Math.max(mergedConfig.durationSeconds, 1)
+              : Math.max(authoritativeSecs, 1)
           );
 
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedConfig));
             localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(dbData.isRunning));
-            localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(dbData.remainingSeconds));
-            if (dbData.remainingSeconds === 0 && !dbData.isRunning) {
+            if (mergedConfig.mode !== "target-time") {
+              localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(authoritativeSecs));
+            } else {
+              localStorage.removeItem(COUNTDOWN_SECS_KEY);
+            }
+            if (authoritativeSecs === 0 && !dbData.isRunning) {
               localStorage.setItem(COUNTDOWN_ZEROED_KEY, "true");
             } else {
               localStorage.removeItem(COUNTDOWN_ZEROED_KEY);

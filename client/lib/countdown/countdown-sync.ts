@@ -42,7 +42,11 @@ export function broadcastCountdownState(
   try {
     localStorage.setItem(COUNTDOWN_STORAGE_KEY, JSON.stringify(fullPayload.state));
     localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(fullPayload.isRunning));
-    localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(fullPayload.remainingSeconds));
+    if (fullPayload.state.mode !== "target-time") {
+      localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(fullPayload.remainingSeconds));
+    } else {
+      localStorage.removeItem(COUNTDOWN_SECS_KEY);
+    }
 
     if (fullPayload.remainingSeconds === 0 && !fullPayload.isRunning) {
       localStorage.setItem(COUNTDOWN_ZEROED_KEY, "true");

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { ConfigService } from '@nestjs/config';
+import { calculateSecondsUntilTarget } from '@ggm/types';
 import type { AuthenticatedActor } from '../common/types.js';
 import type { UpdateCountdownDto, PublicCountdownDto } from '@ggm/types';
 
@@ -24,23 +25,6 @@ const DEFAULT_COUNTDOWN: PublicCountdownDto = {
   targetEndTime: null,
   updatedAt: new Date().toISOString(),
 };
-
-function calculateSecondsUntilTarget(targetHHMM: string): number {
-  const [targetH, targetM] = (targetHHMM || '08:00').split(':').map(Number);
-  const now = new Date();
-  const target = new Date(now);
-  target.setHours(targetH || 0, targetM || 0, 0, 0);
-
-  let diffMs = target.getTime() - now.getTime();
-
-  // If target time passed earlier today by more than 2 hours, roll forward to tomorrow
-  if (diffMs < -2 * 60 * 60 * 1000) {
-    target.setDate(target.getDate() + 1);
-    diffMs = target.getTime() - now.getTime();
-  }
-
-  return Math.round(diffMs / 1000);
-}
 
 @Injectable()
 export class CountdownService {

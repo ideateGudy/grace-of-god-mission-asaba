@@ -7,6 +7,7 @@ import {
   type CountdownThemeId,
   type ChurchCountdownState,
   COUNTDOWN_THEMES,
+  calculateSecondsUntilTarget,
 } from "@/lib/countdown/countdown-types";
 import {
   COUNTDOWN_STORAGE_KEY,
@@ -39,22 +40,6 @@ const DEFAULT_STATE: ChurchCountdownState = {
 
 function formatTwoDigits(n: number): string {
   return Math.max(0, Math.floor(n)).toString().padStart(2, "0");
-}
-
-function calculateSecondsUntilTarget(targetHHMM: string): number {
-  const [targetH, targetM] = targetHHMM.split(":").map(Number);
-  const now = new Date();
-  const target = new Date(now);
-  target.setHours(targetH || 0, targetM || 0, 0, 0);
-
-  let diffMs = target.getTime() - now.getTime();
-
-  if (diffMs < -2 * 60 * 60 * 1000) {
-    target.setDate(target.getDate() + 1);
-    diffMs = target.getTime() - now.getTime();
-  }
-
-  return Math.round(diffMs / 1000);
 }
 
 export function ChurchCountdownLive() {
@@ -100,16 +85,16 @@ export function ChurchCountdownLive() {
             setIsRunning(true);
           }
 
-          const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
-          if (savedSecs !== null) {
-            const parsed = Number(JSON.parse(savedSecs));
-            setRemainingSeconds(parsed);
-            setInitialTotalSeconds(Math.max(parsed, 1));
+          if (loadedConfig.mode === "target-time") {
+            const secs = calculateSecondsUntilTarget(loadedConfig.targetTimeString);
+            setRemainingSeconds(secs);
+            setInitialTotalSeconds(Math.max(secs, 1));
           } else {
-            if (loadedConfig.mode === "target-time") {
-              const secs = calculateSecondsUntilTarget(loadedConfig.targetTimeString);
-              setRemainingSeconds(secs);
-              setInitialTotalSeconds(Math.max(secs, 1));
+            const savedSecs = localStorage.getItem(COUNTDOWN_SECS_KEY);
+            if (savedSecs !== null) {
+              const parsed = Number(JSON.parse(savedSecs));
+              setRemainingSeconds(parsed);
+              setInitialTotalSeconds(Math.max(parsed, 1));
             } else {
               setRemainingSeconds(loadedConfig.durationSeconds);
               setInitialTotalSeconds(Math.max(loadedConfig.durationSeconds, 1));
@@ -141,18 +126,32 @@ export function ChurchCountdownLive() {
 
           setConfig(mergedConfig);
           setIsRunning(remote.isRunning);
-          setRemainingSeconds(remote.remainingSeconds);
+
+          let authoritativeSecs: number;
+          if (mergedConfig.mode === "target-time") {
+            authoritativeSecs = calculateSecondsUntilTarget(mergedConfig.targetTimeString);
+          } else if (mergedConfig.mode === "duration" && remote.isRunning && remote.targetEndTime) {
+            authoritativeSecs = Math.max(0, Math.round((remote.targetEndTime - Date.now()) / 1000));
+          } else {
+            authoritativeSecs = remote.remainingSeconds;
+          }
+
+          setRemainingSeconds(authoritativeSecs);
           setInitialTotalSeconds(
-            remote.mode === "duration"
-              ? Math.max(remote.durationSeconds, 1)
-              : Math.max(remote.remainingSeconds, 1)
+            mergedConfig.mode === "duration"
+              ? Math.max(mergedConfig.durationSeconds, 1)
+              : Math.max(authoritativeSecs, 1)
           );
 
           try {
             localStorage.setItem(COUNTDOWN_STORAGE_KEY, JSON.stringify(mergedConfig));
             localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(remote.isRunning));
-            localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(remote.remainingSeconds));
-            if (remote.remainingSeconds === 0 && !remote.isRunning) {
+            if (mergedConfig.mode !== "target-time") {
+              localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(authoritativeSecs));
+            } else {
+              localStorage.removeItem(COUNTDOWN_SECS_KEY);
+            }
+            if (authoritativeSecs === 0 && !remote.isRunning) {
               localStorage.setItem(COUNTDOWN_ZEROED_KEY, "true");
             } else {
               localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
@@ -273,7 +272,11 @@ export function ChurchCountdownLive() {
           const { state, remainingSeconds: remoteSecs, isRunning: remoteRunning } = event.data;
           setConfig(state);
           setIsRunning(remoteRunning);
-          setRemainingSeconds(remoteSecs);
+          if (state.mode === "target-time") {
+            setRemainingSeconds(calculateSecondsUntilTarget(state.targetTimeString));
+          } else {
+            setRemainingSeconds(remoteSecs);
+          }
         }
       };
     } catch {
@@ -296,7 +299,12 @@ export function ChurchCountdownLive() {
         }
       } else if (e.key === COUNTDOWN_SECS_KEY && e.newValue !== null) {
         try {
-          setRemainingSeconds(Number(JSON.parse(e.newValue)));
+          setConfig((currentConfig) => {
+            if (currentConfig.mode === "duration") {
+              setRemainingSeconds(Number(JSON.parse(e.newValue!)));
+            }
+            return currentConfig;
+          });
         } catch {
           // Ignore
         }

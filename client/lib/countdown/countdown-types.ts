@@ -281,3 +281,57 @@ export const PROGRAMME_PRESETS: ProgrammePreset[] = [
     },
   },
 ];
+
+/**
+ * Calculates remaining seconds until a target "HH:MM" clock time in Church Sanctuary Time (Africa/Lagos, UTC+1).
+ * If the target time passed earlier today by more than 2 hours, it rolls forward to tomorrow.
+ */
+export function calculateSecondsUntilTarget(targetHHMM: string): number {
+  const [targetH, targetM] = (targetHHMM || "08:00").split(":").map(Number);
+  const safeTargetH = isNaN(targetH) ? 8 : targetH;
+  const safeTargetM = isNaN(targetM) ? 0 : targetM;
+
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Africa/Lagos",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+      hour12: false,
+    });
+
+    const parts = formatter.formatToParts(new Date());
+    let nowH = 0;
+    let nowM = 0;
+    let nowS = 0;
+
+    for (const p of parts) {
+      if (p.type === "hour") nowH = Number(p.value);
+      if (p.type === "minute") nowM = Number(p.value);
+      if (p.type === "second") nowS = Number(p.value);
+    }
+    if (nowH === 24) nowH = 0;
+
+    const nowSecondsToday = nowH * 3600 + nowM * 60 + nowS;
+    const targetSecondsToday = safeTargetH * 3600 + safeTargetM * 60;
+
+    let diffSecs = targetSecondsToday - nowSecondsToday;
+
+    // If target time passed earlier today by more than 2 hours (-7200s), roll forward to tomorrow (+86400s)
+    if (diffSecs < -2 * 3600) {
+      diffSecs += 86400;
+    }
+
+    return diffSecs;
+  } catch {
+    const now = new Date();
+    const target = new Date(now);
+    target.setHours(safeTargetH, safeTargetM, 0, 0);
+    let diffMs = target.getTime() - now.getTime();
+    if (diffMs < -2 * 60 * 60 * 1000) {
+      target.setDate(target.getDate() + 1);
+      diffMs = target.getTime() - now.getTime();
+    }
+    return Math.round(diffMs / 1000);
+  }
+}
