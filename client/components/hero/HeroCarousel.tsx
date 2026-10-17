@@ -2,24 +2,37 @@
 
 import { useEffect, useState } from "react";
 import { useReducedMotion } from "motion/react";
-import { Pause, Play } from "lucide-react";
 import type { HeroSlideDto } from "@ggm/types";
 import { HeroSlideView } from "./HeroSlideView";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function HeroCarousel({ slides, autoplay, intervalSeconds }: { slides: HeroSlideDto[]; autoplay: boolean; intervalSeconds: number }) {
+export function HeroCarousel({
+  slides,
+  autoplay,
+  intervalSeconds,
+}: {
+  slides: HeroSlideDto[];
+  autoplay: boolean;
+  intervalSeconds: number;
+}) {
   const [active, setActive] = useState(0);
-  const [userPaused, setUserPaused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const reduced = useReducedMotion();
-  const shouldPlay = autoplay && !userPaused && !hovered && !focused && !reduced && slides.length > 1;
+
+  const shouldPlay = autoplay && !hovered && !focused && !reduced && slides.length > 1;
+
   useEffect(() => {
     if (!shouldPlay) return;
-    const timer = window.setInterval(() => setActive((index) => (index + 1) % slides.length), intervalSeconds * 1000);
+    const timer = window.setInterval(
+      () => setActive((index) => (index + 1) % slides.length),
+      intervalSeconds * 1000
+    );
     return () => window.clearInterval(timer);
   }, [shouldPlay, intervalSeconds, slides.length]);
+
   if (!slides.length) return null;
+
   return (
     <div
       className="relative"
@@ -41,36 +54,35 @@ export function HeroCarousel({ slides, autoplay, intervalSeconds }: { slides: He
           isFirst={active === 0}
         />
       </div>
+
       {slides.length > 1 && (
-        <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 sm:gap-2 rounded-full bg-midnight/80 p-1.5 sm:p-2 text-white backdrop-blur-xs">
-          {autoplay && !reduced && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="hidden sm:inline-flex size-11 text-white hover:bg-white/10 hover:text-white"
-              aria-label={userPaused ? "Play slides" : "Pause slides"}
-              onClick={() => setUserPaused((value) => !value)}
-            >
-              {userPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
-            </Button>
-          )}
-          {slides.map((slide, index) => (
-            <button
-              key={slide.id ?? index}
-              type="button"
-              className="size-11 rounded-full flex items-center justify-center"
-              aria-label={`Show slide ${index + 1} of ${slides.length}`}
-              aria-current={active === index}
-              onClick={() => setActive(index)}
-            >
-              <span
-                className={`block size-2 rounded-full transition-all ${
-                  active === index ? "bg-gold scale-125" : "bg-white/60 hover:bg-white/80"
-                }`}
-              />
-            </button>
-          ))}
+        <div
+          className="absolute bottom-3 sm:bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 sm:gap-2 pointer-events-auto"
+          aria-label="Slide indicators"
+        >
+          {slides.map((slide, index) => {
+            const isActive = active === index;
+
+            return (
+              <button
+                key={slide.id ?? index}
+                type="button"
+                className="p-1.5 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded-full cursor-pointer"
+                aria-label={`Go to slide ${index + 1} of ${slides.length}`}
+                aria-current={isActive}
+                onClick={() => setActive(index)}
+              >
+                <span
+                  className={cn(
+                    "block rounded-full transition-all duration-300",
+                    isActive
+                      ? "w-7 sm:w-8 h-2 sm:h-2.5 bg-gold shadow-[0_2px_8px_rgba(217,164,65,0.7)] ring-1 ring-black/30"
+                      : "w-2 sm:w-2.5 h-2 sm:h-2.5 bg-white/70 hover:bg-white shadow-[0_1px_4px_rgba(0,0,0,0.6)] ring-1 ring-black/40 hover:scale-125"
+                  )}
+                />
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

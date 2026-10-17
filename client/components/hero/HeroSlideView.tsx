@@ -79,7 +79,7 @@ export function HeroSlideView({
   return (
     <section
       className={cn(
-        "relative isolate flex min-h-[min(780px,94svh)] flex-col items-center justify-center overflow-hidden px-4 sm:px-6 md:px-8 pt-24 sm:pt-28 pb-12 sm:pb-16 transition-colors duration-150",
+        "relative isolate flex min-h-[min(780px,94svh)] flex-col items-center justify-center overflow-hidden px-4 sm:px-6 md:px-8 pt-24 sm:pt-28 pb-16 sm:pb-20 transition-colors duration-150",
         isDefaultMidnight && "bg-midnight text-white",
         !isDefaultMidnight && !customBgStyle && (isSplit ? "bg-background text-foreground" : "bg-midnight text-white"),
         isDarkTone ? "text-midnight" : "text-white"
@@ -251,7 +251,7 @@ export function HeroSlideView({
           {/* Weekly Fellowship Pill & Direct Link to Google Maps */}
           <div
             className={cn(
-              "mt-8 sm:mt-12 flex w-full",
+              "mt-8 sm:mt-12 mb-3 sm:mb-4 flex w-full",
               slide.align === "CENTER" && "justify-center",
               slide.align === "START" && "justify-start",
               slide.align === "END" && "justify-end",
