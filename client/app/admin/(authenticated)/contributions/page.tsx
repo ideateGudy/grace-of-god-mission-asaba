@@ -62,6 +62,24 @@ export default function AdminContributionsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [verifyingRef, setVerifyingRef] = useState<string | null>(null);
+
+  const handleVerify = async (ref: string) => {
+    setVerifyingRef(ref);
+    try {
+      const res = await api.giving.getStatus(ref);
+      if (res.data?.status === "SUCCESS") {
+        toast.success(`Transaction ${ref} verified and marked SUCCESS!`);
+        await load();
+      } else {
+        toast.info(`Transaction ${ref} status: ${res.data?.status || "PENDING"}`);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to verify transaction with payment provider.");
+    } finally {
+      setVerifyingRef(null);
+    }
+  };
 
   // Load projects list for dropdown filter
   useEffect(() => {
@@ -358,16 +376,30 @@ export default function AdminContributionsPage() {
                     </TableCell>
 
                     <TableCell className="text-right whitespace-nowrap">
-                      {c.paystackRef ? (
-                        <div className="flex items-center justify-end gap-1">
-                          <span className="font-mono text-xs text-muted-foreground">
-                            {c.paystackRef.slice(0, 10)}…
-                          </span>
-                          <CopyButton text={c.paystackRef} label="Reference" className="h-7 w-7" />
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
+                      <div className="flex items-center justify-end gap-2">
+                        {c.paystackRef ? (
+                          <div className="flex items-center gap-1">
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {c.paystackRef.slice(0, 10)}…
+                            </span>
+                            <CopyButton text={c.paystackRef} label="Reference" className="h-7 w-7" />
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                        {c.status === "PENDING" && c.paystackRef && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-[11px] gap-1 px-2 border-emerald-500/30 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400"
+                            onClick={() => void handleVerify(c.paystackRef!)}
+                            disabled={verifyingRef === c.paystackRef}
+                          >
+                            <RefreshCw className={`w-3 h-3 ${verifyingRef === c.paystackRef ? "animate-spin" : ""}`} />
+                            Verify
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

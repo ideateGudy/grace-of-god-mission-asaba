@@ -233,6 +233,9 @@ export const api = {
     get: () => fetcher<{ data: LivestreamStatusDto }>("/livestream", { tags: ["livestream"] }),
     update: (data: UpdateLivestreamDto) => fetcher<{ data: LivestreamStatusDto }>("/admin/livestream", { method: "PATCH", body: JSON.stringify(data), cache: "no-store" }),
   },
+  giving: {
+    getStatus: (reference: string) => fetcher<{ data: { status: string; reference: string; amountKobo: string; projectTitle: string; displayName: string; createdAt: string } }>(`/giving/status/${encodeURIComponent(reference)}`, { cache: "no-store" }),
+  },
   prayerWall: {
     list: (query = "") => fetcher<{ data: PrayerWallItemDto[]; meta: { page: number; limit: number; total: number } }>(`/prayer-wall${query}`, { tags: ["prayer-wall"] }),
     pray: (id: string) => fetcher<{ data: { id: string; prayedCount: number } }>(`/prayer-wall/${encodeURIComponent(id)}/pray`, { method: "POST", cache: "no-store" }),

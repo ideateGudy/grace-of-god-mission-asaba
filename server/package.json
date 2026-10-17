@@ -26,7 +26,8 @@
         "migrate:deploy": "prisma migrate deploy --config prisma.config.ts",
         "generate": "prisma generate --config prisma.config.ts",
         "postinstall": "prisma generate --config prisma.config.ts || exit 0",
-        "cli:reset-super-admin": "tsx src/cli/reset-super-admin.ts"
+        "cli:reset-super-admin": "tsx src/cli/reset-super-admin.ts",
+        "cli:reset-2fa": "tsx src/cli/reset-2fa.ts"
     },
     "dependencies": {
         "@ggm/types": "workspace:*",

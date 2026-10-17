@@ -340,6 +340,13 @@ export default function SiteSettingsPage() {
             </div>
           </div>
 
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+              <strong className="font-semibold">Financial Integrity Notice:</strong> Any changes made to these bank accounts take effect immediately across all public giving channels (e.g. <span className="font-mono">/give</span>) and are permanently recorded in the immutable administrative audit log.
+            </div>
+          </div>
+
           <div className="grid gap-5 sm:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="bankName">Bank Name</Label>

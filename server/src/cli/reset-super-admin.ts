@@ -25,6 +25,8 @@ async function main() {
       data: {
         passwordHash,
         mustChangePassword: true,
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
         tokenVersion: superAdmin.tokenVersion + 1,
       },
     });

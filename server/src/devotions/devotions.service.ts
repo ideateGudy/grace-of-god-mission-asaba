@@ -18,7 +18,8 @@ export class DevotionsService {
   ) {}
 
   async getTodayDevotion(): Promise<DevotionDto | null> {
-    const todayStr = new Date().toISOString().slice(0, 10);
+    // Normalize date to West Africa Time (Africa/Lagos, UTC+1)
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Lagos' }).format(new Date());
     const todayDate = new Date(`${todayStr}T00:00:00.000Z`);
 
     // 1. Try finding an exact match for today's date
