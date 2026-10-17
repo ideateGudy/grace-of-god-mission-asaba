@@ -34,12 +34,18 @@ export async function generateMetadata(): Promise<Metadata> {
       description: "Service information, sermons, events, and ways to connect with Grace of God Mission Asaba.",
       images: [
         {
-          url: "/ggm_logo.png",
-          width: 1280,
-          height: 1280,
-          alt: `${name} Emblem`,
+          url: "/opengraph-image",
+          width: 1200,
+          height: 630,
+          alt: `${name} | Sanctuary of Grace & Truth`,
         },
       ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: name,
+      description: "Service information, sermons, events, and ways to connect with Grace of God Mission Asaba.",
+      images: ["/opengraph-image"],
     },
     robots: { index: true, follow: true },
   };

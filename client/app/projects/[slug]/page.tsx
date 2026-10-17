@@ -52,6 +52,19 @@ export async function generateMetadata({
     title: `${project.title} | Grace of God Mission Asaba`,
     description: project.description.slice(0, 160),
     alternates: { canonical: `/projects/${slug}` },
+    openGraph: {
+      title: project.title,
+      description: project.description.slice(0, 160),
+      type: "website",
+      images: [
+        {
+          url: `/api/og?title=${encodeURIComponent(project.title)}&category=CHURCH+PROJECT&subtitle=${encodeURIComponent(project.description.slice(0, 150))}&eyebrow=BUILDING+THE+KINGDOM&badge=${encodeURIComponent(project.status.toUpperCase())}&accent=%23059669`,
+          width: 1200,
+          height: 630,
+          alt: project.title,
+        },
+      ],
+    },
   };
 }
 

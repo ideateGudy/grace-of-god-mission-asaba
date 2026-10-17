@@ -13,6 +13,27 @@ export const metadata: Metadata = {
   description:
     "Full-screen high-legibility presentation & projector mode for the Daily Grace devotional at Grace of God Mission Asaba.",
   alternates: { canonical: "/devotion/present" },
+  openGraph: {
+    title: "Daily Grace Presentation View | Grace of God Mission Asaba",
+    description:
+      "Full-screen high-legibility presentation & projector mode for the Daily Grace devotional at Grace of God Mission Asaba.",
+    url: "/devotion/present",
+    images: [
+      {
+        url: "/devotion/present/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Daily Grace Presentation View",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Daily Grace Presentation View | Grace of God Mission Asaba",
+    description:
+      "Full-screen high-legibility presentation & projector mode for the Daily Grace devotional at Grace of God Mission Asaba.",
+    images: ["/devotion/present/opengraph-image"],
+  },
 };
 
 export default async function DevotionPresentPage() {

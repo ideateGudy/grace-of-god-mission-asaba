@@ -49,7 +49,23 @@ export async function generateMetadata({
           title: sermon.title,
           description: sermon.description ?? `Sermon by ${sermon.preacher}.`,
           type: "article",
-          images: sermon.thumbnailUrl ? [sermon.thumbnailUrl] : [],
+          images: sermon.thumbnailUrl
+            ? [
+                {
+                  url: sermon.thumbnailUrl,
+                  width: 1200,
+                  height: 630,
+                  alt: sermon.title,
+                },
+              ]
+            : [
+                {
+                  url: `/api/og?title=${encodeURIComponent(sermon.title)}&category=SERMON&subtitle=${encodeURIComponent(sermon.preacher ? `Preacher: ${sermon.preacher}` : "")}&eyebrow=${encodeURIComponent(sermon.series || "Faith Comes By Hearing")}&badge=${encodeURIComponent(sermon.scripture || "")}&accent=%236366F1`,
+                  width: 1200,
+                  height: 630,
+                  alt: sermon.title,
+                },
+              ],
         },
       }
     : { title: "Sermon not found" };

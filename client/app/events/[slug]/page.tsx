@@ -44,6 +44,14 @@ export async function generateMetadata({
           title: event.title,
           description: event.description ?? event.venue,
           type: "article",
+          images: [
+            {
+              url: `/api/og?title=${encodeURIComponent(event.title)}&category=CHURCH+EVENT&subtitle=${encodeURIComponent(event.description?.slice(0, 150) ?? event.venue ?? "")}&eyebrow=SANCTUARY+EVENT&badge=${encodeURIComponent(event.venue ?? "Asaba, Delta State")}&accent=%23F59E0B`,
+              width: 1200,
+              height: 630,
+              alt: event.title,
+            },
+          ],
         },
       }
     : { title: "Event not found" };
