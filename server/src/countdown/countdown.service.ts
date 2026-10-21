@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { ConfigService } from '@nestjs/config';
-import { calculateSecondsUntilTarget } from '@ggm/types';
+import { calculateSecondsUntilTarget, calculateSecondsUntilDate } from '@ggm/types';
 import type { AuthenticatedActor } from '../common/types.js';
 import type { UpdateCountdownDto, PublicCountdownDto } from '@ggm/types';
 
@@ -13,15 +13,16 @@ const DEFAULT_COUNTDOWN: PublicCountdownDto = {
   scriptureText: 'Arise, shine; for thy light is come, and the glory of the LORD is risen upon thee.',
   mode: 'target-time',
   targetTimeString: '08:00',
-  durationSeconds: 300,
+  targetDate: '',
+  durationSeconds: 1800,
   theme: 'royal-gold',
   soundEnabled: true,
-  overtimeEnabled: true,
+  overtimeEnabled: false,
   showScripture: false,
   showLogo: true,
   stageMode: false,
   isRunning: true,
-  remainingSeconds: 300,
+  remainingSeconds: 1800,
   targetEndTime: null,
   updatedAt: new Date().toISOString(),
 };
@@ -53,9 +54,15 @@ export class CountdownService {
     let remainingSeconds = raw.remainingSeconds ?? DEFAULT_COUNTDOWN.remainingSeconds;
     const targetEndTime = raw.targetEndTime ? Number(raw.targetEndTime) : null;
 
-    if (mode === 'target-time') {
+    if (mode === 'event-date') {
+      if (raw.targetDate) {
+        remainingSeconds = calculateSecondsUntilDate(raw.targetDate);
+      } else {
+        remainingSeconds = calculateSecondsUntilTarget(raw.targetTimeString || '08:00');
+      }
+    } else if (mode === 'target-time') {
       remainingSeconds = calculateSecondsUntilTarget(raw.targetTimeString || '08:00');
-    } else if (mode === 'duration' && isRunning && targetEndTime) {
+    } else if ((mode === 'activity' || mode === 'duration') && isRunning && targetEndTime) {
       remainingSeconds = Math.round((targetEndTime - Date.now()) / 1000);
       if (!raw.overtimeEnabled && remainingSeconds <= 0) {
         remainingSeconds = 0;
@@ -69,6 +76,7 @@ export class CountdownService {
       scriptureText: raw.scriptureText || DEFAULT_COUNTDOWN.scriptureText,
       mode,
       targetTimeString: raw.targetTimeString || DEFAULT_COUNTDOWN.targetTimeString,
+      targetDate: raw.targetDate || DEFAULT_COUNTDOWN.targetDate,
       durationSeconds: raw.durationSeconds ?? DEFAULT_COUNTDOWN.durationSeconds,
       theme: raw.theme || DEFAULT_COUNTDOWN.theme,
       soundEnabled: raw.soundEnabled ?? DEFAULT_COUNTDOWN.soundEnabled,
@@ -92,9 +100,16 @@ export class CountdownService {
     let remainingSeconds = dto.remainingSeconds !== undefined ? dto.remainingSeconds : current.remainingSeconds;
 
     let targetEndTime: number | null = null;
-    if (mode === 'duration') {
+    if (mode === 'activity' || mode === 'duration') {
       if (isRunning) {
         targetEndTime = Date.now() + Math.max(remainingSeconds, 0) * 1000;
+      }
+    } else if (mode === 'event-date') {
+      const dateToCalc = dto.targetDate ?? current.targetDate;
+      if (dateToCalc) {
+        remainingSeconds = calculateSecondsUntilDate(dateToCalc);
+      } else {
+        remainingSeconds = calculateSecondsUntilTarget(dto.targetTimeString ?? current.targetTimeString);
       }
     } else {
       remainingSeconds = calculateSecondsUntilTarget(dto.targetTimeString ?? current.targetTimeString);
@@ -107,6 +122,7 @@ export class CountdownService {
       scriptureText: dto.scriptureText ?? current.scriptureText,
       mode,
       targetTimeString: dto.targetTimeString ?? current.targetTimeString,
+      targetDate: dto.targetDate ?? current.targetDate ?? '',
       durationSeconds,
       theme: dto.theme ?? current.theme,
       soundEnabled: dto.soundEnabled ?? current.soundEnabled,

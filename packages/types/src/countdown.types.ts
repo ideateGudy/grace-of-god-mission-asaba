@@ -1,4 +1,4 @@
-export type CountdownMode = "target-time" | "duration";
+export type CountdownMode = "activity" | "event-date" | "target-time" | "duration";
 
 export type CountdownThemeId =
   | "royal-gold"
@@ -96,8 +96,9 @@ export const updateCountdownSchema = z.object({
   subtitle: z.string().trim().max(300).optional(),
   scriptureRef: z.string().trim().max(200).optional(),
   scriptureText: z.string().trim().max(1000).optional(),
-  mode: z.enum(["target-time", "duration"]).optional(),
+  mode: z.enum(["activity", "event-date", "target-time", "duration"]).optional(),
   targetTimeString: z.string().trim().max(20).optional(),
+  targetDate: z.string().trim().max(100).optional(),
   durationSeconds: z.number().int().min(0).max(86400).optional(),
   theme: z.enum(["royal-gold", "pentecost-fire", "celestial-blue", "emerald-grace", "obs-transparent"]).optional(),
   soundEnabled: z.boolean().optional(),
@@ -126,7 +127,8 @@ export interface ChurchCountdownState {
   scriptureText: string;
   mode: CountdownMode;
   targetTimeString: string; // "HH:MM" e.g. "08:00"
-  durationSeconds: number; // For duration mode, initial duration in seconds
+  targetDate: string; // ISO date string e.g. "2026-12-31T23:59:59"
+  durationSeconds: number; // For activity timer, initial duration in seconds
   theme: CountdownThemeId;
   soundEnabled: boolean;
   overtimeEnabled: boolean;
@@ -134,6 +136,100 @@ export interface ChurchCountdownState {
   showLogo: boolean;
   stageMode: boolean; // Hide controls for sanctuary screen
 }
+
+export interface ActivityPreset {
+  id: string;
+  name: string;
+  category: string;
+  iconName: string;
+  durationMinutes: number;
+  title: string;
+  subtitle: string;
+  theme: CountdownThemeId;
+}
+
+export const ACTIVITY_PRESETS: ActivityPreset[] = [
+  {
+    id: "sermon-30",
+    name: "Sermon (30 Mins)",
+    category: "Word Ministration",
+    iconName: "BookOpen",
+    durationMinutes: 30,
+    title: "SERMON & EXHORTATION",
+    subtitle: "Ministering the Undiluted Word of God",
+    theme: "royal-gold",
+  },
+  {
+    id: "sermon-45",
+    name: "Sermon (45 Mins)",
+    category: "Word Ministration",
+    iconName: "BookOpen",
+    durationMinutes: 45,
+    title: "SERMON & EXHORTATION",
+    subtitle: "Ministering the Undiluted Word of God",
+    theme: "royal-gold",
+  },
+  {
+    id: "praise-20",
+    name: "Praise & Worship (20 Mins)",
+    category: "Worship Session",
+    iconName: "Flame",
+    durationMinutes: 20,
+    title: "HIGH PRAISE & WORSHIP",
+    subtitle: "Lifting Holy Hands in Sanctuary Worship",
+    theme: "pentecost-fire",
+  },
+  {
+    id: "praise-30",
+    name: "Praise & Worship (30 Mins)",
+    category: "Worship Session",
+    iconName: "Flame",
+    durationMinutes: 30,
+    title: "HIGH PRAISE & WORSHIP",
+    subtitle: "Lifting Holy Hands in Sanctuary Worship",
+    theme: "pentecost-fire",
+  },
+  {
+    id: "announcements-10",
+    name: "Announcements (10 Mins)",
+    category: "Church Notice",
+    iconName: "Clock",
+    durationMinutes: 10,
+    title: "CHURCH NOTICES & ANNOUNCEMENTS",
+    subtitle: "Kingdom Updates & Weekly Activities",
+    theme: "celestial-blue",
+  },
+  {
+    id: "offering-10",
+    name: "Offering & Tithes (10 Mins)",
+    category: "Covenant Giving",
+    iconName: "Crown",
+    durationMinutes: 10,
+    title: "COVENANT GIVING & TITHES",
+    subtitle: "Honouring the Lord with Our Substance",
+    theme: "emerald-grace",
+  },
+  {
+    id: "prayer-15",
+    name: "Opening Prayer (15 Mins)",
+    category: "Sanctuary Prayer",
+    iconName: "Flame",
+    durationMinutes: 15,
+    title: "OPENING PRAYER & INTERCESSION",
+    subtitle: "Calling Upon the God of Grace",
+    theme: "pentecost-fire",
+  },
+  {
+    id: "testimonies-15",
+    name: "Testimonies (15 Mins)",
+    category: "Testimonies",
+    iconName: "Sparkles",
+    durationMinutes: 15,
+    title: "SIGNS & WONDERS TESTIMONIES",
+    subtitle: "Overcoming by the Blood and Our Testimony",
+    theme: "royal-gold",
+  },
+];
 
 export interface ProgrammePreset {
   id: string;
@@ -365,3 +461,148 @@ export function calculateSecondsUntilTarget(targetHHMM: string): number {
     return Math.round(diffMs / 1000);
   }
 }
+
+/**
+ * Calculates remaining seconds until a target date/time string.
+ * When the target date is reached or passed, it returns 0 (stays at zero, never goes negative).
+ */
+export function calculateSecondsUntilDate(targetDateStr: string): number {
+  if (!targetDateStr) return 0;
+  const target = new Date(targetDateStr).getTime();
+  if (isNaN(target)) return 0;
+  const now = Date.now();
+  const diffSecs = Math.round((target - now) / 1000);
+  return Math.max(0, diffSecs);
+}
+
+/**
+ * Formats a Date to a local ISO string (YYYY-MM-DDTHH:mm:ss) compatible with datetime-local inputs.
+ */
+export function formatToLocalIso(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
+/**
+ * Returns the upcoming Sunday 08:00 AM date in local ISO format.
+ */
+export function getNextSundayServiceDate(): string {
+  const now = new Date();
+  const result = new Date(now);
+  const day = result.getDay();
+  let daysUntilSunday = (7 - day) % 7;
+  if (day === 0 && (now.getHours() > 8 || (now.getHours() === 8 && now.getMinutes() > 0))) {
+    daysUntilSunday = 7;
+  }
+  result.setDate(result.getDate() + daysUntilSunday);
+  result.setHours(8, 0, 0, 0);
+  return formatToLocalIso(result);
+}
+
+/**
+ * Returns the upcoming Wednesday 17:30 Midweek Service date in local ISO format.
+ */
+export function getNextMidweekServiceDate(): string {
+  const now = new Date();
+  const result = new Date(now);
+  const day = result.getDay();
+  let daysUntilWed = (3 - day + 7) % 7;
+  if (day === 3 && (now.getHours() > 17 || (now.getHours() === 17 && now.getMinutes() > 30))) {
+    daysUntilWed = 7;
+  }
+  result.setDate(result.getDate() + daysUntilWed);
+  result.setHours(17, 30, 0, 0);
+  return formatToLocalIso(result);
+}
+
+/**
+ * Returns the upcoming New Year date (Dec 31 23:59:59) in local ISO format.
+ */
+export function getUpcomingNewYearDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const target = new Date(year, 11, 31, 23, 59, 59, 0);
+  if (now.getTime() > target.getTime()) {
+    target.setFullYear(year + 1);
+  }
+  return formatToLocalIso(target);
+}
+
+export interface TimeBreakdown {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  totalSeconds: number;
+  isOvertime: boolean;
+  isZero: boolean;
+}
+
+export function calculateTimeBreakdown(totalSeconds: number): TimeBreakdown {
+  const isOvertime = totalSeconds < 0;
+  const absSecs = Math.abs(totalSeconds);
+  const days = Math.floor(absSecs / 86400);
+  const hours = Math.floor((absSecs % 86400) / 3600);
+  const minutes = Math.floor((absSecs % 3600) / 60);
+  const seconds = absSecs % 60;
+  return {
+    days,
+    hours,
+    minutes,
+    seconds,
+    totalSeconds,
+    isOvertime,
+    isZero: totalSeconds === 0,
+  };
+}
+
+export interface EventDatePreset {
+  id: string;
+  name: string;
+  category: string;
+  iconName: string;
+  title: string;
+  subtitle: string;
+  theme: CountdownThemeId;
+  getTargetDate: () => string;
+}
+
+export const EVENT_DATE_PRESETS: EventDatePreset[] = [
+  {
+    id: "sunday-celebration",
+    name: "Sunday Celebration Service",
+    category: "Weekly Encounter",
+    iconName: "Church",
+    title: "SUNDAY CELEBRATION SERVICE",
+    subtitle: "Sanctuary Doors Open · Service Starts In...",
+    theme: "royal-gold",
+    getTargetDate: getNextSundayServiceDate,
+  },
+  {
+    id: "midweek-communion",
+    name: "Midweek Communion Service",
+    category: "Bible Study",
+    iconName: "BookOpen",
+    title: "MIDWEEK COMMUNION SERVICE",
+    subtitle: "Word & Communion Encounter Begins In...",
+    theme: "emerald-grace",
+    getTargetDate: getNextMidweekServiceDate,
+  },
+  {
+    id: "new-year-crossover",
+    name: "New Year Crossover Service",
+    category: "Annual Prophetic Vigil",
+    iconName: "Sparkles",
+    title: "NEW YEAR CROSSOVER SERVICE",
+    subtitle: "Stepping into Greater Glory · Countdown to New Year In...",
+    theme: "celestial-blue",
+    getTargetDate: getUpcomingNewYearDate,
+  },
+];
+
