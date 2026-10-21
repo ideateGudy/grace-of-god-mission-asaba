@@ -8,6 +8,8 @@ import {
   type ChurchCountdownState,
   COUNTDOWN_THEMES,
   calculateSecondsUntilTarget,
+  calculateSecondsUntilDate,
+  calculateTimeBreakdown,
 } from "@/lib/countdown/countdown-types";
 import {
   COUNTDOWN_STORAGE_KEY,
@@ -27,12 +29,13 @@ const DEFAULT_STATE: ChurchCountdownState = {
   scriptureRef: "ISAIAH 60:1",
   scriptureText:
     "Arise, shine; for thy light is come, and the glory of the LORD is risen upon thee.",
-  mode: "target-time",
+  mode: "activity",
   targetTimeString: "08:00",
-  durationSeconds: 300,
+  targetDate: "",
+  durationSeconds: 1800,
   theme: "royal-gold",
   soundEnabled: true,
-  overtimeEnabled: true,
+  overtimeEnabled: false,
   showScripture: false,
   showLogo: true,
   stageMode: false,
@@ -46,8 +49,8 @@ export function ChurchCountdownLive() {
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [config, setConfig] = useState<ChurchCountdownState>(DEFAULT_STATE);
   const [isRunning, setIsRunning] = useState<boolean>(true);
-  const [remainingSeconds, setRemainingSeconds] = useState<number>(300);
-  const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(300);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(1800);
+  const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(1800);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chimePlayedRef = useRef<boolean>(false);
@@ -85,7 +88,13 @@ export function ChurchCountdownLive() {
             setIsRunning(true);
           }
 
-          if (loadedConfig.mode === "target-time") {
+          if (loadedConfig.mode === "event-date") {
+            const secs = loadedConfig.targetDate
+              ? calculateSecondsUntilDate(loadedConfig.targetDate)
+              : calculateSecondsUntilTarget(loadedConfig.targetTimeString);
+            setRemainingSeconds(secs);
+            setInitialTotalSeconds(Math.max(secs, 1));
+          } else if (loadedConfig.mode === "target-time") {
             const secs = calculateSecondsUntilTarget(loadedConfig.targetTimeString);
             setRemainingSeconds(secs);
             setInitialTotalSeconds(Math.max(secs, 1));
@@ -115,6 +124,7 @@ export function ChurchCountdownLive() {
             scriptureText: remote.scriptureText || DEFAULT_STATE.scriptureText,
             mode: remote.mode || DEFAULT_STATE.mode,
             targetTimeString: remote.targetTimeString || DEFAULT_STATE.targetTimeString,
+            targetDate: remote.targetDate || DEFAULT_STATE.targetDate,
             durationSeconds: remote.durationSeconds || DEFAULT_STATE.durationSeconds,
             theme: remote.theme || DEFAULT_STATE.theme,
             soundEnabled: remote.soundEnabled ?? DEFAULT_STATE.soundEnabled,
@@ -128,9 +138,17 @@ export function ChurchCountdownLive() {
           setIsRunning(remote.isRunning);
 
           let authoritativeSecs: number;
-          if (mergedConfig.mode === "target-time") {
+          if (mergedConfig.mode === "event-date") {
+            authoritativeSecs = mergedConfig.targetDate
+              ? calculateSecondsUntilDate(mergedConfig.targetDate)
+              : calculateSecondsUntilTarget(mergedConfig.targetTimeString);
+          } else if (mergedConfig.mode === "target-time") {
             authoritativeSecs = calculateSecondsUntilTarget(mergedConfig.targetTimeString);
-          } else if (mergedConfig.mode === "duration" && remote.isRunning && remote.targetEndTime) {
+          } else if (
+            (mergedConfig.mode === "activity" || mergedConfig.mode === "duration") &&
+            remote.isRunning &&
+            remote.targetEndTime
+          ) {
             authoritativeSecs = Math.max(0, Math.round((remote.targetEndTime - Date.now()) / 1000));
           } else {
             authoritativeSecs = remote.remainingSeconds;
@@ -138,7 +156,7 @@ export function ChurchCountdownLive() {
 
           setRemainingSeconds(authoritativeSecs);
           setInitialTotalSeconds(
-            mergedConfig.mode === "duration"
+            mergedConfig.mode === "activity" || mergedConfig.mode === "duration"
               ? Math.max(mergedConfig.durationSeconds, 1)
               : Math.max(authoritativeSecs, 1)
           );
@@ -146,7 +164,8 @@ export function ChurchCountdownLive() {
           try {
             localStorage.setItem(COUNTDOWN_STORAGE_KEY, JSON.stringify(mergedConfig));
             localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(remote.isRunning));
-            if (mergedConfig.mode !== "target-time") {
+            const isDurationBased = mergedConfig.mode === "activity" || mergedConfig.mode === "duration";
+            if (isDurationBased) {
               localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(authoritativeSecs));
             } else {
               localStorage.removeItem(COUNTDOWN_SECS_KEY);
@@ -193,6 +212,7 @@ export function ChurchCountdownLive() {
             prev.subtitle !== remote.subtitle ||
             prev.mode !== remote.mode ||
             prev.targetTimeString !== remote.targetTimeString ||
+            prev.targetDate !== (remote.targetDate ?? "") ||
             prev.durationSeconds !== remote.durationSeconds ||
             prev.theme !== remote.theme ||
             prev.showScripture !== remote.showScripture ||
@@ -206,6 +226,7 @@ export function ChurchCountdownLive() {
               scriptureText: remote.scriptureText,
               mode: remote.mode,
               targetTimeString: remote.targetTimeString,
+              targetDate: remote.targetDate ?? "",
               durationSeconds: remote.durationSeconds,
               theme: remote.theme,
               showScripture: remote.showScripture,
@@ -228,6 +249,9 @@ export function ChurchCountdownLive() {
         // Sync time if paused or reset to 0
         if (!remote.isRunning || remote.remainingSeconds === 0) {
           setRemainingSeconds(remote.remainingSeconds);
+        } else if (remote.mode === "event-date" && remote.targetDate) {
+          const calculatedSecs = calculateSecondsUntilDate(remote.targetDate);
+          setRemainingSeconds(calculatedSecs);
         } else if (remote.mode === "duration" && remote.targetEndTime) {
           const calculatedSecs = Math.round((remote.targetEndTime - Date.now()) / 1000);
           setRemainingSeconds((prev) => {
@@ -272,7 +296,12 @@ export function ChurchCountdownLive() {
           const { state, remainingSeconds: remoteSecs, isRunning: remoteRunning } = event.data;
           setConfig(state);
           setIsRunning(remoteRunning);
-          if (state.mode === "target-time") {
+          if (state.mode === "event-date") {
+            const secs = state.targetDate
+              ? calculateSecondsUntilDate(state.targetDate)
+              : calculateSecondsUntilTarget(state.targetTimeString);
+            setRemainingSeconds(secs);
+          } else if (state.mode === "target-time") {
             setRemainingSeconds(calculateSecondsUntilTarget(state.targetTimeString));
           } else {
             setRemainingSeconds(remoteSecs);
@@ -300,7 +329,7 @@ export function ChurchCountdownLive() {
       } else if (e.key === COUNTDOWN_SECS_KEY && e.newValue !== null) {
         try {
           setConfig((currentConfig) => {
-            if (currentConfig.mode === "duration") {
+            if (currentConfig.mode === "activity" || currentConfig.mode === "duration") {
               setRemainingSeconds(Number(JSON.parse(e.newValue!)));
             }
             return currentConfig;
@@ -334,7 +363,14 @@ export function ChurchCountdownLive() {
       return;
     }
 
-    if (config.mode === "target-time") {
+    if (config.mode === "event-date") {
+      const secs = config.targetDate
+        ? calculateSecondsUntilDate(config.targetDate)
+        : calculateSecondsUntilTarget(config.targetTimeString);
+      setRemainingSeconds(secs);
+      setInitialTotalSeconds(Math.max(secs, 1));
+      chimePlayedRef.current = secs <= 0;
+    } else if (config.mode === "target-time") {
       const secs = calculateSecondsUntilTarget(config.targetTimeString);
       setRemainingSeconds(secs);
       setInitialTotalSeconds(Math.max(secs, 1));
@@ -344,14 +380,26 @@ export function ChurchCountdownLive() {
       setInitialTotalSeconds(Math.max(config.durationSeconds, 1));
       chimePlayedRef.current = false;
     }
-  }, [isMounted, config.mode, config.targetTimeString, config.durationSeconds]);
+  }, [isMounted, config.mode, config.targetDate, config.targetTimeString, config.durationSeconds]);
 
   // 1-second interval ticker for live projection
   useEffect(() => {
     if (!isMounted || !isRunning) return;
 
     const interval = setInterval(() => {
-      if (config.mode === "target-time") {
+      if (config.mode === "event-date") {
+        const secs = config.targetDate
+          ? calculateSecondsUntilDate(config.targetDate)
+          : calculateSecondsUntilTarget(config.targetTimeString);
+
+        // Date Countdown: Counts down to zero and stays at zero. Does NOT show Time Up.
+        if (secs <= 0) {
+          setRemainingSeconds(0);
+          setIsRunning(false);
+        } else {
+          setRemainingSeconds(secs);
+        }
+      } else if (config.mode === "target-time") {
         const secs = calculateSecondsUntilTarget(config.targetTimeString);
 
         // Sound triggers
@@ -372,7 +420,8 @@ export function ChurchCountdownLive() {
           setRemainingSeconds(secs);
         }
       } else {
-        // Duration mode
+        // Activity Timer (mode === "activity" || mode === "duration")
+        // Regulates church activities: counts down to zero and shows time up
         setRemainingSeconds((prev) => {
           const next = prev - 1;
 
@@ -396,7 +445,15 @@ export function ChurchCountdownLive() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isMounted, isRunning, config.mode, config.targetTimeString, config.soundEnabled, config.overtimeEnabled]);
+  }, [
+    isMounted,
+    isRunning,
+    config.mode,
+    config.targetDate,
+    config.targetTimeString,
+    config.soundEnabled,
+    config.overtimeEnabled,
+  ]);
 
   // Toggle fullscreen on double click or pressing 'F'
   const toggleFullscreen = async () => {
@@ -445,12 +502,13 @@ export function ChurchCountdownLive() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Compute breakdown: hours, minutes, seconds, overtime
+  // Compute breakdown: days, hours, minutes, seconds, overtime
   const isOvertime = remainingSeconds < 0;
-  const absSeconds = Math.abs(remainingSeconds);
-  const hours = Math.floor(absSeconds / 3600);
-  const minutes = Math.floor((absSeconds % 3600) / 60);
-  const seconds = absSeconds % 60;
+  const breakdown = calculateTimeBreakdown(remainingSeconds);
+  const { days, hours, minutes, seconds } = breakdown;
+
+  const isActivityTimer = config.mode === "activity" || config.mode === "duration";
+  const isEventDateTimer = config.mode === "event-date" || config.mode === "target-time";
 
   // Percentage for progress bar (0 to 1)
   const progressRatio = useMemo(() => {
@@ -519,11 +577,14 @@ export function ChurchCountdownLive() {
       <div
         className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[850px] h-[90vw] max-h-[850px] rounded-full blur-[100px] sm:blur-[160px] -z-10 transition-all duration-1000"
         style={{
-          backgroundColor: isOvertime
-            ? "rgba(239, 68, 68, 0.24)"
-            : remainingSeconds <= 60
-            ? "rgba(245, 158, 11, 0.28)"
-            : currentTheme.accentGlow,
+          backgroundColor:
+            isActivityTimer && remainingSeconds <= 0
+              ? "rgba(239, 68, 68, 0.32)"
+              : isOvertime
+              ? "rgba(239, 68, 68, 0.24)"
+              : remainingSeconds <= 60
+              ? "rgba(245, 158, 11, 0.28)"
+              : currentTheme.accentGlow,
         }}
       />
 
@@ -571,39 +632,55 @@ export function ChurchCountdownLive() {
           <span
             className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full animate-pulse shrink-0"
             style={{
-              backgroundColor: isOvertime
-                ? "#EF4444"
-                : remainingSeconds <= 60
-                ? "#F59E0B"
-                : currentTheme.primaryAccent,
+              backgroundColor:
+                isActivityTimer && remainingSeconds <= 0
+                  ? "#EF4444"
+                  : isOvertime
+                  ? "#EF4444"
+                  : remainingSeconds <= 60
+                  ? "#F59E0B"
+                  : currentTheme.primaryAccent,
             }}
           />
           <span
             className="text-[11px] sm:text-xs md:text-sm font-black tracking-widest uppercase"
             style={{ color: currentTheme.primaryAccent }}
           >
-            {config.subtitle || "SERVICE STARTS IN..."}
+            {config.subtitle || (isActivityTimer ? "CHURCH ACTIVITY TIMER" : "SERVICE STARTS IN...")}
           </span>
         </div>
 
         {/* Programme Title */}
         <h1 className="font-black tracking-tight text-2xl sm:text-4xl md:text-6xl lg:text-7xl leading-tight text-white mb-3 sm:mb-6 max-w-4xl px-2">
           <span className="drop-shadow-[0_10px_30px_rgba(0,0,0,0.9)] break-words">
-            {config.title || "UNTITLED CHURCH PROGRAMME"}
+            {config.title || (isActivityTimer ? "CHURCH ACTIVITY" : "UNTITLED CHURCH PROGRAMME")}
           </span>
         </h1>
 
-        {/* OVERTIME BADGE ALERT */}
-        {isOvertime && (
-          <div className="mb-3 sm:mb-6 inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full bg-rose-500/25 border border-rose-500/60 text-rose-300 font-extrabold text-xs sm:text-base animate-pulse">
-            <span>⚠️ SERVICE IN SESSION / OVERTIME</span>
+        {/* ------------------------------------------------------------- */}
+        {/* BANNER 1: CHURCH ACTIVITY TIMER "TIME UP" BANNER             */}
+        {/* Shows clearly when church activity timer reaches zero         */}
+        {/* ------------------------------------------------------------- */}
+        {isActivityTimer && remainingSeconds <= 0 && (
+          <div className="mb-4 sm:mb-8 px-6 sm:px-10 py-3 sm:py-5 rounded-2xl sm:rounded-3xl bg-rose-600/35 border-2 border-rose-500 text-rose-100 font-black text-2xl sm:text-4xl md:text-5xl animate-pulse shadow-[0_0_60px_rgba(244,63,94,0.6)]">
+            ⏰ TIME UP · PLEASE CONCLUDE
           </div>
         )}
 
-        {/* TIME'S UP CELEBRATORY BANNER (When 00:00:00 and overtime disabled) */}
-        {!config.overtimeEnabled && remainingSeconds <= 0 && (
-          <div className="mb-4 sm:mb-8 px-4 sm:px-8 py-2.5 sm:py-4 rounded-2xl sm:rounded-3xl bg-amber-500/25 border-2 border-amber-400 text-amber-200 font-black text-lg sm:text-3xl md:text-4xl animate-bounce shadow-2xl">
-            ✨ WELCOME TO CHURCH · SERVICE HAS BEGUN ✨
+        {/* Overtime indicator for activity timer if overtime enabled */}
+        {isActivityTimer && isOvertime && config.overtimeEnabled && (
+          <div className="mb-3 sm:mb-6 inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full bg-rose-500/25 border border-rose-500/60 text-rose-300 font-extrabold text-xs sm:text-base animate-pulse">
+            <span>⚠️ ACTIVITY OVERTIME</span>
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------- */}
+        {/* BANNER 2: EVENT DATE COUNTDOWN ARRIVAL BANNER                  */}
+        {/* Stays at zero and DOES NOT show "TIME UP"                     */}
+        {/* ------------------------------------------------------------- */}
+        {isEventDateTimer && remainingSeconds <= 0 && (
+          <div className="mb-4 sm:mb-8 px-6 sm:px-10 py-2.5 sm:py-4 rounded-2xl sm:rounded-3xl bg-amber-500/20 border-2 border-amber-400 text-amber-200 font-black text-lg sm:text-2xl md:text-3xl animate-in fade-in shadow-xl">
+            ✨ WELCOME TO CHURCH · PROGRAMME IN SESSION ✨
           </div>
         )}
 
@@ -621,14 +698,16 @@ export function ChurchCountdownLive() {
           </div>
         )}
 
+        {/* ============================================================== */}
         {/* MASSIVE TIME DISPLAY CARDS (Ultra-responsive on all screen sizes) */}
+        {/* ============================================================== */}
         <div className="flex items-center justify-center gap-1.5 sm:gap-4 md:gap-6 lg:gap-8 my-2 sm:my-6 w-full max-w-5xl mx-auto">
-          {/* Hours Card (shown if target-time mode or hours > 0) */}
-          {(hours > 0 || config.mode === "target-time") && (
+          {/* A. DAYS CARD (Displayed only in Event Date Countdown when days > 0) */}
+          {isEventDateTimer && days > 0 && (
             <>
               <div className="flex flex-col items-center">
                 <div
-                  className="w-[24vw] min-w-[72px] max-w-[100px] sm:max-w-[160px] md:max-w-[210px] lg:max-w-[250px] sm:w-36 md:w-52 lg:w-60 h-[28vw] min-h-[85px] max-h-[110px] sm:max-h-[190px] md:max-h-[250px] lg:max-h-[280px] sm:h-44 md:h-56 lg:h-68 rounded-2xl sm:rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_15px_35px_rgba(0,0,0,0.6)] sm:shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative overflow-hidden shrink-0"
+                  className="w-[20vw] min-w-[62px] max-w-[85px] sm:max-w-[130px] md:max-w-[170px] lg:max-w-[210px] sm:w-32 md:w-44 lg:w-52 h-[24vw] min-h-[75px] max-h-[95px] sm:max-h-[160px] md:max-h-[210px] lg:max-h-[240px] sm:h-38 md:h-48 lg:h-58 rounded-2xl sm:rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_15px_35px_rgba(0,0,0,0.6)] sm:shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative overflow-hidden shrink-0"
                   style={{
                     backgroundColor: "rgba(255, 255, 255, 0.04)",
                     borderColor: currentTheme.borderColor,
@@ -639,8 +718,62 @@ export function ChurchCountdownLive() {
                     style={{ borderColor: "rgba(255, 255, 255, 0.06)" }}
                   />
                   <span
-                    className="font-black text-3xl sm:text-6xl md:text-8xl lg:text-9xl tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.95)]"
+                    className="font-black text-2xl sm:text-5xl md:text-7xl lg:text-8xl tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.95)]"
                     style={{ color: currentTheme.digitColor }}
+                  >
+                    {formatTwoDigits(days)}
+                  </span>
+                </div>
+                <span
+                  className="mt-2 sm:mt-4 text-[9px] sm:text-xs md:text-sm lg:text-base font-black tracking-widest uppercase"
+                  style={{ color: currentTheme.labelColor }}
+                >
+                  DAYS
+                </span>
+              </div>
+
+              {/* Colon */}
+              <div className="flex flex-col justify-center items-center gap-1.5 sm:gap-3 md:gap-5 pb-5 sm:pb-8 md:pb-12 text-white/40 font-black shrink-0">
+                <div className="w-1.5 sm:w-3 md:w-3.5 h-1.5 sm:h-3 md:h-3.5 rounded-full bg-white/70 animate-pulse" />
+                <div className="w-1.5 sm:w-3 md:w-3.5 h-1.5 sm:h-3 md:h-3.5 rounded-full bg-white/70 animate-pulse" />
+              </div>
+            </>
+          )}
+
+          {/* B. HOURS CARD */}
+          {(hours > 0 || (isEventDateTimer && days === 0) || config.mode === "target-time") && (
+            <>
+              <div className="flex flex-col items-center">
+                <div
+                  className={`rounded-2xl sm:rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_15px_35px_rgba(0,0,0,0.6)] sm:shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative overflow-hidden shrink-0 ${
+                    isEventDateTimer && days > 0
+                      ? "w-[20vw] min-w-[62px] max-w-[85px] sm:max-w-[130px] md:max-w-[170px] lg:max-w-[210px] sm:w-32 md:w-44 lg:w-52 h-[24vw] min-h-[75px] max-h-[95px] sm:max-h-[160px] md:max-h-[210px] lg:max-h-[240px] sm:h-38 md:h-48 lg:h-58"
+                      : "w-[24vw] min-w-[72px] max-w-[100px] sm:max-w-[160px] md:max-w-[210px] lg:max-w-[250px] sm:w-36 md:w-52 lg:w-60 h-[28vw] min-h-[85px] max-h-[110px] sm:max-h-[190px] md:max-h-[250px] lg:max-h-[280px] sm:h-44 md:h-56 lg:h-68"
+                  }`}
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.04)",
+                    borderColor:
+                      isActivityTimer && remainingSeconds <= 0
+                        ? "#EF4444"
+                        : currentTheme.borderColor,
+                  }}
+                >
+                  <div
+                    className="absolute inset-x-0 top-0 h-1/2 bg-white/[0.03] border-b"
+                    style={{ borderColor: "rgba(255, 255, 255, 0.06)" }}
+                  />
+                  <span
+                    className={`font-black tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.95)] ${
+                      isEventDateTimer && days > 0
+                        ? "text-2xl sm:text-5xl md:text-7xl lg:text-8xl"
+                        : "text-3xl sm:text-6xl md:text-8xl lg:text-9xl"
+                    }`}
+                    style={{
+                      color:
+                        isActivityTimer && remainingSeconds <= 0
+                          ? "#FCA5A5"
+                          : currentTheme.digitColor,
+                    }}
                   >
                     {formatTwoDigits(hours)}
                   </span>
@@ -661,17 +794,22 @@ export function ChurchCountdownLive() {
             </>
           )}
 
-          {/* Minutes Card */}
+          {/* C. MINUTES CARD */}
           <div className="flex flex-col items-center">
             <div
               className={`rounded-2xl sm:rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_15px_35px_rgba(0,0,0,0.6)] sm:shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative overflow-hidden shrink-0 ${
-                hours > 0 || config.mode === "target-time"
+                isEventDateTimer && days > 0
+                  ? "w-[20vw] min-w-[62px] max-w-[85px] sm:max-w-[130px] md:max-w-[170px] lg:max-w-[210px] sm:w-32 md:w-44 lg:w-52 h-[24vw] min-h-[75px] max-h-[95px] sm:max-h-[160px] md:max-h-[210px] lg:max-h-[240px] sm:h-38 md:h-48 lg:h-58"
+                  : hours > 0 || (isEventDateTimer && days === 0) || config.mode === "target-time"
                   ? "w-[24vw] min-w-[72px] max-w-[100px] sm:max-w-[160px] md:max-w-[210px] lg:max-w-[250px] sm:w-36 md:w-52 lg:w-60 h-[28vw] min-h-[85px] max-h-[110px] sm:max-h-[190px] md:max-h-[250px] lg:max-h-[280px] sm:h-44 md:h-56 lg:h-68"
                   : "w-[38vw] min-w-[110px] max-w-[160px] sm:max-w-[230px] md:max-w-[280px] lg:max-w-[320px] sm:w-52 md:w-64 lg:w-76 h-[40vw] min-h-[120px] max-h-[170px] sm:max-h-[240px] md:max-h-[300px] lg:max-h-[340px] sm:h-56 md:h-68 lg:h-80"
               }`}
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.04)",
-                borderColor: currentTheme.borderColor,
+                borderColor:
+                  isActivityTimer && remainingSeconds <= 0
+                    ? "#EF4444"
+                    : currentTheme.borderColor,
               }}
             >
               <div
@@ -680,11 +818,18 @@ export function ChurchCountdownLive() {
               />
               <span
                 className={`font-black tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.95)] ${
-                  hours > 0 || config.mode === "target-time"
+                  isEventDateTimer && days > 0
+                    ? "text-2xl sm:text-5xl md:text-7xl lg:text-8xl"
+                    : hours > 0 || (isEventDateTimer && days === 0) || config.mode === "target-time"
                     ? "text-3xl sm:text-6xl md:text-8xl lg:text-9xl"
                     : "text-5xl sm:text-7xl md:text-9xl lg:text-[10rem]"
                 }`}
-                style={{ color: currentTheme.digitColor }}
+                style={{
+                  color:
+                    isActivityTimer && remainingSeconds <= 0
+                      ? "#FCA5A5"
+                      : currentTheme.digitColor,
+                }}
               >
                 {formatTwoDigits(minutes)}
               </span>
@@ -703,18 +848,22 @@ export function ChurchCountdownLive() {
             <div className="w-1.5 sm:w-3 md:w-3.5 h-1.5 sm:h-3 md:h-3.5 rounded-full bg-white/70 animate-pulse" />
           </div>
 
-          {/* Seconds Card */}
+          {/* D. SECONDS CARD */}
           <div className="flex flex-col items-center">
             <div
               className={`rounded-2xl sm:rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_15px_35px_rgba(0,0,0,0.6)] sm:shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative overflow-hidden shrink-0 ${
-                hours > 0 || config.mode === "target-time"
+                isEventDateTimer && days > 0
+                  ? "w-[20vw] min-w-[62px] max-w-[85px] sm:max-w-[130px] md:max-w-[170px] lg:max-w-[210px] sm:w-32 md:w-44 lg:w-52 h-[24vw] min-h-[75px] max-h-[95px] sm:max-h-[160px] md:max-h-[210px] lg:max-h-[240px] sm:h-38 md:h-48 lg:h-58"
+                  : hours > 0 || (isEventDateTimer && days === 0) || config.mode === "target-time"
                   ? "w-[24vw] min-w-[72px] max-w-[100px] sm:max-w-[160px] md:max-w-[210px] lg:max-w-[250px] sm:w-36 md:w-52 lg:w-60 h-[28vw] min-h-[85px] max-h-[110px] sm:max-h-[190px] md:max-h-[250px] lg:max-h-[280px] sm:h-44 md:h-56 lg:h-68"
                   : "w-[38vw] min-w-[110px] max-w-[160px] sm:max-w-[230px] md:max-w-[280px] lg:max-w-[320px] sm:w-52 md:w-64 lg:w-76 h-[40vw] min-h-[120px] max-h-[170px] sm:max-h-[240px] md:max-h-[300px] lg:max-h-[340px] sm:h-56 md:h-68 lg:h-80"
               }`}
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderColor:
-                  remainingSeconds <= 10 && remainingSeconds > 0
+                  isActivityTimer && remainingSeconds <= 0
+                    ? "#EF4444"
+                    : remainingSeconds <= 10 && remainingSeconds > 0
                     ? "#F59E0B"
                     : currentTheme.borderColor,
               }}
@@ -725,13 +874,17 @@ export function ChurchCountdownLive() {
               />
               <span
                 className={`font-black tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.95)] ${
-                  hours > 0 || config.mode === "target-time"
+                  isEventDateTimer && days > 0
+                    ? "text-2xl sm:text-5xl md:text-7xl lg:text-8xl"
+                    : hours > 0 || (isEventDateTimer && days === 0) || config.mode === "target-time"
                     ? "text-3xl sm:text-6xl md:text-8xl lg:text-9xl"
                     : "text-5xl sm:text-7xl md:text-9xl lg:text-[10rem]"
                 }`}
                 style={{
                   color:
-                    remainingSeconds <= 10 && remainingSeconds > 0
+                    isActivityTimer && remainingSeconds <= 0
+                      ? "#FCA5A5"
+                      : remainingSeconds <= 10 && remainingSeconds > 0
                       ? "#FDE047"
                       : currentTheme.digitColor,
                 }}
@@ -755,8 +908,14 @@ export function ChurchCountdownLive() {
               className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${Math.min(100, Math.max(0, progressRatio * 100))}%`,
-                background: `linear-gradient(90deg, ${currentTheme.primaryAccent}, ${currentTheme.secondaryAccent})`,
-                boxShadow: `0 0 16px ${currentTheme.accentGlow}`,
+                background:
+                  isActivityTimer && remainingSeconds <= 0
+                    ? "linear-gradient(90deg, #EF4444, #DC2626)"
+                    : `linear-gradient(90deg, ${currentTheme.primaryAccent}, ${currentTheme.secondaryAccent})`,
+                boxShadow:
+                  isActivityTimer && remainingSeconds <= 0
+                    ? "0 0 16px rgba(239, 68, 68, 0.6)"
+                    : `0 0 16px ${currentTheme.accentGlow}`,
               }}
             />
           </div>

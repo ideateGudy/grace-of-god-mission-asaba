@@ -37,7 +37,15 @@ import {
   COUNTDOWN_THEMES,
   COUNTDOWN_COLOR_PRESETS,
   PROGRAMME_PRESETS,
+  ACTIVITY_PRESETS,
+  EVENT_DATE_PRESETS,
   calculateSecondsUntilTarget,
+  calculateSecondsUntilDate,
+  calculateTimeBreakdown,
+  getNextSundayServiceDate,
+  getNextMidweekServiceDate,
+  getUpcomingNewYearDate,
+  formatToLocalIso,
 } from "@/lib/countdown/countdown-types";
 import {
   COUNTDOWN_STORAGE_KEY,
@@ -60,12 +68,13 @@ const DEFAULT_STATE: ChurchCountdownState = {
   subtitle: "Service Starts In...",
   scriptureRef: "ISAIAH 60:1",
   scriptureText: "Arise, shine; for thy light is come, and the glory of the LORD is risen upon thee.",
-  mode: "target-time",
+  mode: "activity",
   targetTimeString: "08:00",
-  durationSeconds: 300,
+  targetDate: "",
+  durationSeconds: 1800,
   theme: "royal-gold",
   soundEnabled: true,
-  overtimeEnabled: true,
+  overtimeEnabled: false,
   showScripture: false,
   showLogo: true,
   stageMode: false,
@@ -75,21 +84,39 @@ function formatTwoDigits(n: number): string {
   return Math.max(0, Math.floor(n)).toString().padStart(2, "0");
 }
 
+function getPresetIcon(iconName: string): string {
+  switch (iconName) {
+    case "Church":
+      return "⛪";
+    case "BookOpen":
+      return "📖";
+    case "Flame":
+      return "🔥";
+    case "Sparkles":
+      return "✨";
+    case "Crown":
+      return "👑";
+    default:
+      return "⏱️";
+  }
+}
+
 export function ChurchCountdown() {
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [config, setConfig] = useState<ChurchCountdownState>(DEFAULT_STATE);
   const [isRunning, setIsRunning] = useState<boolean>(true);
-  const [remainingSeconds, setRemainingSeconds] = useState<number>(300);
-  const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(300);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(1800);
+  const [initialTotalSeconds, setInitialTotalSeconds] = useState<number>(1800);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
   const [controlsOpen, setControlsOpen] = useState<boolean>(false);
   const [customTimerOpen, setCustomTimerOpen] = useState<boolean>(false);
-  const [customMinutes, setCustomMinutes] = useState<string>("10");
+  const [customMinutes, setCustomMinutes] = useState<string>("30");
   const [customSeconds, setCustomSeconds] = useState<string>("0");
   const [customTargetTime, setCustomTargetTime] = useState<string>("08:00");
-  const [timerDialogTab, setTimerDialogTab] = useState<"duration" | "target">("duration");
+  const [customTargetDate, setCustomTargetDate] = useState<string>(() => getNextSundayServiceDate());
+  const [timerDialogTab, setTimerDialogTab] = useState<"activity" | "event-date">("activity");
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chimePlayedRef = useRef<boolean>(false);
@@ -128,7 +155,13 @@ export function ChurchCountdown() {
             setIsRunning(true);
           }
 
-          if (loadedConfig.mode === "target-time") {
+          if (loadedConfig.mode === "event-date") {
+            const secs = loadedConfig.targetDate
+              ? calculateSecondsUntilDate(loadedConfig.targetDate)
+              : calculateSecondsUntilTarget(loadedConfig.targetTimeString);
+            setRemainingSeconds(secs);
+            setInitialTotalSeconds(Math.max(secs, 1));
+          } else if (loadedConfig.mode === "target-time") {
             const secs = calculateSecondsUntilTarget(loadedConfig.targetTimeString);
             setRemainingSeconds(secs);
             setInitialTotalSeconds(Math.max(secs, 1));
@@ -158,6 +191,7 @@ export function ChurchCountdown() {
             scriptureText: dbData.scriptureText || DEFAULT_STATE.scriptureText,
             mode: dbData.mode || DEFAULT_STATE.mode,
             targetTimeString: dbData.targetTimeString || DEFAULT_STATE.targetTimeString,
+            targetDate: dbData.targetDate || DEFAULT_STATE.targetDate,
             durationSeconds: dbData.durationSeconds || DEFAULT_STATE.durationSeconds,
             theme: dbData.theme || DEFAULT_STATE.theme,
             soundEnabled: dbData.soundEnabled ?? DEFAULT_STATE.soundEnabled,
@@ -171,9 +205,17 @@ export function ChurchCountdown() {
           setIsRunning(dbData.isRunning);
 
           let authoritativeSecs: number;
-          if (mergedConfig.mode === "target-time") {
+          if (mergedConfig.mode === "event-date") {
+            authoritativeSecs = mergedConfig.targetDate
+              ? calculateSecondsUntilDate(mergedConfig.targetDate)
+              : calculateSecondsUntilTarget(mergedConfig.targetTimeString);
+          } else if (mergedConfig.mode === "target-time") {
             authoritativeSecs = calculateSecondsUntilTarget(mergedConfig.targetTimeString);
-          } else if (mergedConfig.mode === "duration" && dbData.isRunning && dbData.targetEndTime) {
+          } else if (
+            (mergedConfig.mode === "activity" || mergedConfig.mode === "duration") &&
+            dbData.isRunning &&
+            dbData.targetEndTime
+          ) {
             authoritativeSecs = Math.max(0, Math.round((dbData.targetEndTime - Date.now()) / 1000));
           } else {
             authoritativeSecs = dbData.remainingSeconds;
@@ -181,7 +223,7 @@ export function ChurchCountdown() {
 
           setRemainingSeconds(authoritativeSecs);
           setInitialTotalSeconds(
-            mergedConfig.mode === "duration"
+            mergedConfig.mode === "activity" || mergedConfig.mode === "duration"
               ? Math.max(mergedConfig.durationSeconds, 1)
               : Math.max(authoritativeSecs, 1)
           );
@@ -189,7 +231,8 @@ export function ChurchCountdown() {
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedConfig));
             localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(dbData.isRunning));
-            if (mergedConfig.mode !== "target-time") {
+            const isDurationBased = mergedConfig.mode === "activity" || mergedConfig.mode === "duration";
+            if (isDurationBased) {
               localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(authoritativeSecs));
             } else {
               localStorage.removeItem(COUNTDOWN_SECS_KEY);
@@ -271,6 +314,7 @@ export function ChurchCountdown() {
         scriptureText: config.scriptureText,
         mode: config.mode,
         targetTimeString: config.targetTimeString,
+        targetDate: config.targetDate,
         durationSeconds: config.durationSeconds,
         theme: config.theme,
         soundEnabled: config.soundEnabled,
@@ -282,7 +326,7 @@ export function ChurchCountdown() {
         remainingSeconds,
       };
 
-      const key = `${config.title}|${config.subtitle}|${config.mode}|${config.targetTimeString}|${config.durationSeconds}|${config.theme}|${isRunning}|${remainingSeconds}|${config.showScripture}|${config.showLogo}`;
+      const key = `${config.title}|${config.subtitle}|${config.mode}|${config.targetDate}|${config.targetTimeString}|${config.durationSeconds}|${config.theme}|${isRunning}|${remainingSeconds}|${config.showScripture}|${config.showLogo}`;
       if (key === lastSavedPayloadRef.current) return;
       lastSavedPayloadRef.current = key;
 
@@ -330,7 +374,14 @@ export function ChurchCountdown() {
       return;
     }
 
-    if (config.mode === "target-time") {
+    if (config.mode === "event-date") {
+      const secs = config.targetDate
+        ? calculateSecondsUntilDate(config.targetDate)
+        : calculateSecondsUntilTarget(config.targetTimeString);
+      setRemainingSeconds(secs);
+      setInitialTotalSeconds(Math.max(secs, 1));
+      chimePlayedRef.current = secs <= 0;
+    } else if (config.mode === "target-time") {
       const secs = calculateSecondsUntilTarget(config.targetTimeString);
       setRemainingSeconds(secs);
       setInitialTotalSeconds(Math.max(secs, 1));
@@ -340,17 +391,39 @@ export function ChurchCountdown() {
       setInitialTotalSeconds(Math.max(config.durationSeconds, 1));
       chimePlayedRef.current = false;
     }
-  }, [isMounted, config.mode, config.targetTimeString, config.durationSeconds]);
+  }, [isMounted, config.mode, config.targetDate, config.targetTimeString, config.durationSeconds]);
 
   // 1-second interval ticker
   useEffect(() => {
     if (!isMounted || !isRunning) return;
 
     const interval = setInterval(() => {
-      if (config.mode === "target-time") {
-        const secs = calculateSecondsUntilTarget(config.targetTimeString);
+      if (config.mode === "event-date") {
+        // Event/Date countdown: counts down to zero and stays at zero. Does NOT show time up.
+        const secs = config.targetDate
+          ? calculateSecondsUntilDate(config.targetDate)
+          : calculateSecondsUntilTarget(config.targetTimeString);
 
         // Sound triggers
+        if (config.soundEnabled) {
+          if (secs > 0 && secs <= 5 && lastSecondRef.current !== secs) {
+            audioSynth.playUrgentTick();
+            lastSecondRef.current = secs;
+          } else if (secs === 0 && !chimePlayedRef.current) {
+            audioSynth.playServiceGong();
+            chimePlayedRef.current = true;
+          }
+        }
+
+        if (secs <= 0) {
+          setRemainingSeconds(0);
+          setIsRunning(false);
+        } else {
+          setRemainingSeconds(secs);
+        }
+      } else if (config.mode === "target-time") {
+        const secs = calculateSecondsUntilTarget(config.targetTimeString);
+
         if (config.soundEnabled) {
           if (secs > 0 && secs <= 5 && lastSecondRef.current !== secs) {
             audioSynth.playUrgentTick();
@@ -368,7 +441,7 @@ export function ChurchCountdown() {
           setRemainingSeconds(secs);
         }
       } else {
-        // Duration mode
+        // Church activity timer (mode: "activity" or "duration"): counts down to zero and triggers time up
         setRemainingSeconds((prev) => {
           const next = prev - 1;
 
@@ -392,7 +465,15 @@ export function ChurchCountdown() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isMounted, isRunning, config.mode, config.targetTimeString, config.soundEnabled, config.overtimeEnabled]);
+  }, [
+    isMounted,
+    isRunning,
+    config.mode,
+    config.targetDate,
+    config.targetTimeString,
+    config.soundEnabled,
+    config.overtimeEnabled,
+  ]);
 
   // Fullscreen event listener
   useEffect(() => {
@@ -490,6 +571,83 @@ export function ChurchCountdown() {
     });
   };
 
+  const handleSelectActivityTimer = (durationMinutes: number = 30, activityTitle?: string) => {
+    const totalSecs = Math.max(1, durationMinutes * 60);
+    chimePlayedRef.current = false;
+    lastSecondRef.current = -1;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
+        localStorage.setItem(COUNTDOWN_RUNNING_KEY, "true");
+        localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(totalSecs));
+      } catch {}
+    }
+    setRemainingSeconds(totalSecs);
+    setInitialTotalSeconds(totalSecs);
+    setIsRunning(true);
+    setConfig((prev) => ({
+      ...prev,
+      mode: "activity",
+      durationSeconds: totalSecs,
+      title: activityTitle || (prev.mode === "event-date" ? "SERMON / MESSAGE" : prev.title),
+      subtitle: "SANCTUARY ACTIVITY COUNTDOWN",
+    }));
+    toast.success(`Church Activity Timer: ${durationMinutes} mins (Shows 'Time Up' at zero)`);
+  };
+
+  const handleSelectEventDateTimer = (targetIso?: string, eventTitle?: string) => {
+    const dateToUse = targetIso || config.targetDate || getNextSundayServiceDate();
+    const secs = calculateSecondsUntilDate(dateToUse);
+    chimePlayedRef.current = secs <= 0;
+    lastSecondRef.current = -1;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
+        localStorage.removeItem(COUNTDOWN_SECS_KEY);
+        localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(secs > 0));
+      } catch {}
+    }
+    setRemainingSeconds(secs);
+    setInitialTotalSeconds(Math.max(secs, 1));
+    setIsRunning(secs > 0);
+    setConfig((prev) => ({
+      ...prev,
+      mode: "event-date",
+      targetDate: dateToUse,
+      title:
+        eventTitle ||
+        (prev.mode === "activity" || prev.mode === "duration" ? "SUNDAY CELEBRATION SERVICE" : prev.title),
+      subtitle: "COUNTDOWN TO SERVICE",
+    }));
+    toast.success("Event & Date Countdown Active (Stays at zero, no 'Time Up')");
+  };
+
+  const handleSetCustomEventDate = (isoString: string, customTitle?: string, autoStart: boolean = true) => {
+    const secs = calculateSecondsUntilDate(isoString);
+    chimePlayedRef.current = secs <= 0;
+    lastSecondRef.current = -1;
+    const shouldRun = autoStart && secs > 0;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
+        localStorage.removeItem(COUNTDOWN_SECS_KEY);
+        localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(shouldRun));
+      } catch {}
+    }
+    setRemainingSeconds(secs);
+    setInitialTotalSeconds(Math.max(secs, 1));
+    setIsRunning(shouldRun);
+    setConfig((prev) => ({
+      ...prev,
+      mode: "event-date",
+      targetDate: isoString,
+      ...(customTitle ? { title: customTitle.toUpperCase() } : {}),
+      subtitle: "COUNTDOWN TO PROGRAMME",
+    }));
+    setCustomTimerOpen(false);
+    toast.success(`Target Event Date Set`);
+  };
+
   const handleReset = () => {
     chimePlayedRef.current = false;
     lastSecondRef.current = -1;
@@ -497,20 +655,26 @@ export function ChurchCountdown() {
       try {
         localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
         localStorage.setItem(COUNTDOWN_RUNNING_KEY, "true");
-      } catch {
-        // Ignore
-      }
+      } catch {}
     }
-    if (config.mode === "target-time") {
+    if (config.mode === "event-date") {
+      const secs = config.targetDate
+        ? calculateSecondsUntilDate(config.targetDate)
+        : calculateSecondsUntilTarget(config.targetTimeString);
+      setRemainingSeconds(secs);
+      setInitialTotalSeconds(Math.max(secs, 1));
+      setIsRunning(secs > 0);
+    } else if (config.mode === "target-time") {
       const secs = calculateSecondsUntilTarget(config.targetTimeString);
       setRemainingSeconds(secs);
       setInitialTotalSeconds(Math.max(secs, 1));
+      setIsRunning(secs > 0);
     } else {
       setRemainingSeconds(config.durationSeconds);
       setInitialTotalSeconds(Math.max(config.durationSeconds, 1));
+      setIsRunning(true);
     }
-    setIsRunning(true);
-    toast.info("Timer Reset to Initial Time");
+    toast.info("Timer Reset to Initial Target");
   };
 
   const handleResetToZero = () => {
@@ -524,15 +688,14 @@ export function ChurchCountdown() {
         localStorage.setItem(COUNTDOWN_RUNNING_KEY, "false");
         localStorage.setItem(COUNTDOWN_SECS_KEY, "0");
         localStorage.setItem(COUNTDOWN_ZEROED_KEY, "true");
-      } catch {
-        // Ignore
-      }
+      } catch {}
     }
-    setConfig((prev) => ({
-      ...prev,
-      mode: "duration",
-      durationSeconds: 0,
-    }));
+    if (config.mode === "activity" || config.mode === "duration") {
+      setConfig((prev) => ({
+        ...prev,
+        durationSeconds: 0,
+      }));
+    }
     toast.info("Timer Reset to 00:00:00 (Stopped)");
   };
 
@@ -547,21 +710,19 @@ export function ChurchCountdown() {
         }
         localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(autoStart));
         localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(totalSecs));
-      } catch {
-        // Ignore
-      }
+      } catch {}
     }
     setRemainingSeconds(totalSecs);
     setInitialTotalSeconds(Math.max(totalSecs, 1));
     setIsRunning(autoStart);
     setConfig((prev) => ({
       ...prev,
-      mode: "duration",
+      mode: "activity",
       durationSeconds: totalSecs,
     }));
     setCustomTimerOpen(false);
     toast.success(
-      `Custom Timer Set: ${minutes}m ${seconds > 0 ? `${seconds}s` : ""} ${autoStart ? "(Running)" : "(Ready)"}`
+      `Activity Timer Set: ${minutes}m ${seconds > 0 ? `${seconds}s` : ""} ${autoStart ? "(Running)" : "(Ready)"}`
     );
   };
 
@@ -574,9 +735,7 @@ export function ChurchCountdown() {
         localStorage.removeItem(COUNTDOWN_ZEROED_KEY);
         localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(autoStart));
         localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(secs));
-      } catch {
-        // Ignore
-      }
+      } catch {}
     }
     setRemainingSeconds(secs);
     setInitialTotalSeconds(Math.max(secs, 1));
@@ -606,12 +765,16 @@ export function ChurchCountdown() {
     toast.success(`Color Theme Applied: ${themeName}`);
   };
 
-  // Compute breakdown: hours, minutes, seconds, overtime
-  const isOvertime = remainingSeconds < 0;
-  const absSeconds = Math.abs(remainingSeconds);
-  const hours = Math.floor(absSeconds / 3600);
-  const minutes = Math.floor((absSeconds % 3600) / 60);
-  const seconds = absSeconds % 60;
+  // Timer mode flags
+  const isActivityTimer = config.mode === "activity" || config.mode === "duration";
+  const isEventDateTimer = config.mode === "event-date" || config.mode === "target-time";
+
+  // Compute breakdown: days, hours, minutes, seconds, overtime
+  const { days, hours, minutes, seconds, isZero } = useMemo(
+    () => calculateTimeBreakdown(remainingSeconds),
+    [remainingSeconds]
+  );
+  const isOvertime = isActivityTimer && remainingSeconds < 0;
 
   // Percentage for circular progress ring (0 to 1)
   const progressRatio = useMemo(() => {
@@ -836,39 +999,123 @@ export function ChurchCountdown() {
       </header>
 
       {/* ============================================================== */}
-      {/* 2. PROGRAMME COLOR PRESETS QUICK BAR (Visible when not in Stage Mode) */}
+      {/* ============================================================== */}
+      {/* 2. DUAL-TIMER SELECTOR SEGMENTED CONTROL (Only One Runs At A Time) */}
       {/* ============================================================== */}
       {!config.stageMode && (
-        <div className="relative z-10 max-w-6xl mx-auto w-full pt-4 pb-2">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider shrink-0 flex items-center gap-1 pr-1">
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Color Presets:</span>
-            </span>
-            {COUNTDOWN_COLOR_PRESETS.map((p) => {
-              const themeId = p.theme;
-              const isSelected = config.theme === themeId;
-              const themeAccent = COUNTDOWN_THEMES[themeId]?.primaryAccent || "#D9A441";
-              return (
+        <div className="relative z-10 max-w-4xl mx-auto w-full px-4 pt-3 pb-2">
+          <div className="grid grid-cols-2 p-1.5 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-xl shadow-2xl">
+            {/* Tab 1: Church Sanctuary Activity Timer */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectActivityTimer(Math.max(1, Math.floor((config.durationSeconds || 1800) / 60)))
+              }
+              className={`py-3 px-3 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 cursor-pointer ${
+                isActivityTimer
+                  ? "bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-lg shadow-amber-500/25 ring-1 ring-amber-400"
+                  : "text-white/70 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Clock className="w-4 h-4 shrink-0" />
+                <span className="tracking-wide">Church Activity Timer</span>
+              </div>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  isActivityTimer ? "bg-black/20 text-black" : "bg-white/10 text-white/50"
+                }`}
+              >
+                Shows &ldquo;Time Up&rdquo;
+              </span>
+            </button>
+
+            {/* Tab 2: Event & Date Countdown */}
+            <button
+              type="button"
+              onClick={() => handleSelectEventDateTimer()}
+              className={`py-3 px-3 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 cursor-pointer ${
+                isEventDateTimer
+                  ? "bg-gradient-to-r from-emerald-400 to-teal-500 text-black shadow-lg shadow-emerald-500/25 ring-1 ring-emerald-400"
+                  : "text-white/70 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Calendar className="w-4 h-4 shrink-0" />
+                <span className="tracking-wide">Event & Date Countdown</span>
+              </div>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  isEventDateTimer ? "bg-black/20 text-black" : "bg-white/10 text-white/50"
+                }`}
+              >
+                Stays at Zero
+              </span>
+            </button>
+          </div>
+
+          {/* Contextual Quick Presets Bar for Active Timer */}
+          <div className="mt-2.5 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {isActivityTimer ? (
+              <>
+                <span className="text-[11px] font-bold text-amber-400/80 uppercase tracking-wider shrink-0 flex items-center gap-1 pr-1">
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>Activity Presets:</span>
+                </span>
+                {ACTIVITY_PRESETS.map((act) => {
+                  const isCur =
+                    config.mode === "activity" && config.durationSeconds === act.durationMinutes * 60;
+                  return (
+                    <button
+                      key={act.id}
+                      type="button"
+                      onClick={() => handleSelectActivityTimer(act.durationMinutes, act.name)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 border transition cursor-pointer flex items-center gap-1.5 ${
+                        isCur
+                          ? "bg-amber-400 text-black border-amber-400 shadow-md font-black"
+                          : "bg-white/[0.04] border-white/10 text-white/80 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <span>{getPresetIcon(act.iconName)}</span>
+                      <span>{act.name}</span>
+                      <span className="opacity-75">({act.durationMinutes}m)</span>
+                    </button>
+                  );
+                })}
+              </>
+            ) : (
+              <>
+                <span className="text-[11px] font-bold text-emerald-400/80 uppercase tracking-wider shrink-0 flex items-center gap-1 pr-1">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Quick Date Presets:</span>
+                </span>
+                {EVENT_DATE_PRESETS.map((ev) => (
+                  <button
+                    key={ev.id}
+                    type="button"
+                    onClick={() => {
+                      const iso = ev.getTargetDate();
+                      handleSelectEventDateTimer(iso, ev.name);
+                    }}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 border bg-white/[0.04] border-white/10 text-white/80 hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:text-emerald-300 transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>{getPresetIcon(ev.iconName)}</span>
+                    <span>{ev.name}</span>
+                  </button>
+                ))}
                 <button
-                  key={p.id}
                   type="button"
-                  onClick={() => handleApplyColorTheme(p.theme, p.name)}
-                  title={`Apply ${p.name} theme colors (keeps time and title)`}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 border transition flex items-center gap-1.5 ${
-                    isSelected
-                      ? "bg-amber-400/20 border-amber-400 text-amber-300 shadow-sm ring-1 ring-amber-400/30"
-                      : "bg-white/[0.04] border-white/10 text-white/80 hover:bg-white/10 hover:text-white"
-                  }`}
+                  onClick={() => {
+                    setTimerDialogTab("event-date");
+                    setCustomTimerOpen(true);
+                  }}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 border bg-emerald-500/15 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 transition cursor-pointer flex items-center gap-1"
                 >
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: themeAccent }}
-                  />
-                  <span>{p.name}</span>
+                  <Calendar className="w-3 h-3" />
+                  <span>Pick Date & Time...</span>
                 </button>
-              );
-            })}
+              </>
+            )}
           </div>
         </div>
       )}
@@ -887,12 +1134,14 @@ export function ChurchCountdown() {
                   ? "#EF4444"
                   : remainingSeconds <= 60
                   ? "#F59E0B"
-                  : currentTheme.primaryAccent,
+                  : isActivityTimer
+                  ? currentTheme.primaryAccent
+                  : "#10B981",
               }}
             />
             <span
               className="text-xs font-black tracking-widest uppercase"
-              style={{ color: currentTheme.primaryAccent }}
+              style={{ color: isActivityTimer ? currentTheme.primaryAccent : "#34D399" }}
             >
               {config.subtitle}
             </span>
@@ -939,46 +1188,61 @@ export function ChurchCountdown() {
           )}
         </div>
 
-        {/* OVERTIME BADGE ALERT */}
-        {isOvertime && (
-          <div className="mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/20 border border-rose-500/50 text-rose-300 font-extrabold text-sm sm:text-base animate-pulse">
-            <span>⚠️ SERVICE IN SESSION / OVERTIME</span>
+        {/* STATUS BANNER 1: CHURCH ACTIVITY TIMER - TIME UP (Prominent Alert) */}
+        {isActivityTimer && remainingSeconds <= 0 && (
+          <div className="mb-6 px-8 py-4 rounded-3xl bg-rose-600/30 border-2 border-rose-500 text-rose-200 font-black text-2xl sm:text-4xl animate-pulse shadow-[0_0_50px_rgba(244,63,94,0.4)] flex items-center justify-center gap-3">
+            <span>⏰ TIME UP · PLEASE CONCLUDE</span>
           </div>
         )}
 
-        {/* TIME'S UP CELEBRATORY BANNER (When 00:00:00 and overtime disabled) */}
-        {!config.overtimeEnabled && remainingSeconds <= 0 && (
-          <div className="mb-6 px-6 py-3 rounded-2xl bg-amber-500/20 border border-amber-400 text-amber-200 font-black text-xl sm:text-2xl animate-bounce">
-            ✨ WELCOME TO CHURCH · SERVICE HAS BEGUN ✨
+        {/* STATUS BANNER 2: ACTIVITY OVERTIME BADGE */}
+        {isActivityTimer && isOvertime && (
+          <div className="mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/20 border border-rose-500/50 text-rose-300 font-extrabold text-sm sm:text-base animate-pulse">
+            <span>
+              ⚠️ ACTIVITY OVERTIME: +{formatTwoDigits(minutes)}:{formatTwoDigits(seconds)}
+            </span>
+          </div>
+        )}
+
+        {/* STATUS BANNER 3: EVENT & DATE COUNTDOWN - ARRIVAL BANNER (Does NOT show Time Up, stays at 0) */}
+        {isEventDateTimer && remainingSeconds <= 0 && (
+          <div className="mb-6 px-8 py-3.5 rounded-3xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-200 font-black text-xl sm:text-3xl animate-bounce shadow-[0_0_40px_rgba(16,185,129,0.3)]">
+            ✨ THE APPOINTED TIME HAS ARRIVED · WELCOME TO SERVICE ✨
           </div>
         )}
 
         {/* ============================================================== */}
-        {/* MASSIVE 2026 ARCHITECTURAL TIME CARDS (Click to Edit Timer)    */}
+        {/* ARCHITECTURAL TIME CARDS (Click any card or press T)          */}
         {/* ============================================================== */}
         {!config.stageMode && (
           <button
             type="button"
-            onClick={() => setCustomTimerOpen(true)}
+            onClick={() => {
+              setTimerDialogTab(isActivityTimer ? "activity" : "event-date");
+              setCustomTimerOpen(true);
+            }}
             title="Click any card or press 'T' to set custom timer"
             className="group mb-2 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.05] hover:bg-white/10 border border-white/10 text-xs font-semibold text-white/70 hover:text-white transition shadow-sm cursor-pointer"
           >
             <Clock className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
-            <span>Click time cards or press &apos;T&apos; to set custom timer · &apos;Z&apos; for 00:00</span>
+            <span>Click cards or press &apos;T&apos; to configure · &apos;Z&apos; for 00:00</span>
           </button>
         )}
 
-        <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 my-2">
-          {/* Hours Card (only shown if > 0 or in target time mode) */}
-          {(hours > 0 || config.mode === "target-time") && (
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 md:gap-6 my-2">
+          {/* Days Card (Displayed for Event Date Countdown when days > 0) */}
+          {isEventDateTimer && days > 0 && (
             <>
               <div
-                onClick={() => setCustomTimerOpen(true)}
-                title="Click to set custom timer (Press T)"
+                onClick={() => {
+                  setTimerDialogTab("event-date");
+                  setCustomTimerOpen(true);
+                }}
+                title="Click to configure date countdown (Press T)"
                 className="flex flex-col items-center cursor-pointer group"
               >
                 <div
-                  className="w-24 sm:w-36 md:w-48 lg:w-56 h-32 sm:h-44 md:h-56 lg:h-64 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] group-hover:scale-[1.02] group-hover:border-amber-400/60 relative overflow-hidden"
+                  className="w-20 sm:w-28 md:w-36 lg:w-44 h-28 sm:h-36 md:h-48 lg:h-56 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] group-hover:scale-[1.02] group-hover:border-emerald-400/60 relative overflow-hidden"
                   style={{
                     backgroundColor: "rgba(255, 255, 255, 0.04)",
                     borderColor: currentTheme.borderColor,
@@ -989,14 +1253,63 @@ export function ChurchCountdown() {
                     style={{ borderColor: "rgba(255, 255, 255, 0.06)" }}
                   />
                   <span
-                    className="font-black text-5xl sm:text-7xl md:text-8xl lg:text-9xl tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)]"
+                    className="font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)]"
                     style={{ color: currentTheme.digitColor }}
+                  >
+                    {formatTwoDigits(days)}
+                  </span>
+                </div>
+                <span
+                  className="mt-3 text-xs sm:text-sm font-black tracking-widest uppercase"
+                  style={{ color: currentTheme.labelColor }}
+                >
+                  DAYS
+                </span>
+              </div>
+
+              {/* Colon Separator */}
+              <div className="flex flex-col justify-center items-center gap-2 sm:gap-3 pb-6 sm:pb-10 text-xl sm:text-3xl text-white/40 font-black">
+                <div className="w-1.5 sm:w-2.5 h-1.5 sm:h-2.5 rounded-full bg-white/60 animate-pulse" />
+                <div className="w-1.5 sm:w-2.5 h-1.5 sm:h-2.5 rounded-full bg-white/60 animate-pulse" />
+              </div>
+            </>
+          )}
+
+          {/* Hours Card (Displayed if hours > 0 or in event-date mode) */}
+          {(hours > 0 || isEventDateTimer || config.mode === "target-time") && (
+            <>
+              <div
+                onClick={() => {
+                  setTimerDialogTab(isActivityTimer ? "activity" : "event-date");
+                  setCustomTimerOpen(true);
+                }}
+                title="Click to set custom timer (Press T)"
+                className="flex flex-col items-center cursor-pointer group"
+              >
+                <div
+                  className="w-20 sm:w-28 md:w-36 lg:w-44 h-28 sm:h-36 md:h-48 lg:h-56 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] group-hover:scale-[1.02] group-hover:border-amber-400/60 relative overflow-hidden"
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.04)",
+                    borderColor:
+                      isActivityTimer && remainingSeconds <= 0 ? "#EF4444" : currentTheme.borderColor,
+                  }}
+                >
+                  <div
+                    className="absolute inset-x-0 top-0 h-1/2 bg-white/[0.03] border-b"
+                    style={{ borderColor: "rgba(255, 255, 255, 0.06)" }}
+                  />
+                  <span
+                    className="font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)]"
+                    style={{
+                      color:
+                        isActivityTimer && remainingSeconds <= 0 ? "#F87171" : currentTheme.digitColor,
+                    }}
                   >
                     {formatTwoDigits(hours)}
                   </span>
                 </div>
                 <span
-                  className="mt-3 text-xs sm:text-sm md:text-base font-black tracking-widest uppercase"
+                  className="mt-3 text-xs sm:text-sm font-black tracking-widest uppercase"
                   style={{ color: currentTheme.labelColor }}
                 >
                   HOURS
@@ -1004,24 +1317,32 @@ export function ChurchCountdown() {
               </div>
 
               {/* Colon Separator */}
-              <div className="flex flex-col justify-center items-center gap-3 sm:gap-4 pb-8 sm:pb-12 text-2xl sm:text-4xl md:text-6xl text-white/40 font-black">
-                <div className="w-2 sm:w-3.5 h-2 sm:h-3.5 rounded-full bg-white/60 animate-pulse" />
-                <div className="w-2 sm:w-3.5 h-2 sm:h-3.5 rounded-full bg-white/60 animate-pulse" />
+              <div className="flex flex-col justify-center items-center gap-2 sm:gap-3 pb-6 sm:pb-10 text-xl sm:text-3xl text-white/40 font-black">
+                <div className="w-1.5 sm:w-2.5 h-1.5 sm:h-2.5 rounded-full bg-white/60 animate-pulse" />
+                <div className="w-1.5 sm:w-2.5 h-1.5 sm:h-2.5 rounded-full bg-white/60 animate-pulse" />
               </div>
             </>
           )}
 
           {/* Minutes Card */}
           <div
-            onClick={() => setCustomTimerOpen(true)}
+            onClick={() => {
+              setTimerDialogTab(isActivityTimer ? "activity" : "event-date");
+              setCustomTimerOpen(true);
+            }}
             title="Click to set custom timer (Press T)"
             className="flex flex-col items-center cursor-pointer group"
           >
             <div
-              className="w-24 sm:w-36 md:w-48 lg:w-56 h-32 sm:h-44 md:h-56 lg:h-64 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] group-hover:scale-[1.02] group-hover:border-amber-400/60 relative overflow-hidden"
+              className={`${
+                isActivityTimer && hours === 0
+                  ? "w-28 sm:w-44 md:w-56 lg:w-64 h-36 sm:h-52 md:h-64 lg:h-72"
+                  : "w-20 sm:w-28 md:w-36 lg:w-44 h-28 sm:h-36 md:h-48 lg:h-56"
+              } rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] group-hover:scale-[1.02] group-hover:border-amber-400/60 relative overflow-hidden`}
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.04)",
-                borderColor: currentTheme.borderColor,
+                borderColor:
+                  isActivityTimer && remainingSeconds <= 0 ? "#EF4444" : currentTheme.borderColor,
               }}
             >
               <div
@@ -1029,14 +1350,21 @@ export function ChurchCountdown() {
                 style={{ borderColor: "rgba(255, 255, 255, 0.06)" }}
               />
               <span
-                className="font-black text-5xl sm:text-7xl md:text-8xl lg:text-9xl tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)]"
-                style={{ color: currentTheme.digitColor }}
+                className={`font-black ${
+                  isActivityTimer && hours === 0
+                    ? "text-6xl sm:text-8xl md:text-9xl lg:text-[10rem]"
+                    : "text-4xl sm:text-6xl md:text-7xl lg:text-8xl"
+                } tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)]`}
+                style={{
+                  color:
+                    isActivityTimer && remainingSeconds <= 0 ? "#F87171" : currentTheme.digitColor,
+                }}
               >
                 {formatTwoDigits(minutes)}
               </span>
             </div>
             <span
-              className="mt-3 text-xs sm:text-sm md:text-base font-black tracking-widest uppercase"
+              className="mt-3 text-xs sm:text-sm font-black tracking-widest uppercase"
               style={{ color: currentTheme.labelColor }}
             >
               MINUTES
@@ -1044,23 +1372,32 @@ export function ChurchCountdown() {
           </div>
 
           {/* Colon Separator */}
-          <div className="flex flex-col justify-center items-center gap-3 sm:gap-4 pb-8 sm:pb-12 text-2xl sm:text-4xl md:text-6xl text-white/40 font-black">
-            <div className="w-2 sm:w-3.5 h-2 sm:h-3.5 rounded-full bg-white/60 animate-pulse" />
-            <div className="w-2 sm:w-3.5 h-2 sm:h-3.5 rounded-full bg-white/60 animate-pulse" />
+          <div className="flex flex-col justify-center items-center gap-2 sm:gap-3 pb-6 sm:pb-10 text-xl sm:text-3xl text-white/40 font-black">
+            <div className="w-1.5 sm:w-2.5 h-1.5 sm:h-2.5 rounded-full bg-white/60 animate-pulse" />
+            <div className="w-1.5 sm:w-2.5 h-1.5 sm:h-2.5 rounded-full bg-white/60 animate-pulse" />
           </div>
 
           {/* Seconds Card */}
           <div
-            onClick={() => setCustomTimerOpen(true)}
+            onClick={() => {
+              setTimerDialogTab(isActivityTimer ? "activity" : "event-date");
+              setCustomTimerOpen(true);
+            }}
             title="Click to set custom timer (Press T)"
             className="flex flex-col items-center cursor-pointer group"
           >
             <div
-              className="w-24 sm:w-36 md:w-48 lg:w-56 h-32 sm:h-44 md:h-56 lg:h-64 rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] group-hover:scale-[1.02] group-hover:border-amber-400/60 relative overflow-hidden"
+              className={`${
+                isActivityTimer && hours === 0
+                  ? "w-28 sm:w-44 md:w-56 lg:w-64 h-36 sm:h-52 md:h-64 lg:h-72"
+                  : "w-20 sm:w-28 md:w-36 lg:w-44 h-28 sm:h-36 md:h-48 lg:h-56"
+              } rounded-3xl flex items-center justify-center border backdrop-blur-2xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7)] group-hover:scale-[1.02] group-hover:border-amber-400/60 relative overflow-hidden`}
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderColor:
-                  remainingSeconds <= 10 && remainingSeconds > 0
+                  isActivityTimer && remainingSeconds <= 0
+                    ? "#EF4444"
+                    : remainingSeconds <= 10 && remainingSeconds > 0
                     ? "#F59E0B"
                     : currentTheme.borderColor,
               }}
@@ -1070,10 +1407,16 @@ export function ChurchCountdown() {
                 style={{ borderColor: "rgba(255, 255, 255, 0.06)" }}
               />
               <span
-                className="font-black text-5xl sm:text-7xl md:text-8xl lg:text-9xl tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)]"
+                className={`font-black ${
+                  isActivityTimer && hours === 0
+                    ? "text-6xl sm:text-8xl md:text-9xl lg:text-[10rem]"
+                    : "text-4xl sm:text-6xl md:text-7xl lg:text-8xl"
+                } tracking-tighter drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)]`}
                 style={{
                   color:
-                    remainingSeconds <= 10 && remainingSeconds > 0
+                    isActivityTimer && remainingSeconds <= 0
+                      ? "#F87171"
+                      : remainingSeconds <= 10 && remainingSeconds > 0
                       ? "#FDE047"
                       : currentTheme.digitColor,
                 }}
@@ -1082,7 +1425,7 @@ export function ChurchCountdown() {
               </span>
             </div>
             <span
-              className="mt-3 text-xs sm:text-sm md:text-base font-black tracking-widest uppercase"
+              className="mt-3 text-xs sm:text-sm font-black tracking-widest uppercase"
               style={{ color: currentTheme.labelColor }}
             >
               SECONDS
@@ -1175,61 +1518,85 @@ export function ChurchCountdown() {
                 <RotateCcw className="w-4 h-4" />
               </button>
 
-              {/* Quick Time Bumps (+1m, +5m, -1m) */}
-              <div className="hidden sm:flex items-center gap-1 pl-2 border-l border-white/15">
-                <button
-                  type="button"
-                  onClick={() => handleAdjustMinutes(-1)}
-                  className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 text-xs font-bold transition flex items-center gap-1"
-                >
-                  <Minus className="w-3 h-3" />
-                  <span>1m</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAdjustMinutes(1)}
-                  className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 text-xs font-bold transition flex items-center gap-1"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>1m</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAdjustMinutes(5)}
-                  className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 text-xs font-bold transition flex items-center gap-1"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>5m</span>
-                </button>
-              </div>
+              {/* Quick Adjustment Controls for Active Mode */}
+              {isActivityTimer ? (
+                <>
+                  {/* Quick Time Bumps (+1m, +5m, -1m) */}
+                  <div className="hidden sm:flex items-center gap-1 pl-2 border-l border-white/15">
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustMinutes(-1)}
+                      className="px-2 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <Minus className="w-3 h-3" />
+                      <span>1m</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustMinutes(1)}
+                      className="px-2 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>1m</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustMinutes(5)}
+                      className="px-2 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>5m</span>
+                    </button>
+                  </div>
 
-              {/* Quick Duration Chips Bar */}
-              <div className="hidden lg:flex items-center gap-1 pl-2 border-l border-white/15">
-                {[3, 5, 10, 15, 20, 30].map((mins) => (
-                  <button
-                    key={mins}
-                    type="button"
-                    onClick={() => handleSetCustomDuration(mins, 0, true)}
-                    className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition ${
-                      config.mode === "duration" && config.durationSeconds === mins * 60
-                        ? "bg-amber-400 text-black border-amber-400 shadow-sm"
-                        : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10 hover:text-white"
-                    }`}
-                  >
-                    {mins}m
-                  </button>
-                ))}
-              </div>
+                  {/* Quick Duration Chips Bar */}
+                  <div className="hidden lg:flex items-center gap-1 pl-2 border-l border-white/15">
+                    {[5, 10, 15, 20, 30, 45].map((mins) => (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => handleSelectActivityTimer(mins)}
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                          config.durationSeconds === mins * 60
+                            ? "bg-amber-400 text-black border-amber-400 shadow-sm"
+                            : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        {mins}m
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="hidden sm:flex items-center gap-1.5 pl-2 border-l border-white/15">
+                  {EVENT_DATE_PRESETS.slice(0, 3).map((ev) => (
+                    <button
+                      key={ev.id}
+                      type="button"
+                      onClick={() => {
+                        const iso = ev.getTargetDate();
+                        handleSelectEventDateTimer(iso, ev.name);
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl text-xs font-bold border bg-white/5 border-white/10 hover:bg-emerald-500/20 hover:border-emerald-500/30 text-white/80 hover:text-emerald-300 transition cursor-pointer"
+                    >
+                      {ev.name}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Set Custom Timer Trigger Button */}
               <button
                 type="button"
-                onClick={() => setCustomTimerOpen(true)}
-                title="Set custom timer or target clock (Press T)"
-                className="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-400/20 to-amber-500/20 hover:from-amber-400/30 hover:to-amber-500/30 border border-amber-400/40 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition shadow-sm ml-1"
+                onClick={() => {
+                  setTimerDialogTab(isActivityTimer ? "activity" : "event-date");
+                  setCustomTimerOpen(true);
+                }}
+                title="Configure active timer (Press T)"
+                className="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-400/20 to-amber-500/20 hover:from-amber-400/30 hover:to-amber-500/30 border border-amber-400/40 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition shadow-sm ml-1 cursor-pointer"
               >
                 <Clock className="w-3.5 h-3.5 text-amber-400" />
-                <span>Custom Timer</span>
+                <span>Configure Timer</span>
               </button>
             </div>
 
@@ -1238,9 +1605,13 @@ export function ChurchCountdown() {
               <span className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-amber-400" />
                 <span>
-                  {config.mode === "target-time"
-                    ? `Target: ${config.targetTimeString} Prompt`
-                    : `Duration: ${Math.floor(config.durationSeconds / 60)} min`}
+                  {isEventDateTimer
+                    ? `Date Target: ${
+                        config.targetDate
+                          ? formatToLocalIso(new Date(config.targetDate)).slice(0, 16).replace("T", " ")
+                          : config.targetTimeString
+                      }`
+                    : `Activity: ${Math.floor(config.durationSeconds / 60)} min`}
                 </span>
               </span>
               <span>·</span>
@@ -1333,74 +1704,95 @@ export function ChurchCountdown() {
               {/* 3. Timer Mode & Parameters */}
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-white/70 block">
-                  Countdown Method
+                  Active Countdown Mode (Only One Runs At A Time)
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setConfig((p) => ({ ...p, mode: "target-time" }))}
-                    className={`p-3 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1 ${
-                      config.mode === "target-time"
-                        ? "bg-amber-400/20 border-amber-400 text-amber-300"
+                    onClick={() => {
+                      handleSelectActivityTimer(Math.max(1, Math.floor((config.durationSeconds || 1800) / 60)));
+                    }}
+                    className={`p-3 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1 cursor-pointer ${
+                      isActivityTimer
+                        ? "bg-amber-400/20 border-amber-400 text-amber-300 ring-1 ring-amber-400/30"
                         : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
                     }`}
                   >
-                    <Clock className="w-4 h-4" />
-                    <span>Target Clock Time</span>
-                    <span className="text-[10px] opacity-75">e.g. 8:00 AM Today</span>
+                    <Clock className="w-4 h-4 text-amber-400" />
+                    <span>Church Activity Timer</span>
+                    <span className="text-[10px] text-amber-400/80">Shows &ldquo;Time Up&rdquo;</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setConfig((p) => ({ ...p, mode: "duration" }))}
-                    className={`p-3 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1 ${
-                      config.mode === "duration"
-                        ? "bg-amber-400/20 border-amber-400 text-amber-300"
+                    onClick={() => {
+                      handleSelectEventDateTimer();
+                    }}
+                    className={`p-3 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1 cursor-pointer ${
+                      isEventDateTimer
+                        ? "bg-emerald-500/20 border-emerald-400 text-emerald-300 ring-1 ring-emerald-400/30"
                         : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
                     }`}
                   >
-                    <Sliders className="w-4 h-4" />
-                    <span>Fixed Duration</span>
-                    <span className="text-[10px] opacity-75">e.g. 5 or 10 min timer</span>
+                    <Calendar className="w-4 h-4 text-emerald-400" />
+                    <span>Event & Date Countdown</span>
+                    <span className="text-[10px] text-emerald-400/80">Stays at Zero</span>
                   </button>
                 </div>
 
-                {/* Target Time Picker */}
-                {config.mode === "target-time" ? (
-                  <div className="pt-2">
-                    <label className="text-[11px] font-bold text-white/60 block mb-1">
-                      Set Service Start Clock (24-hour HH:MM)
+                {/* Target Date Picker for Event Date Timer */}
+                {isEventDateTimer ? (
+                  <div className="pt-2 space-y-2">
+                    <label className="text-[11px] font-bold text-white/70 block">
+                      Target Event Date & Time:
                     </label>
                     <input
-                      type="time"
-                      value={config.targetTimeString}
-                      onChange={(e) => setConfig((p) => ({ ...p, targetTimeString: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/15 text-white font-mono text-base focus:border-amber-400 outline-none"
+                      type="datetime-local"
+                      value={config.targetDate ? formatToLocalIso(new Date(config.targetDate)).slice(0, 16) : ""}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const iso = new Date(e.target.value).toISOString();
+                          handleSelectEventDateTimer(iso);
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/15 text-white font-mono text-sm focus:border-emerald-400 outline-none"
                     />
-                  </div>
-                ) : (
-                  /* Duration Slider / Chips */
-                  <div className="pt-2 space-y-2">
-                    <label className="text-[11px] font-bold text-white/60 block">
-                      Quick Duration Presets:
-                    </label>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {[3, 5, 10, 15, 20, 30, 45, 60].map((m) => (
+                    <div className="grid grid-cols-3 gap-1.5 pt-1">
+                      {EVENT_DATE_PRESETS.map((ev) => (
                         <button
-                          key={m}
+                          key={ev.id}
                           type="button"
                           onClick={() => {
-                            setConfig((p) => ({ ...p, durationSeconds: m * 60 }));
-                            setRemainingSeconds(m * 60);
-                            setInitialTotalSeconds(m * 60);
+                            const iso = ev.getTargetDate();
+                            handleSelectEventDateTimer(iso, ev.name);
                           }}
-                          className={`py-1.5 rounded-lg text-xs font-bold border transition ${
-                            config.durationSeconds === m * 60
+                          className="py-1.5 px-2 rounded-lg text-[11px] font-bold border bg-white/5 border-white/10 hover:bg-emerald-500/20 hover:border-emerald-500/30 hover:text-emerald-300 text-white/80 transition cursor-pointer text-center"
+                        >
+                          {ev.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  /* Activity Duration Chips */
+                  <div className="pt-2 space-y-2">
+                    <label className="text-[11px] font-bold text-white/70 block">
+                      Quick Sanctuary Activity Presets:
+                    </label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {ACTIVITY_PRESETS.map((act) => (
+                        <button
+                          key={act.id}
+                          type="button"
+                          onClick={() => handleSelectActivityTimer(act.durationMinutes, act.name)}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition cursor-pointer text-left flex items-center justify-between ${
+                            config.durationSeconds === act.durationMinutes * 60
                               ? "bg-amber-400 text-black border-amber-400"
                               : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10"
                           }`}
                         >
-                          {m}m
+                          <span>{getPresetIcon(act.iconName)} {act.name}</span>
+                          <span className="opacity-75">{act.durationMinutes}m</span>
                         </button>
                       ))}
                     </div>
@@ -1544,44 +1936,73 @@ export function ChurchCountdown() {
             <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-white/5 border border-white/10">
               <button
                 type="button"
-                onClick={() => setTimerDialogTab("duration")}
-                className={`py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 ${
-                  timerDialogTab === "duration"
-                    ? "bg-amber-400 text-black shadow-md"
-                    : "text-white/70 hover:text-white"
-                }`}
-              >
-                <Sliders className="w-3.5 h-3.5" />
-                <span>Fixed Duration (Minutes)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTimerDialogTab("target")}
-                className={`py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 ${
-                  timerDialogTab === "target"
-                    ? "bg-amber-400 text-black shadow-md"
+                onClick={() => setTimerDialogTab("activity")}
+                className={`py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  timerDialogTab === "activity"
+                    ? "bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md ring-1 ring-amber-400"
                     : "text-white/70 hover:text-white"
                 }`}
               >
                 <Clock className="w-3.5 h-3.5" />
-                <span>Target Service Clock</span>
+                <span>Church Activity Timer</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimerDialogTab("event-date")}
+                className={`py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  timerDialogTab === "event-date"
+                    ? "bg-gradient-to-r from-emerald-400 to-teal-500 text-black shadow-md ring-1 ring-emerald-400"
+                    : "text-white/70 hover:text-white"
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Event & Date Countdown</span>
               </button>
             </div>
 
-            {timerDialogTab === "duration" ? (
+            {timerDialogTab === "activity" ? (
               <div className="space-y-4">
-                {/* Quick Minute Chips (One-Click Launch) */}
+                {/* Information Callout */}
+                <div className="px-3 py-2 rounded-xl bg-amber-400/10 border border-amber-400/30 text-amber-200 text-xs flex items-center gap-2">
+                  <span className="text-sm">⏱️</span>
+                  <span>Counts down to zero and displays <strong>&ldquo;TIME UP&rdquo;</strong> to regulate service activities.</span>
+                </div>
+
+                {/* Quick Activity Presets */}
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold uppercase tracking-wider text-amber-400/90 block">
-                    Instant Launch Chips (One-Click Start):
+                    Sanctuary Activity Presets:
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {ACTIVITY_PRESETS.map((act) => (
+                      <button
+                        key={act.id}
+                        type="button"
+                        onClick={() => {
+                          handleSelectActivityTimer(act.durationMinutes, act.name);
+                          setCustomTimerOpen(false);
+                        }}
+                        className="p-2 rounded-xl text-xs font-bold bg-white/[0.06] hover:bg-amber-400 hover:text-black border border-white/10 hover:border-amber-400 transition cursor-pointer flex items-center justify-between"
+                      >
+                        <span>{getPresetIcon(act.iconName)} {act.name}</span>
+                        <span className="opacity-75">{act.durationMinutes}m</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quick Minute Chips (One-Click Launch) */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block">
+                    Quick Minute Chips:
                   </label>
                   <div className="grid grid-cols-5 gap-1.5">
-                    {[1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 40, 45, 60, 75, 90].map((m) => (
+                    {[3, 5, 10, 15, 20, 25, 30, 40, 45, 60].map((m) => (
                       <button
                         key={m}
                         type="button"
                         onClick={() => handleSetCustomDuration(m, 0, true)}
-                        className="py-2 rounded-xl text-xs font-black bg-white/[0.06] hover:bg-amber-400 hover:text-black border border-white/10 hover:border-amber-400 transition"
+                        className="py-1.5 rounded-xl text-xs font-black bg-white/[0.06] hover:bg-amber-400 hover:text-black border border-white/10 hover:border-amber-400 transition cursor-pointer"
                       >
                         {m}m
                       </button>
@@ -1592,7 +2013,7 @@ export function ChurchCountdown() {
                 {/* Exact Minutes & Seconds Custom Input */}
                 <div className="space-y-2 pt-2 border-t border-white/10">
                   <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block">
-                    Custom Duration:
+                    Custom Activity Duration:
                   </label>
                   <div className="flex items-center gap-3">
                     <div className="flex-1">
@@ -1603,7 +2024,7 @@ export function ChurchCountdown() {
                         max="300"
                         value={customMinutes}
                         onChange={(e) => setCustomMinutes(e.target.value)}
-                        placeholder="10"
+                        placeholder="30"
                         className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.07] border border-white/15 text-white font-mono font-bold text-lg text-center focus:border-amber-400 outline-none"
                       />
                     </div>
@@ -1635,7 +2056,7 @@ export function ChurchCountdown() {
                     className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-black text-sm flex items-center justify-center gap-2 transition shadow-lg cursor-pointer"
                   >
                     <Play className="w-4 h-4 fill-current" />
-                    <span>Start Timer Now</span>
+                    <span>Start Activity Timer Now</span>
                   </button>
 
                   <button
@@ -1653,43 +2074,67 @@ export function ChurchCountdown() {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Target Clock Time Input */}
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-amber-400/90 block">
-                    Target Service Time (Today):
-                  </label>
-                  <input
-                    type="time"
-                    value={customTargetTime}
-                    onChange={(e) => setCustomTargetTime(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-white/[0.08] border border-white/20 text-white font-mono font-black text-2xl text-center focus:border-amber-400 outline-none"
-                  />
+                {/* Information Callout */}
+                <div className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 text-xs flex items-center gap-2">
+                  <span className="text-sm">📅</span>
+                  <span>Counts down to zero and <strong>stays at zero</strong>. Does <strong>not</strong> show &ldquo;Time Up&rdquo;.</span>
                 </div>
 
-                {/* Quick Service Clock Times */}
+                {/* Quick Date Presets */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-white/50 block">Quick Service Hours:</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {["08:00", "09:00", "10:00", "11:00", "17:30", "18:00", "22:00", "23:00"].map((clock) => (
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-emerald-400/90 block">
+                    Quick Event Presets:
+                  </label>
+                  <div className="space-y-1.5">
+                    {EVENT_DATE_PRESETS.map((ev) => (
                       <button
-                        key={clock}
+                        key={ev.id}
                         type="button"
-                        onClick={() => handleSetCustomTargetTime(clock, true)}
-                        className="py-2 rounded-xl text-xs font-mono font-bold bg-white/[0.06] hover:bg-amber-400 hover:text-black border border-white/10 hover:border-amber-400 transition cursor-pointer"
+                        onClick={() => {
+                          const iso = ev.getTargetDate();
+                          handleSetCustomEventDate(iso, ev.name, true);
+                        }}
+                        className="w-full p-2.5 rounded-xl text-xs font-bold bg-white/[0.06] hover:bg-emerald-500/20 hover:border-emerald-500/40 border border-white/10 transition cursor-pointer flex items-center justify-between text-left"
                       >
-                        {clock}
+                        <div className="flex items-center gap-2">
+                          <span>{getPresetIcon(ev.iconName)}</span>
+                          <div>
+                            <span className="text-white block font-bold">{ev.name}</span>
+                            <span className="text-[10px] text-white/50 block">{ev.subtitle}</span>
+                          </div>
+                        </div>
+                        <span className="text-[11px] text-emerald-400 font-mono">Launch →</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
+                {/* Exact Target Date & Time Input */}
+                <div className="space-y-2 pt-2 border-t border-white/10">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block">
+                    Set Custom Target Date & Time:
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={customTargetDate ? formatToLocalIso(new Date(customTargetDate)).slice(0, 16) : ""}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setCustomTargetDate(new Date(e.target.value).toISOString());
+                      }
+                    }}
+                    className="w-full px-4 py-3 rounded-2xl bg-white/[0.08] border border-white/20 text-white font-mono font-bold text-base text-center focus:border-emerald-400 outline-none"
+                  />
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => handleSetCustomTargetTime(customTargetTime, true)}
-                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-black text-sm flex items-center justify-center gap-2 transition shadow-lg cursor-pointer"
+                  onClick={() => {
+                    handleSetCustomEventDate(customTargetDate, undefined, true);
+                  }}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 text-black font-black text-sm flex items-center justify-center gap-2 transition shadow-lg cursor-pointer"
                 >
                   <Play className="w-4 h-4 fill-current" />
-                  <span>Set Clock & Start</span>
+                  <span>Launch Date Countdown</span>
                 </button>
               </div>
             )}

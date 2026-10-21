@@ -42,7 +42,8 @@ export function broadcastCountdownState(
   try {
     localStorage.setItem(COUNTDOWN_STORAGE_KEY, JSON.stringify(fullPayload.state));
     localStorage.setItem(COUNTDOWN_RUNNING_KEY, JSON.stringify(fullPayload.isRunning));
-    if (fullPayload.state.mode !== "target-time") {
+    const isDurationBased = fullPayload.state.mode === "activity" || fullPayload.state.mode === "duration";
+    if (isDurationBased) {
       localStorage.setItem(COUNTDOWN_SECS_KEY, JSON.stringify(fullPayload.remainingSeconds));
     } else {
       localStorage.removeItem(COUNTDOWN_SECS_KEY);
