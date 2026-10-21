@@ -1,8 +1,17 @@
 export type AdminRole = "SUPER_ADMIN" | "ADMIN";
 export type Permission =
-  | "SERMONS_MANAGE" | "EVENTS_MANAGE" | "ANNOUNCEMENTS_MANAGE" | "GALLERY_MANAGE"
-  | "HERO_MANAGE" | "CONTACT_INBOX" | "PRAYER_INBOX"
-  | "PROJECTS_MANAGE" | "GIVING_MANAGE";
+  | "SERMONS_MANAGE"
+  | "EVENTS_MANAGE"
+  | "ANNOUNCEMENTS_MANAGE"
+  | "GALLERY_MANAGE"
+  | "HERO_MANAGE"
+  | "CONTACT_INBOX"
+  | "PRAYER_INBOX"
+  | "PROJECTS_MANAGE"
+  | "GIVING_MANAGE"
+  | "TESTIMONIES_MANAGE"
+  | "DEVOTIONS_MANAGE"
+  | "LIVESTREAM_MANAGE";
 
 export type SessionUser = {
   id: string; email: string; name: string; role: AdminRole;

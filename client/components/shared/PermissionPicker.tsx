@@ -12,6 +12,9 @@ const CONTENT_PERMISSIONS = [
   { id: "HERO_MANAGE", label: "Manage Hero" },
   { id: "PROJECTS_MANAGE", label: "Manage Projects" },
   { id: "GIVING_MANAGE", label: "Manage Giving & Contributions" },
+  { id: "TESTIMONIES_MANAGE", label: "Manage Testimonies" },
+  { id: "DEVOTIONS_MANAGE", label: "Manage Daily Devotions" },
+  { id: "LIVESTREAM_MANAGE", label: "Manage Livestream & Countdown" },
 ];
 
 const INBOX_PERMISSIONS = [
