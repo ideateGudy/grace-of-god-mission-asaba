@@ -11,7 +11,12 @@ export class HealthController {
   @PublicRoute()
   @Get()
   async check() {
-    await this.prisma.$queryRaw`SELECT 1`;
-    return { status: 'ok', timestamp: new Date().toISOString() };
+    let dbStatus = 'ok';
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+    } catch (err: any) {
+      dbStatus = `error: ${err?.message || 'db unreachable'}`;
+    }
+    return { status: 'ok', database: dbStatus, timestamp: new Date().toISOString() };
   }
 }
