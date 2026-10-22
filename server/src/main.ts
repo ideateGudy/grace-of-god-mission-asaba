@@ -4,6 +4,7 @@ import { AppModule } from './app.module.js';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
+import { PrismaService } from './prisma/prisma.service.js';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { pinoHttp } from 'pino-http';
 import { randomUUID } from 'node:crypto';
@@ -26,6 +27,16 @@ async function bootstrap() {
       health: '/api/v1/health',
       timestamp: new Date().toISOString(),
     });
+  });
+
+  expressApp.get('/diag', async (_req: any, res: any) => {
+    try {
+      const prisma = app.get(PrismaService);
+      await prisma.$queryRaw`SELECT 1`;
+      res.status(200).json({ status: 'ok', database: 'connected' });
+    } catch (err: any) {
+      res.status(500).json({ status: 'error', database: err?.message || String(err) });
+    }
   });
   
   app.use(helmet());
