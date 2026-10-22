@@ -65,22 +65,35 @@ import Redis from 'ioredis';
           }
         }
 
+        const isStudioUrl = (context: any) => {
+          const req = context.switchToHttp().getRequest();
+          const url = req?.originalUrl || req?.url || req?.path || '';
+          return url.includes('/studio/') || url.includes('/countdown');
+        };
+
         return {
           throttlers: [
             {
               name: 'default',
               ttl: 60000,
               limit: config.get<number>('THROTTLE_LIMIT') ?? 2000,
+              skipIf: isStudioUrl,
             },
-            { name: 'short', ttl: 60000, limit: 20 },
-            { name: 'long', ttl: 3600000, limit: 100 },
+            {
+              name: 'short',
+              ttl: 60000,
+              limit: 600,
+              skipIf: isStudioUrl,
+            },
+            {
+              name: 'long',
+              ttl: 3600000,
+              limit: 5000,
+              skipIf: isStudioUrl,
+            },
           ],
           errorMessage: 'Too many requests. Please wait a moment before trying again.',
-          skipIf: (context: any) => {
-            const req = context.switchToHttp().getRequest();
-            const url = req?.url || '';
-            return url.includes('/studio/') || url.includes('/countdown');
-          },
+          skipIf: isStudioUrl,
           storage,
         };
       },
