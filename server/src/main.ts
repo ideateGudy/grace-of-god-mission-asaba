@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import express from 'express';
 import { AppModule } from './app.module.js';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
@@ -28,9 +29,8 @@ async function bootstrap() {
   });
   
   app.use(helmet());
-  const express = await import('express');
-  app.use(express.default.json({ limit: '10mb' }));
-  app.use(express.default.urlencoded({ limit: '10mb', extended: true }));
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
   app.use(pinoHttp({
     genReqId(request, response) {
       const suppliedId = request.headers['x-request-id'];
