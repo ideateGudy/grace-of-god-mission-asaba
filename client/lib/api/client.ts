@@ -263,17 +263,21 @@ export const api = {
         `/studio/signal/${encodeURIComponent(room)}?since=${since}`,
         { cache: "no-store" }
       ),
-    sendFrame: (room: string, frame: string) =>
+    sendFrame: (room: string, frame: string, label?: string) =>
       fetcher<{ success: boolean }>(`/studio/frame/${encodeURIComponent(room)}`, {
         method: "POST",
-        body: JSON.stringify({ frame }),
+        body: JSON.stringify({ frame, label }),
         cache: "no-store",
       }),
     getFrame: (room: string) =>
-      fetcher<{ data: { frame: string; timestamp: number } | null }>(
+      fetcher<{ data: { frame: string; timestamp: number; label?: string } | null }>(
         `/studio/frame/${encodeURIComponent(room)}`,
         { cache: "no-store" }
       ),
+    getCameras: () =>
+      fetcher<{ data: Array<{ id: string; label: string; lastSeen: number }> }>("/studio/cameras", {
+        cache: "no-store",
+      }),
   },
   giving: {
     getStatus: (reference: string) => fetcher<{ data: { status: string; reference: string; amountKobo: string; projectTitle: string; displayName: string; createdAt: string } }>(`/giving/status/${encodeURIComponent(reference)}`, { cache: "no-store" }),

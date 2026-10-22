@@ -21,6 +21,7 @@ import {
   STUDIO_SYNC_CHANNEL,
   type StudioSyncPayload,
 } from "@/lib/studio/studio-sync";
+import { WebRtcBroadcaster } from "@/lib/studio/studio-webrtc";
 import { api } from "@/lib/api/client";
 
 export function PhoneCameraTransmitter({ roomCode = "ggm-cam" }: { roomCode?: string }) {
@@ -147,18 +148,35 @@ export function PhoneCameraTransmitter({ roomCode = "ggm-cam" }: { roomCode?: st
     };
   }, [facingMode, startCamera]);
 
-  // Real-time Frame Transmitter (Canvas stream to Studio switcher)
+  const broadcasterRef = useRef<WebRtcBroadcaster | null>(null);
+  const [webrtcState, setWebrtcState] = useState<string>("disconnected");
+  const isSendingFrameRef = useRef<boolean>(false);
+
+  // Real-time WebRTC broadcaster + High-Frequency Frame Transmitter fallback
   useEffect(() => {
-    if (!cameraActive) {
+    if (!cameraActive || !streamRef.current) {
       if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+      broadcasterRef.current?.stop();
+      broadcasterRef.current = null;
       return;
     }
 
+    // 1. Initialize WebRTC Broadcaster (Zero-Latency P2P)
+    const broadcaster = new WebRtcBroadcaster(roomCode);
+    broadcaster.onStateChange = (state) => {
+      setWebrtcState(state);
+    };
+    broadcaster.start(streamRef.current).catch((err) => {
+      console.warn("WebRTC broadcaster start error:", err);
+    });
+    broadcasterRef.current = broadcaster;
+
+    // 2. High-Frequency Frame Transmitter (50ms interval ~20 FPS fallback)
     if (!canvasRef.current) {
       canvasRef.current = document.createElement("canvas");
     }
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: false });
 
     let framesSent = 0;
     const fpsTimer = setInterval(() => {
@@ -166,26 +184,35 @@ export function PhoneCameraTransmitter({ roomCode = "ggm-cam" }: { roomCode?: st
       framesSent = 0;
     }, 1000);
 
-    // Send frame to studio every 120ms (approx 8-10fps high-quality feed)
-    frameIntervalRef.current = setInterval(() => {
+    const sendFrameLoop = () => {
       const video = videoRef.current;
-      if (!video || video.readyState < 2 || !ctx) return;
+      if (!video || video.readyState < 2 || !ctx || isSendingFrameRef.current) return;
 
-      const w = 640;
-      const h = Math.round((video.videoHeight / (video.videoWidth || 1)) * 640) || 360;
+      const w = 480;
+      const h = Math.round((video.videoHeight / (video.videoWidth || 1)) * 480) || 270;
       canvas.width = w;
       canvas.height = h;
 
       ctx.drawImage(video, 0, 0, w, h);
-      const frameData = canvas.toDataURL("image/jpeg", 0.65);
+      const frameData = canvas.toDataURL("image/jpeg", 0.55);
 
-      api.studio.sendFrame(roomCode, frameData).catch(() => {});
+      isSendingFrameRef.current = true;
+      const label = `Phone Camera (${roomCode})`;
+      api.studio.sendFrame(roomCode, frameData, label)
+        .catch(() => {})
+        .finally(() => {
+          isSendingFrameRef.current = false;
+        });
+
       framesSent++;
-    }, 120);
+    };
+
+    frameIntervalRef.current = setInterval(sendFrameLoop, 50);
 
     return () => {
       if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
       clearInterval(fpsTimer);
+      broadcaster.stop();
     };
   }, [cameraActive, roomCode]);
 
@@ -199,10 +226,16 @@ export function PhoneCameraTransmitter({ roomCode = "ggm-cam" }: { roomCode?: st
       channel.onmessage = (event: MessageEvent<StudioSyncPayload>) => {
         if (event.data?.state) {
           const st = event.data.state;
-          const activeIsCam = st.activeType === "camera" && !st.isBlackout;
-          const previewIsCam = st.previewType === "camera";
-          setIsOnAir(activeIsCam);
-          setIsStaged(previewIsCam);
+          const isThisCamOnAir =
+            st.activeType === "camera" &&
+            !st.isBlackout &&
+            (st.camera?.roomCode === roomCode || !st.camera?.roomCode);
+          const isThisCamStaged =
+            st.previewType === "camera" &&
+            (st.camera?.roomCode === roomCode || !st.camera?.roomCode);
+
+          setIsOnAir(isThisCamOnAir);
+          setIsStaged(isThisCamStaged);
         }
       };
     } catch {}
@@ -213,21 +246,27 @@ export function PhoneCameraTransmitter({ roomCode = "ggm-cam" }: { roomCode?: st
         const res = await api.countdown.get();
         if (res?.data) {
           const st = res.data;
-          const activeIsCam = st.activeType === "camera" && !st.isBlackout;
-          const previewIsCam = st.previewType === "camera";
-          setIsOnAir(activeIsCam);
-          setIsStaged(previewIsCam);
+          const isThisCamOnAir =
+            st.activeType === "camera" &&
+            !st.isBlackout &&
+            (st.camera?.roomCode === roomCode || !st.camera?.roomCode);
+          const isThisCamStaged =
+            st.previewType === "camera" &&
+            (st.camera?.roomCode === roomCode || !st.camera?.roomCode);
+
+          setIsOnAir(isThisCamOnAir);
+          setIsStaged(isThisCamStaged);
         }
       } catch {}
     };
 
-    const tallyTimer = setInterval(syncRemoteTally, 1500);
+    const tallyTimer = setInterval(syncRemoteTally, 1200);
 
     return () => {
       channel?.close();
       clearInterval(tallyTimer);
     };
-  }, []);
+  }, [roomCode]);
 
   const toggleFacingMode = () => {
     setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));

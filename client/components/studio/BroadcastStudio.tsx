@@ -48,6 +48,7 @@ import { MediaInput } from "@/components/studio/inputs/MediaInput";
 import { LowerThirdInput } from "@/components/studio/inputs/LowerThirdInput";
 import { CameraInput } from "@/components/studio/inputs/CameraInput";
 import { toast } from "sonner";
+import { WebRtcReceiver } from "@/lib/studio/studio-webrtc";
 import { api } from "@/lib/api/client";
 
 function formatTwoDigits(n: number): string {
@@ -221,32 +222,72 @@ export function BroadcastStudio() {
     }
   }, [state.previewType, state.activeType, state.isBlackout]);
 
-  // Poll Phone Camera Frame from Wireless Transmitter
+  const phoneStreamRef = useRef<MediaStream | null>(null);
+  const webrtcReceiverRef = useRef<WebRtcReceiver | null>(null);
+  const [webrtcConnected, setWebrtcConnected] = useState<boolean>(false);
+  const previewPhoneVideoRef = useRef<HTMLVideoElement | null>(null);
+  const programPhoneVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Poll Phone Camera Frame + WebRTC Receiver for instant 0-latency playback
   useEffect(() => {
     const isPhoneCam =
       (state.previewType === "camera" || (state.activeType === "camera" && !state.isBlackout)) &&
       state.camera?.streamType === "phone";
 
-    if (!isPhoneCam) return;
+    if (!isPhoneCam) {
+      webrtcReceiverRef.current?.stop();
+      webrtcReceiverRef.current = null;
+      setWebrtcConnected(false);
+      return;
+    }
 
+    const room = state.camera?.roomCode || "cam-1";
+
+    // 1. Initialize WebRTC Receiver
+    const receiver = new WebRtcReceiver(room);
+    receiver.onStateChange = (connState) => {
+      setWebrtcConnected(connState === "connected");
+    };
+    receiver.onRemoteStream = (remoteStream) => {
+      phoneStreamRef.current = remoteStream;
+      setWebrtcConnected(true);
+      if (previewPhoneVideoRef.current) {
+        previewPhoneVideoRef.current.srcObject = remoteStream;
+        previewPhoneVideoRef.current.play().catch(() => {});
+      }
+      if (programPhoneVideoRef.current) {
+        programPhoneVideoRef.current.srcObject = remoteStream;
+        programPhoneVideoRef.current.play().catch(() => {});
+      }
+    };
+    receiver.start();
+    webrtcReceiverRef.current = receiver;
+
+    // 2. High-Frequency Frame Polling (45ms interval ~22 FPS fallback for instant video)
     let isSubscribed = true;
-    const room = state.camera?.roomCode || "ggm-cam";
+    let isFetching = false;
 
     const fetchFrame = async () => {
+      if (isFetching || !isSubscribed) return;
+      isFetching = true;
       try {
         const res = await api.studio.getFrame(room);
         if (isSubscribed && res?.data?.frame) {
           setPhoneFrame(res.data.frame);
         }
       } catch {}
+      finally {
+        isFetching = false;
+      }
     };
 
     void fetchFrame();
-    const interval = setInterval(fetchFrame, 120);
+    const interval = setInterval(fetchFrame, 45);
 
     return () => {
       isSubscribed = false;
       clearInterval(interval);
+      receiver.stop();
     };
   }, [state.previewType, state.activeType, state.isBlackout, state.camera?.streamType, state.camera?.roomCode]);
 
@@ -597,23 +638,41 @@ export function BroadcastStudio() {
                   />
                 )}
                 {state.camera.streamType === "phone" && (
-                  phoneFrame ? (
-                    <img
-                      src={phoneFrame}
-                      alt="Phone Camera Live Preview"
-                      className="w-full h-full object-contain"
+                  <div className="relative w-full h-full flex items-center justify-center bg-black">
+                    {/* Zero-latency WebRTC video track */}
+                    <video
+                      ref={previewPhoneVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`w-full h-full object-contain ${webrtcConnected ? "block" : "hidden"}`}
                     />
-                  ) : (
-                    <div className="text-center p-4 text-zinc-400">
-                      <Camera className="w-8 h-8 mx-auto mb-2 text-amber-400 animate-pulse" />
-                      <span className="text-xs font-bold text-white block">
-                        Phone Camera Transmitter
+                    {/* Ultra-fast Frame Relay fallback */}
+                    {!webrtcConnected && phoneFrame && (
+                      <img
+                        src={phoneFrame}
+                        alt="Phone Camera Live Preview"
+                        className="w-full h-full object-contain"
+                      />
+                    )}
+                    {/* Standby waiting screen */}
+                    {!webrtcConnected && !phoneFrame && (
+                      <div className="text-center p-4 text-zinc-400">
+                        <Camera className="w-8 h-8 mx-auto mb-2 text-amber-400 animate-pulse" />
+                        <span className="text-xs font-bold text-white block">
+                          Phone Camera Transmitter ({state.camera.roomCode || "cam-1"})
+                        </span>
+                        <span className="text-[10px] text-zinc-500">
+                          Waiting for live feed &middot; Scan QR code below
+                        </span>
+                      </div>
+                    )}
+                    {webrtcConnected && (
+                      <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-emerald-500/80 text-black font-mono font-black text-[9px] uppercase tracking-wider">
+                        ⚡ WebRTC 0-Latency
                       </span>
-                      <span className="text-[10px] text-zinc-500">
-                        Paired phone will stream here · Open /studio/cam
-                      </span>
-                    </div>
-                  )
+                    )}
+                  </div>
                 )}
                 {state.camera.streamType === "webcam" && !cameraActive && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-black/60 text-center pointer-events-none">
@@ -757,23 +816,41 @@ export function BroadcastStudio() {
                       />
                     )}
                     {state.camera.streamType === "phone" && (
-                      phoneFrame ? (
-                        <img
-                          src={phoneFrame}
-                          alt="Phone Camera Program Feed"
-                          className="w-full h-full object-contain"
+                      <div className="relative w-full h-full flex items-center justify-center bg-black">
+                        {/* Zero-latency WebRTC video track */}
+                        <video
+                          ref={programPhoneVideoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className={`w-full h-full object-contain ${webrtcConnected ? "block" : "hidden"}`}
                         />
-                      ) : (
-                        <div className="text-center p-4 text-zinc-400">
-                          <Camera className="w-8 h-8 mx-auto mb-2 text-red-500 animate-pulse" />
-                          <span className="text-xs font-bold text-white block">
-                            PHONE CAM TRANSMITTING ON AIR
+                        {/* Ultra-fast Frame Relay fallback */}
+                        {!webrtcConnected && phoneFrame && (
+                          <img
+                            src={phoneFrame}
+                            alt="Phone Camera Program Feed"
+                            className="w-full h-full object-contain"
+                          />
+                        )}
+                        {/* Standby waiting screen */}
+                        {!webrtcConnected && !phoneFrame && (
+                          <div className="text-center p-4 text-zinc-400">
+                            <Camera className="w-8 h-8 mx-auto mb-2 text-red-500 animate-pulse" />
+                            <span className="text-xs font-bold text-white block">
+                              PHONE CAM ON AIR ({state.camera.roomCode || "cam-1"})
+                            </span>
+                            <span className="text-[10px] text-zinc-500">
+                              Waiting for live phone stream...
+                            </span>
+                          </div>
+                        )}
+                        {webrtcConnected && (
+                          <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-red-600 text-white font-mono font-black text-[9px] uppercase tracking-wider animate-pulse">
+                            ⚡ LIVE P2P
                           </span>
-                          <span className="text-[10px] text-zinc-500">
-                            Waiting for phone camera frame...
-                          </span>
-                        </div>
-                      )
+                        )}
+                      </div>
                     )}
                     {state.camera.streamType === "webcam" && !cameraActive && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-black/60 text-center pointer-events-none">

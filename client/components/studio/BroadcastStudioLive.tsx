@@ -21,6 +21,7 @@ import {
 } from "@/lib/studio/studio-sync";
 import { audioSynth } from "@/lib/studio/audio-synth";
 import { CHURCH_LOGO_PATH } from "@/lib/flyer/church-logo";
+import { WebRtcReceiver } from "@/lib/studio/studio-webrtc";
 import { api } from "@/lib/api/client";
 
 function formatTwoDigits(n: number): string {
@@ -239,30 +240,61 @@ export function BroadcastStudioLive() {
     };
   }, [state.activeType, state.camera?.enabled, state.camera?.deviceId, state.camera?.streamType]);
 
-  // Connect Phone Camera Feed if streamType is phone
+  const phoneVideoRef = useRef<HTMLVideoElement | null>(null);
+  const webrtcReceiverRef = useRef<WebRtcReceiver | null>(null);
+  const [webrtcConnected, setWebrtcConnected] = useState<boolean>(false);
+
+  // Connect Phone Camera Feed (WebRTC zero-latency + 45ms frame relay fallback)
   useEffect(() => {
     if (state.activeType !== "camera" || !state.camera?.enabled || state.camera?.streamType !== "phone" || state.isBlackout) {
+      webrtcReceiverRef.current?.stop();
+      webrtcReceiverRef.current = null;
+      setWebrtcConnected(false);
       return;
     }
 
+    const room = state.camera?.roomCode || "cam-1";
+
+    // 1. WebRTC Receiver
+    const receiver = new WebRtcReceiver(room);
+    receiver.onStateChange = (connState) => {
+      setWebrtcConnected(connState === "connected");
+    };
+    receiver.onRemoteStream = (remoteStream) => {
+      setWebrtcConnected(true);
+      if (phoneVideoRef.current) {
+        phoneVideoRef.current.srcObject = remoteStream;
+        phoneVideoRef.current.play().catch(() => {});
+      }
+    };
+    receiver.start();
+    webrtcReceiverRef.current = receiver;
+
+    // 2. High-Frequency Frame Polling
     let isSubscribed = true;
-    const room = state.camera?.roomCode || "ggm-cam";
+    let isFetching = false;
 
     const fetchFrame = async () => {
+      if (isFetching || !isSubscribed) return;
+      isFetching = true;
       try {
         const res = await api.studio.getFrame(room);
         if (isSubscribed && res?.data?.frame) {
           setPhoneFrame(res.data.frame);
         }
       } catch {}
+      finally {
+        isFetching = false;
+      }
     };
 
     void fetchFrame();
-    const interval = setInterval(fetchFrame, 120);
+    const interval = setInterval(fetchFrame, 45);
 
     return () => {
       isSubscribed = false;
       clearInterval(interval);
+      receiver.stop();
     };
   }, [state.activeType, state.camera?.enabled, state.camera?.streamType, state.camera?.roomCode, state.isBlackout]);
 
@@ -558,19 +590,32 @@ export function BroadcastStudioLive() {
             )}
 
             {state.camera.streamType === "phone" && (
-              phoneFrame ? (
-                <img
-                  src={phoneFrame}
-                  alt="Live Phone Camera Feed"
-                  className="w-full h-full object-contain"
+              <div className="relative w-full h-full flex items-center justify-center bg-black">
+                {/* Zero-latency WebRTC video track */}
+                <video
+                  ref={phoneVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`w-full h-full object-contain ${webrtcConnected ? "block" : "hidden"}`}
                 />
-              ) : (
-                <div className="text-center p-4 text-zinc-400">
-                  <span className="text-sm font-bold text-white block">
-                    Phone Camera Connected · Waiting for Live Frame
-                  </span>
-                </div>
-              )
+                {/* Ultra-fast Frame Relay fallback */}
+                {!webrtcConnected && phoneFrame && (
+                  <img
+                    src={phoneFrame}
+                    alt="Live Phone Camera Feed"
+                    className="w-full h-full object-contain"
+                  />
+                )}
+                {/* Standby waiting screen */}
+                {!webrtcConnected && !phoneFrame && (
+                  <div className="text-center p-4 text-zinc-400">
+                    <span className="text-sm font-bold text-white block">
+                      Phone Camera Connected ({state.camera.roomCode || "cam-1"}) · Connecting Live Stream...
+                    </span>
+                  </div>
+                )}
+              </div>
             )}
 
             {state.camera.streamType === "youtube" && state.camera.youtubeId && (

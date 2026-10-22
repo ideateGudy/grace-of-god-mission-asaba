@@ -12,11 +12,13 @@ import {
   Tv,
   Check,
   AlertCircle,
+  Plus,
 } from "lucide-react";
 import {
   type BroadcastStudioState,
   type StudioCameraState,
 } from "@ggm/types";
+import { api } from "@/lib/api/client";
 
 interface CameraInputProps {
   state: BroadcastStudioState;
@@ -31,6 +33,19 @@ interface VideoDevice {
   isManyCam: boolean;
 }
 
+interface ConnectedPhoneCamera {
+  id: string;
+  label: string;
+  lastSeen: number;
+}
+
+const PHONE_CAMERA_PRESETS = [
+  { id: "cam-1", label: "Camera 1: Altar / Pulpit" },
+  { id: "cam-2", label: "Camera 2: Choir / Sanctuary" },
+  { id: "cam-3", label: "Camera 3: Wide Congregation" },
+  { id: "cam-4", label: "Camera 4: Pastor Close-up" },
+];
+
 export function CameraInput({ state, onChange, onTakeLive }: CameraInputProps) {
   const [devices, setDevices] = useState<VideoDevice[]>([]);
   const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
@@ -38,10 +53,45 @@ export function CameraInput({ state, onChange, onTakeLive }: CameraInputProps) {
   const [ipCameraUrl, setIpCameraUrl] = useState<string>("");
   const [youtubeInput, setYoutubeInput] = useState<string>("");
   const [roomCode, setRoomCode] = useState<string>(() => {
-    return state.camera?.roomCode || "ggm-cam";
+    return state.camera?.roomCode || "cam-1";
   });
+  const [discoveredCameras, setDiscoveredCameras] = useState<ConnectedPhoneCamera[]>([]);
 
   const cameraState = state.camera;
+
+  // Poll active transmitting cameras every 2 seconds
+  useEffect(() => {
+    let active = true;
+    const fetchCameras = async () => {
+      try {
+        const res = await api.studio.getCameras();
+        if (active && res?.data) {
+          setDiscoveredCameras(res.data);
+        }
+      } catch {}
+    };
+
+    void fetchCameras();
+    const interval = setInterval(fetchCameras, 2000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const selectPhoneRoom = (selectedRoom: string) => {
+    setRoomCode(selectedRoom);
+    onChange((prev) => ({
+      ...prev,
+      previewType: "camera",
+      camera: {
+        ...prev.camera,
+        streamType: "phone",
+        roomCode: selectedRoom,
+        enabled: true,
+      },
+    }));
+  };
 
   const refreshDevices = async () => {
     if (typeof navigator === "undefined" || !navigator.mediaDevices) return;
@@ -322,13 +372,92 @@ export function CameraInput({ state, onChange, onTakeLive }: CameraInputProps) {
         </div>
       )}
 
-      {/* Mode 2: Wi-Fi Phone Camera Pairing QR Code */}
+      {/* Mode 2: Multi-Phone Camera Switching Deck & Pairing */}
       {(cameraState.streamType === "phone" || showQrModal) && (
-        <div className="p-4 bg-zinc-900/60 rounded-xl border border-amber-400/30 space-y-3 text-center sm:text-left">
-          <div className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="p-4 bg-zinc-900/60 rounded-xl border border-amber-400/30 space-y-4">
+          {/* Top Multi-Camera Angle Selector Bar */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Smartphone className="w-3.5 h-3.5" />
+                Select Active Camera Slot:
+              </label>
+              <span className="text-[10px] text-zinc-400 font-mono">
+                Active Slot: <strong className="text-white">{roomCode.toUpperCase()}</strong>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {PHONE_CAMERA_PRESETS.map((preset) => {
+                const isSelected = roomCode === preset.id && cameraState.streamType === "phone";
+                const isDiscovered = discoveredCameras.some((c) => c.id === preset.id);
+
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => selectPhoneRoom(preset.id)}
+                    className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                      isSelected
+                        ? "bg-amber-400/20 border-amber-400 text-white shadow-lg ring-1 ring-amber-400/50"
+                        : "bg-black/40 border-white/10 text-zinc-400 hover:text-white hover:border-white/20"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1 w-full mb-1">
+                      <span className="text-xs font-bold text-white uppercase">{preset.id}</span>
+                      {isDiscovered ? (
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Camera transmitting" />
+                      ) : (
+                        <span className="w-2 h-2 rounded-full bg-zinc-600" title="Standby" />
+                      )}
+                    </div>
+                    <span className="text-[10px] text-zinc-300 font-medium truncate w-full">
+                      {preset.label.split(": ")[1] || preset.label}
+                    </span>
+                    <span className="text-[9px] text-zinc-500 font-mono mt-0.5">
+                      {isDiscovered ? "🟢 ONLINE" : "⚪ STANDBY"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Connected Live Camera Feeds (Discovered via WebSocket/API) */}
+          {discoveredCameras.length > 0 && (
+            <div className="p-3 rounded-xl bg-black/50 border border-emerald-500/30 space-y-2">
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                Live Transmitting Cameras Detected ({discoveredCameras.length})
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {discoveredCameras.map((cam) => {
+                  const isCurrent = roomCode === cam.id && cameraState.streamType === "phone";
+                  return (
+                    <button
+                      key={cam.id}
+                      type="button"
+                      onClick={() => selectPhoneRoom(cam.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border transition-all ${
+                        isCurrent
+                          ? "bg-emerald-500 text-black border-emerald-400 shadow-md"
+                          : "bg-zinc-800 text-zinc-200 border-white/10 hover:border-emerald-400"
+                      }`}
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{cam.label}</span>
+                      {isCurrent && <Check className="w-3 h-3 ml-1" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* QR Code and Wi-Fi Pairing Helper */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 pt-2 border-t border-white/10">
             {/* QR Code Container */}
             <div className="w-32 h-32 bg-white rounded-xl p-2 flex items-center justify-center flex-shrink-0 shadow-lg">
-              {/* SVG QR Code representation using Google Charts API or inline render */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
@@ -339,13 +468,12 @@ export function CameraInput({ state, onChange, onTakeLive }: CameraInputProps) {
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 flex-1">
               <span className="text-xs font-black text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Wifi className="w-3.5 h-3.5" /> Wireless Phone Camera Transmitter
+                <Wifi className="w-3.5 h-3.5" /> Pair Phone for Slot &quot;{roomCode.toUpperCase()}&quot;
               </span>
               <p className="text-xs text-zinc-300 leading-relaxed">
-                Scan this QR code with any smartphone camera connected to the church Wi-Fi. The phone
-                will instantly open the transmitter page and stream high-definition video into this switcher!
+                Scan with any smartphone camera on the church Wi-Fi. The camera feed will instantly beam with zero latency into this camera slot!
               </p>
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <span className="text-[10px] px-2 py-0.5 rounded bg-black text-zinc-300 font-mono border border-white/10">
@@ -357,7 +485,7 @@ export function CameraInput({ state, onChange, onTakeLive }: CameraInputProps) {
                   rel="noreferrer"
                   className="text-[11px] text-amber-400 hover:underline font-bold"
                 >
-                  Open Phone Cam Link Manually &rarr;
+                  Open Camera Link on Phone &rarr;
                 </a>
               </div>
 
@@ -367,9 +495,6 @@ export function CameraInput({ state, onChange, onTakeLive }: CameraInputProps) {
                   <span className="text-amber-400 font-bold block">
                     📱 Mobile Phone Wi-Fi Pairing IP:
                   </span>
-                  <p className="text-zinc-400 text-[10px] leading-tight">
-                    Smartphones cannot reach &ldquo;localhost&rdquo;. Select your PC&apos;s Wi-Fi network IP so the QR code points to your computer:
-                  </p>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       type="button"
@@ -404,16 +529,6 @@ export function CameraInput({ state, onChange, onTakeLive }: CameraInputProps) {
                     >
                       localhost:3000
                     </button>
-                  </div>
-                  <div className="flex items-center gap-1.5 pt-0.5">
-                    <span className="text-[10px] text-zinc-500">Target IP:</span>
-                    <input
-                      type="text"
-                      value={networkHost}
-                      onChange={(e) => setNetworkHost(e.target.value.trim())}
-                      placeholder="e.g. 192.168.1.66:3000"
-                      className="px-2 py-0.5 bg-black border border-white/10 rounded text-[10px] text-white font-mono flex-1 focus:outline-none focus:border-amber-400"
-                    />
                   </div>
                 </div>
               )}
