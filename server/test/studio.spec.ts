@@ -157,5 +157,25 @@ describe("Web Broadcast Studio Switcher & Bible Engine", () => {
     expect(getResult.title).toBe("MIRACLE & COMMUNION SERVICE");
     expect(getResult.activeType).toBe("media");
     expect(getResult.previewType).toBe("countdown");
+
+    // Multi-camera frame transmission & discovery
+    service.sendStudioFrame("cam-1", "data:image/jpeg;base64,sampleframe1", "Camera 1: Altar");
+    service.sendStudioFrame("cam-2", "data:image/jpeg;base64,sampleframe2", "Camera 2: Choir");
+
+    const cam1Frame = service.getStudioFrame("cam-1");
+    expect(cam1Frame).toBeDefined();
+    expect(cam1Frame?.frame).toBe("data:image/jpeg;base64,sampleframe1");
+    expect(cam1Frame?.label).toBe("Camera 1: Altar");
+
+    const cameras = service.getStudioCameras();
+    expect(cameras.length).toBe(2);
+    expect(cameras.some((c) => c.id === "cam-1")).toBe(true);
+    expect(cameras.some((c) => c.id === "cam-2")).toBe(true);
+
+    // WebRTC signaling
+    service.sendStudioSignal("cam-1", { type: "offer", sender: "phone-1", data: { sdp: "dummy-offer" } });
+    const signals = service.getStudioSignals("cam-1");
+    expect(signals.length).toBe(1);
+    expect(signals[0].type).toBe("offer");
   });
 });

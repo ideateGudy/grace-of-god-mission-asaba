@@ -199,7 +199,8 @@ export class CountdownService {
   }
 
   private readonly studioSignals = new Map<string, Array<{ type: string; sender: string; data: any; timestamp: number }>>();
-  private readonly studioFrames = new Map<string, { frame: string; timestamp: number }>();
+  private readonly studioFrames = new Map<string, { frame: string; timestamp: number; label?: string }>();
+  private readonly studioCameras = new Map<string, { id: string; label: string; lastSeen: number }>();
 
   sendStudioSignal(room: string, message: { type: string; sender: string; data: any }) {
     const list = this.studioSignals.get(room) || [];
@@ -214,12 +215,30 @@ export class CountdownService {
     return list.filter((m) => m.timestamp > since);
   }
 
-  sendStudioFrame(room: string, frame: string) {
-    this.studioFrames.set(room, { frame, timestamp: Date.now() });
+  sendStudioFrame(room: string, frame: string, label?: string) {
+    const now = Date.now();
+    this.studioFrames.set(room, { frame, timestamp: now, label });
+    this.studioCameras.set(room, {
+      id: room,
+      label: label || `Camera (${room})`,
+      lastSeen: now,
+    });
     return { success: true };
   }
 
   getStudioFrame(room: string) {
     return this.studioFrames.get(room) || null;
+  }
+
+  getStudioCameras() {
+    const now = Date.now();
+    // Prune cameras inactive for more than 15 seconds
+    for (const [id, cam] of this.studioCameras.entries()) {
+      if (now - cam.lastSeen > 15000) {
+        this.studioCameras.delete(id);
+        this.studioFrames.delete(id);
+      }
+    }
+    return Array.from(this.studioCameras.values());
   }
 }

@@ -52,14 +52,20 @@ export class CountdownController {
   @Post('studio/frame/:room')
   sendStudioFrame(
     @Param('room') room: string,
-    @Body() body: { frame: string },
+    @Body() body: { frame: string; label?: string },
   ) {
-    return this.countdownService.sendStudioFrame(room, body?.frame || '');
+    return this.countdownService.sendStudioFrame(room, body?.frame || '', body?.label);
   }
 
   @PublicRoute()
   @Get('studio/frame/:room')
   getStudioFrame(@Param('room') room: string) {
     return { data: this.countdownService.getStudioFrame(room) };
+  }
+
+  @PublicRoute()
+  @Get('studio/cameras')
+  getStudioCameras() {
+    return { data: this.countdownService.getStudioCameras() };
   }
 }
