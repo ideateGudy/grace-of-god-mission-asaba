@@ -29,7 +29,8 @@ describe("Web Broadcast Studio Switcher & Bible Engine", () => {
 
     // Verify camera defaults
     expect(DEFAULT_STUDIO_STATE.camera).toBeDefined();
-    expect(DEFAULT_STUDIO_STATE.camera.streamType).toBe("webcam");
+    expect(DEFAULT_STUDIO_STATE.camera.streamType).toBe("phone");
+    expect(DEFAULT_STUDIO_STATE.camera.roomCode).toBe("cam-1");
   });
 
   it("validates switcher CUT transition logic (Preview becomes Program)", () => {

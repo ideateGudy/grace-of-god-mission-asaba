@@ -75,6 +75,12 @@ import Redis from 'ioredis';
             { name: 'short', ttl: 60000, limit: 20 },
             { name: 'long', ttl: 3600000, limit: 100 },
           ],
+          errorMessage: 'Too many requests. Please wait a moment before trying again.',
+          skipIf: (context: any) => {
+            const req = context.switchToHttp().getRequest();
+            const url = req?.url || '';
+            return url.includes('/studio/') || url.includes('/countdown');
+          },
           storage,
         };
       },

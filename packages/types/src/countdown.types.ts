@@ -249,7 +249,8 @@ export const DEFAULT_STUDIO_STATE: BroadcastStudioState = {
   },
   camera: {
     enabled: false,
-    streamType: "webcam",
+    streamType: "phone",
+    roomCode: "cam-1",
   },
   isBlackout: false,
   transitionType: "fade",

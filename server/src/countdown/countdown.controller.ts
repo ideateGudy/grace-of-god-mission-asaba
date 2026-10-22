@@ -8,7 +8,7 @@ import { updateCountdownSchema, type UpdateCountdownDto } from '@ggm/types';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
 import type { AuthenticatedRequest } from '../common/types.js';
 
-@SkipThrottle()
+@SkipThrottle({ default: true, short: true, long: true })
 @Controller()
 export class CountdownController {
   constructor(private readonly countdownService: CountdownService) {}

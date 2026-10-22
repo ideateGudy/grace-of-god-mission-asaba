@@ -128,7 +128,7 @@ export class WebRtcBroadcaster {
       data: offer,
     }).catch(() => {});
 
-    // 3. Fast Poll backup (200ms) to ensure handshake never gets dropped
+    // 3. Fast Poll backup (1000ms) to ensure handshake never gets dropped
     this.pollInterval = setInterval(async () => {
       try {
         const res = await api.studio.getSignals(this.roomCode, this.lastSignalTimestamp);
@@ -137,7 +137,7 @@ export class WebRtcBroadcaster {
           await handleIncomingSignal(sig);
         }
       } catch {}
-    }, 200);
+    }, 1000);
   }
 
   public stop() {
@@ -266,7 +266,7 @@ export class WebRtcReceiver {
       data: {},
     }).catch(() => {});
 
-    // 3. Fast Poll backup (200ms)
+    // 3. Fast Poll backup (1000ms)
     this.pollInterval = setInterval(async () => {
       try {
         const res = await api.studio.getSignals(this.roomCode, this.lastSignalTimestamp);
@@ -275,7 +275,7 @@ export class WebRtcReceiver {
           await handleIncomingSignal(sig);
         }
       } catch {}
-    }, 200);
+    }, 1000);
   }
 
   public stop() {
