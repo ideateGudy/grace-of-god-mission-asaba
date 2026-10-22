@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/store/useSessionStore";
 import { api } from "@/lib/api/client";
-import { ChurchCountdown } from "@/components/countdown/ChurchCountdown";
+import { BroadcastStudio } from "@/components/studio/BroadcastStudio";
 import Image from "next/image";
 import { CHURCH_LOGO_PATH } from "@/lib/flyer/church-logo";
 
-export function CountdownAuthGuard() {
+export function StudioAuthGuard() {
   const { user, setUser } = useSessionStore();
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(() => !user);
@@ -24,7 +24,7 @@ export function CountdownAuthGuard() {
           localStorage.removeItem("gom_access_token");
           localStorage.removeItem("gom_refresh_token");
         }
-        router.push("/admin/login?redirect=/countdown");
+        router.push("/admin/login?redirect=/studio");
       } finally {
         setLoading(false);
       }
@@ -58,21 +58,16 @@ export function CountdownAuthGuard() {
           </div>
           <div className="text-center space-y-1">
             <h2 className="text-xs sm:text-sm font-black tracking-widest text-white uppercase">
-              GRACE OF GOD MISSION
+              Initializing Broadcast Studio
             </h2>
-            <p className="text-[10px] sm:text-xs font-bold tracking-widest text-amber-400 uppercase">
-              VERIFYING ADMIN ACCESS...
+            <p className="text-[11px] text-amber-300/80 font-medium tracking-wider uppercase">
+              Verifying Media Crew Authentication...
             </p>
           </div>
-          <div className="w-8 h-8 rounded-full border-2 border-amber-400 border-t-transparent animate-spin mt-2" />
         </div>
       </div>
     );
   }
 
-  if (!user) {
-    return null;
-  }
-
-  return <ChurchCountdown />;
+  return <BroadcastStudio />;
 }

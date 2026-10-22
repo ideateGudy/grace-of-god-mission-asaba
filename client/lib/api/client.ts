@@ -244,6 +244,37 @@ export const api = {
         cache: "no-store",
       }),
   },
+  studio: {
+    get: () => fetcher<{ data: PublicCountdownDto }>("/countdown", { cache: "no-store" }),
+    update: (data: UpdateCountdownDto) =>
+      fetcher<{ data: PublicCountdownDto }>("/admin/countdown", {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        cache: "no-store",
+      }),
+    sendSignal: (room: string, payload: { type: string; sender: string; data: any }) =>
+      fetcher<{ success: boolean }>(`/studio/signal/${encodeURIComponent(room)}`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        cache: "no-store",
+      }),
+    getSignals: (room: string, since = 0) =>
+      fetcher<{ data: Array<{ type: string; sender: string; data: any; timestamp: number }> }>(
+        `/studio/signal/${encodeURIComponent(room)}?since=${since}`,
+        { cache: "no-store" }
+      ),
+    sendFrame: (room: string, frame: string) =>
+      fetcher<{ success: boolean }>(`/studio/frame/${encodeURIComponent(room)}`, {
+        method: "POST",
+        body: JSON.stringify({ frame }),
+        cache: "no-store",
+      }),
+    getFrame: (room: string) =>
+      fetcher<{ data: { frame: string; timestamp: number } | null }>(
+        `/studio/frame/${encodeURIComponent(room)}`,
+        { cache: "no-store" }
+      ),
+  },
   giving: {
     getStatus: (reference: string) => fetcher<{ data: { status: string; reference: string; amountKobo: string; projectTitle: string; displayName: string; createdAt: string } }>(`/giving/status/${encodeURIComponent(reference)}`, { cache: "no-store" }),
   },

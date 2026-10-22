@@ -1,5 +1,5 @@
 /**
- * Deterministic Web Audio API Synthesizer for Church Countdown Timer.
+ * Deterministic Web Audio API Synthesizer for Church Broadcast Studio & Countdown.
  * 100% Offline: Generates all chime, gong, and tick sounds mathematically.
  * Zero external audio files or network requests required.
  */
@@ -119,6 +119,14 @@ class OfflineAudioSynth {
     } catch {
       // Silently guarded
     }
+  }
+
+  public playCathedralChimes(): void {
+    this.playServiceGong();
+  }
+
+  public playOvertimeAlert(): void {
+    this.playUrgentTick();
   }
 }
 

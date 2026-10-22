@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Inbox, Video, Plus, Bell, Image as ImageIcon, Sparkles, Radio, BookOpen, MessageSquareQuote, Clock } from "lucide-react";
+import { CalendarDays, Inbox, Video, Plus, Bell, Image as ImageIcon, Sparkles, Radio, BookOpen, MessageSquareQuote, Clock, Tv } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ export default function AdminDashboardPage() {
   const can = (permission: string) => isSuperAdmin || Boolean(user?.permissions.includes(permission));
 
   const quickActions = [
-    { label: "Countdown Timer", href: "/countdown", icon: Clock },
+    { label: "Broadcast Studio", href: "/studio", icon: Tv },
     can("SERMONS_MANAGE") ? { label: "Add sermon", href: "/admin/sermons/new", icon: Video } : null,
     can("EVENTS_MANAGE") ? { label: "Add event", href: "/admin/events/new", icon: CalendarDays } : null,
     can("LIVESTREAM_MANAGE") ? { label: "Go live", href: "/admin/live", icon: Radio } : null,

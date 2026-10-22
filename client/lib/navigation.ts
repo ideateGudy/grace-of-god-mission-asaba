@@ -61,9 +61,9 @@ export const NAV_CATEGORIES: NavCategory[] = [
         icon: Radio,
       },
       {
-        title: "Service Countdown",
-        href: "/countdown/live",
-        description: "Live sanctuary countdown timer & projection display",
+        title: "Broadcast Studio",
+        href: "/studio/live",
+        description: "Live sanctuary presentation, scripture & stream display",
         icon: Clock,
       },
       {
