@@ -48,7 +48,8 @@ import Redis from 'ioredis';
         if (redisUrl) {
           try {
             const redis = new (Redis as any)(redisUrl, {
-              maxRetriesPerRequest: 3,
+              maxRetriesPerRequest: 1,
+              connectTimeout: 2000,
               enableReadyCheck: false,
               retryStrategy(times: number) {
                 if (times > 3) return null;
@@ -58,7 +59,17 @@ import Redis from 'ioredis';
             redis.on('error', (err: Error) => {
               logger.warn(`Redis connection error in rate limiter: ${err.message}`);
             });
-            storage = new ThrottlerStorageRedisService(redis);
+            const redisStorage = new ThrottlerStorageRedisService(redis);
+            // Safe proxy: if Redis fails/times out, don't crash requests with 500
+            storage = {
+              async increment(key: string, ttl: number, limit: number, blockDuration: number, throttlerName: string) {
+                try {
+                  return await redisStorage.increment(key, ttl, limit, blockDuration, throttlerName);
+                } catch {
+                  return { totalHits: 1, timeToExpire: ttl, isBlocked: false, timeToBlockExpire: 0 };
+                }
+              },
+            };
             logger.log('Distributed rate limiting enabled via Redis.');
           } catch (err: any) {
             logger.warn(`Failed to initialize Redis storage: ${err.message}. Falling back to in-memory.`);
