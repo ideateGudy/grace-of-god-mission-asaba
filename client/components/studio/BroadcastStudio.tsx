@@ -263,7 +263,24 @@ export function BroadcastStudio() {
     receiver.start();
     webrtcReceiverRef.current = receiver;
 
-    // 2. High-Frequency Frame Polling (45ms interval ~22 FPS fallback for instant video)
+    // 2. Instant Real-time Server-Sent Events (SSE) Stream for Frames
+    let sseSource: EventSource | null = null;
+    try {
+      if (typeof window !== "undefined" && typeof EventSource !== "undefined") {
+        const sse = new EventSource(`/api/v1/studio/stream/${encodeURIComponent(room)}`);
+        sse.onmessage = (event) => {
+          try {
+            const parsed = JSON.parse(event.data);
+            if (parsed.type === "frame" && parsed.frame) {
+              setPhoneFrame(parsed.frame);
+            }
+          } catch {}
+        };
+        sseSource = sse;
+      }
+    } catch {}
+
+    // 3. High-Frequency Frame Polling (45ms fallback)
     let isSubscribed = true;
     let isFetching = false;
 
@@ -287,6 +304,7 @@ export function BroadcastStudio() {
     return () => {
       isSubscribed = false;
       clearInterval(interval);
+      sseSource?.close();
       receiver.stop();
     };
   }, [state.previewType, state.activeType, state.isBlackout, state.camera?.streamType, state.camera?.roomCode]);

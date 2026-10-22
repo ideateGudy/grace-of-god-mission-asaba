@@ -4,19 +4,24 @@ const ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
   { urls: "stun:stun2.l.google.com:19302" },
+  { urls: "stun:stun3.l.google.com:19302" },
+  { urls: "stun:stun4.l.google.com:19302" },
 ];
 
 /**
  * Sender (Broadcaster on Phone):
  * Creates RTCPeerConnection, adds local stream track, creates offer or responds to receiver answer.
+ * Uses real-time SSE event stream for instant signal delivery + fallback polling.
  */
 export class WebRtcBroadcaster {
   private pc: RTCPeerConnection | null = null;
   private roomCode: string;
   private senderId: string;
   private pollInterval: NodeJS.Timeout | null = null;
+  private sseSource: EventSource | null = null;
   private lastSignalTimestamp = 0;
   private stream: MediaStream | null = null;
+  private pendingCandidates: RTCIceCandidateInit[] = [];
   public onStateChange?: (state: RTCIceConnectionState | "disconnected" | "connected") => void;
 
   constructor(roomCode: string) {
@@ -27,8 +32,12 @@ export class WebRtcBroadcaster {
   public async start(stream: MediaStream) {
     this.stop();
     this.stream = stream;
+    this.pendingCandidates = [];
 
-    this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    this.pc = new RTCPeerConnection({
+      iceServers: ICE_SERVERS,
+      iceCandidatePoolSize: 4,
+    });
 
     this.pc.oniceconnectionstatechange = () => {
       this.onStateChange?.(this.pc?.iceConnectionState || "disconnected");
@@ -50,7 +59,63 @@ export class WebRtcBroadcaster {
       }
     });
 
-    // Create SDP Offer
+    // Handle Incoming Signal
+    const handleIncomingSignal = async (sig: any) => {
+      if (!sig || sig.sender === this.senderId) return;
+      if (sig.timestamp && sig.timestamp > this.lastSignalTimestamp) {
+        this.lastSignalTimestamp = sig.timestamp;
+      }
+
+      if (sig.type === "answer" && this.pc && this.pc.signalingState === "have-local-offer") {
+        await this.pc.setRemoteDescription(new RTCSessionDescription(sig.data));
+        // Flush any buffered ICE candidates
+        while (this.pendingCandidates.length > 0) {
+          const cand = this.pendingCandidates.shift();
+          if (cand) {
+            try {
+              await this.pc.addIceCandidate(new RTCIceCandidate(cand));
+            } catch {}
+          }
+        }
+      } else if (sig.type === "ice-candidate" && this.pc) {
+        if (this.pc.remoteDescription) {
+          try {
+            await this.pc.addIceCandidate(new RTCIceCandidate(sig.data));
+          } catch {}
+        } else {
+          this.pendingCandidates.push(sig.data);
+        }
+      } else if (sig.type === "request-offer" && this.pc) {
+        const freshOffer = await this.pc.createOffer({
+          offerToReceiveVideo: false,
+          offerToReceiveAudio: false,
+        });
+        await this.pc.setLocalDescription(freshOffer);
+        await api.studio.sendSignal(this.roomCode, {
+          type: "offer",
+          sender: this.senderId,
+          data: freshOffer,
+        }).catch(() => {});
+      }
+    };
+
+    // 1. Instant Real-time Server-Sent Events (SSE) Signaling
+    try {
+      if (typeof window !== "undefined" && typeof EventSource !== "undefined") {
+        const sse = new EventSource(`/api/v1/studio/stream/${encodeURIComponent(this.roomCode)}`);
+        sse.onmessage = (event) => {
+          try {
+            const parsed = JSON.parse(event.data);
+            if (parsed.type === "signal") {
+              void handleIncomingSignal(parsed);
+            }
+          } catch {}
+        };
+        this.sseSource = sse;
+      }
+    } catch {}
+
+    // 2. Initial Offer Broadcast
     const offer = await this.pc.createOffer({
       offerToReceiveVideo: false,
       offerToReceiveAudio: false,
@@ -63,39 +128,23 @@ export class WebRtcBroadcaster {
       data: offer,
     }).catch(() => {});
 
-    // Listen for Answer and ICE candidates from Receiver (PC Studio)
+    // 3. Fast Poll backup (200ms) to ensure handshake never gets dropped
     this.pollInterval = setInterval(async () => {
       try {
         const res = await api.studio.getSignals(this.roomCode, this.lastSignalTimestamp);
         const signals = res?.data || [];
         for (const sig of signals) {
-          if (sig.timestamp > this.lastSignalTimestamp) {
-            this.lastSignalTimestamp = sig.timestamp;
-          }
-          if (sig.sender === this.senderId) continue;
-
-          if (sig.type === "answer" && this.pc && this.pc.signalingState === "have-local-offer") {
-            await this.pc.setRemoteDescription(new RTCSessionDescription(sig.data));
-          } else if (sig.type === "ice-candidate" && this.pc && this.pc.remoteDescription) {
-            try {
-              await this.pc.addIceCandidate(new RTCIceCandidate(sig.data));
-            } catch {}
-          } else if (sig.type === "request-offer" && this.pc) {
-            // Re-broadcast offer if receiver just joined or reloaded
-            const freshOffer = await this.pc.createOffer();
-            await this.pc.setLocalDescription(freshOffer);
-            await api.studio.sendSignal(this.roomCode, {
-              type: "offer",
-              sender: this.senderId,
-              data: freshOffer,
-            }).catch(() => {});
-          }
+          await handleIncomingSignal(sig);
         }
       } catch {}
-    }, 400);
+    }, 200);
   }
 
   public stop() {
+    if (this.sseSource) {
+      this.sseSource.close();
+      this.sseSource = null;
+    }
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
       this.pollInterval = null;
@@ -104,12 +153,13 @@ export class WebRtcBroadcaster {
       this.pc.close();
       this.pc = null;
     }
+    this.pendingCandidates = [];
     this.onStateChange?.("disconnected");
   }
 }
 
 /**
- * Receiver (Studio Monitor on PC):
+ * Receiver (Studio Monitor on PC & Live Sanctuary Output):
  * Listens for offer from phone, responds with answer, receives live low-latency remote MediaStream.
  */
 export class WebRtcReceiver {
@@ -117,7 +167,9 @@ export class WebRtcReceiver {
   private roomCode: string;
   private receiverId: string;
   private pollInterval: NodeJS.Timeout | null = null;
+  private sseSource: EventSource | null = null;
   private lastSignalTimestamp = 0;
+  private pendingCandidates: RTCIceCandidateInit[] = [];
   public onRemoteStream?: (stream: MediaStream) => void;
   public onStateChange?: (state: RTCIceConnectionState | "disconnected" | "connected") => void;
 
@@ -128,7 +180,11 @@ export class WebRtcReceiver {
 
   public start() {
     this.stop();
-    this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    this.pendingCandidates = [];
+    this.pc = new RTCPeerConnection({
+      iceServers: ICE_SERVERS,
+      iceCandidatePoolSize: 4,
+    });
 
     this.pc.oniceconnectionstatechange = () => {
       this.onStateChange?.(this.pc?.iceConnectionState || "disconnected");
@@ -150,44 +206,83 @@ export class WebRtcReceiver {
       }
     };
 
-    // Prompt phone transmitter to send offer if it's already running
+    const handleIncomingSignal = async (sig: any) => {
+      if (!sig || sig.sender === this.receiverId) return;
+      if (sig.timestamp && sig.timestamp > this.lastSignalTimestamp) {
+        this.lastSignalTimestamp = sig.timestamp;
+      }
+
+      if (sig.type === "offer" && this.pc) {
+        await this.pc.setRemoteDescription(new RTCSessionDescription(sig.data));
+        const answer = await this.pc.createAnswer();
+        await this.pc.setLocalDescription(answer);
+
+        await api.studio.sendSignal(this.roomCode, {
+          type: "answer",
+          sender: this.receiverId,
+          data: answer,
+        }).catch(() => {});
+
+        // Flush any buffered candidates received before offer
+        while (this.pendingCandidates.length > 0) {
+          const cand = this.pendingCandidates.shift();
+          if (cand) {
+            try {
+              await this.pc.addIceCandidate(new RTCIceCandidate(cand));
+            } catch {}
+          }
+        }
+      } else if (sig.type === "ice-candidate" && this.pc) {
+        if (this.pc.remoteDescription) {
+          try {
+            await this.pc.addIceCandidate(new RTCIceCandidate(sig.data));
+          } catch {}
+        } else {
+          this.pendingCandidates.push(sig.data);
+        }
+      }
+    };
+
+    // 1. Instant Real-time SSE Connection
+    try {
+      if (typeof window !== "undefined" && typeof EventSource !== "undefined") {
+        const sse = new EventSource(`/api/v1/studio/stream/${encodeURIComponent(this.roomCode)}`);
+        sse.onmessage = (event) => {
+          try {
+            const parsed = JSON.parse(event.data);
+            if (parsed.type === "signal") {
+              void handleIncomingSignal(parsed);
+            }
+          } catch {}
+        };
+        this.sseSource = sse;
+      }
+    } catch {}
+
+    // 2. Prompt phone transmitter to send offer if it's already active
     api.studio.sendSignal(this.roomCode, {
       type: "request-offer",
       sender: this.receiverId,
       data: {},
     }).catch(() => {});
 
+    // 3. Fast Poll backup (200ms)
     this.pollInterval = setInterval(async () => {
       try {
         const res = await api.studio.getSignals(this.roomCode, this.lastSignalTimestamp);
         const signals = res?.data || [];
         for (const sig of signals) {
-          if (sig.timestamp > this.lastSignalTimestamp) {
-            this.lastSignalTimestamp = sig.timestamp;
-          }
-          if (sig.sender === this.receiverId) continue;
-
-          if (sig.type === "offer" && this.pc) {
-            await this.pc.setRemoteDescription(new RTCSessionDescription(sig.data));
-            const answer = await this.pc.createAnswer();
-            await this.pc.setLocalDescription(answer);
-
-            await api.studio.sendSignal(this.roomCode, {
-              type: "answer",
-              sender: this.receiverId,
-              data: answer,
-            }).catch(() => {});
-          } else if (sig.type === "ice-candidate" && this.pc && this.pc.remoteDescription) {
-            try {
-              await this.pc.addIceCandidate(new RTCIceCandidate(sig.data));
-            } catch {}
-          }
+          await handleIncomingSignal(sig);
         }
       } catch {}
-    }, 400);
+    }, 200);
   }
 
   public stop() {
+    if (this.sseSource) {
+      this.sseSource.close();
+      this.sseSource = null;
+    }
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
       this.pollInterval = null;
@@ -196,6 +291,7 @@ export class WebRtcReceiver {
       this.pc.close();
       this.pc = null;
     }
+    this.pendingCandidates = [];
     this.onStateChange?.("disconnected");
   }
 }
