@@ -90,9 +90,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
         `[${requestId}] ${request.method} ${request.url} - Status ${status}`,
         exception instanceof Error ? exception.stack : String(exception),
       );
-      // In production, avoid leaking raw internal error details to client
-      if (process.env.NODE_ENV === 'production') {
+      // In production, avoid leaking raw internal error details to client, except on health diagnostic route
+      if (process.env.NODE_ENV === 'production' && !request.url.includes('/health')) {
         message = ['An unexpected error occurred. Please try again later.'];
+      } else if (exception instanceof Error) {
+        message = [exception.message];
       }
     } else {
       this.logger.warn(
