@@ -9,6 +9,7 @@ import {
   calculateTimeBreakdown,
   getNextSundayServiceDate,
   type CountdownThemeId,
+  type CountdownMode,
   type ChurchCountdownState,
 } from "@ggm/types";
 
@@ -80,6 +81,7 @@ describe("Church Countdown Engine & Offline Presets", () => {
       scriptureText: "The LORD is my shepherd; I shall not want.",
       mode: "target-time",
       targetTimeString: "09:00",
+      targetDate: "",
       durationSeconds: 300,
       theme: "royal-gold",
       soundEnabled: true,
@@ -108,6 +110,7 @@ describe("Church Countdown Engine & Offline Presets", () => {
       scriptureText: "The LORD is my shepherd",
       mode: "target-time",
       targetTimeString: "10:30",
+      targetDate: "",
       durationSeconds: 600,
       theme: "royal-gold",
       soundEnabled: true,
@@ -325,14 +328,16 @@ describe("Church Countdown Engine & Offline Presets", () => {
     expect(worship20).toBeDefined();
 
     // 2. Configure 20-minute activity timer
-    const activityState: ChurchCountdownState = {
+    const activityState = {
       title: "SERMON & EXHORTATION",
       subtitle: "SANCTUARY ACTIVITY COUNTDOWN",
-      mode: "activity",
+      mode: "activity" as const,
+      targetDate: "",
+      targetTimeString: "09:00",
       durationSeconds: 20 * 60, // 1200s
       remainingSeconds: 1200,
       isRunning: true,
-      theme: "royal-gold",
+      theme: "royal-gold" as const,
       soundEnabled: true,
       overtimeEnabled: true,
       showScripture: false,
@@ -377,15 +382,16 @@ describe("Church Countdown Engine & Offline Presets", () => {
     // Rule: Event/Date timer counts down to zero and STAYS AT ZERO (clamps to Math.max(0, diff))
     expect(pastSecs).toBe(0);
 
-    const eventDateState: ChurchCountdownState = {
+    const eventDateState = {
       title: "NEW YEAR CROSSOVER SERVICE",
       subtitle: "COUNTDOWN TO NEW YEAR",
-      mode: "event-date",
+      mode: "event-date" as CountdownMode,
       targetDate: pastDate,
+      targetTimeString: "00:00",
       durationSeconds: 0,
       remainingSeconds: pastSecs,
       isRunning: false,
-      theme: "royal-gold",
+      theme: "royal-gold" as CountdownThemeId,
       soundEnabled: true,
       overtimeEnabled: false,
       showScripture: false,

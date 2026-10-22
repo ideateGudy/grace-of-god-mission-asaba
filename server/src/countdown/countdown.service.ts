@@ -88,6 +88,16 @@ export class CountdownService {
       remainingSeconds,
       targetEndTime,
       updatedAt: raw.updatedAt || settings?.updatedAt?.toISOString() || new Date().toISOString(),
+      activeType: raw.activeType,
+      previewType: raw.previewType,
+      scripture: raw.scripture,
+      mediaList: raw.mediaList,
+      activeMediaId: raw.activeMediaId,
+      overlay: raw.overlay,
+      camera: raw.camera,
+      isBlackout: raw.isBlackout,
+      transitionType: raw.transitionType,
+      transitionDurationMs: raw.transitionDurationMs,
     };
   }
 
@@ -134,6 +144,16 @@ export class CountdownService {
       remainingSeconds,
       targetEndTime,
       updatedAt: new Date().toISOString(),
+      activeType: dto.activeType ?? current.activeType,
+      previewType: dto.previewType ?? current.previewType,
+      scripture: dto.scripture ?? current.scripture,
+      mediaList: dto.mediaList ?? current.mediaList,
+      activeMediaId: dto.activeMediaId ?? current.activeMediaId,
+      overlay: dto.overlay ?? current.overlay,
+      camera: dto.camera ?? current.camera,
+      isBlackout: dto.isBlackout !== undefined ? dto.isBlackout : current.isBlackout,
+      transitionType: dto.transitionType ?? current.transitionType,
+      transitionDurationMs: dto.transitionDurationMs ?? current.transitionDurationMs,
     };
 
     await this.prisma.siteSetting.upsert({
@@ -176,5 +196,30 @@ export class CountdownService {
         await fetch(`${revalidateUrl}?tag=${tag}&secret=${secret}`, { method: 'POST' });
       } catch {}
     }
+  }
+
+  private readonly studioSignals = new Map<string, Array<{ type: string; sender: string; data: any; timestamp: number }>>();
+  private readonly studioFrames = new Map<string, { frame: string; timestamp: number }>();
+
+  sendStudioSignal(room: string, message: { type: string; sender: string; data: any }) {
+    const list = this.studioSignals.get(room) || [];
+    list.push({ ...message, timestamp: Date.now() });
+    if (list.length > 50) list.shift();
+    this.studioSignals.set(room, list);
+    return { success: true };
+  }
+
+  getStudioSignals(room: string, since: number = 0) {
+    const list = this.studioSignals.get(room) || [];
+    return list.filter((m) => m.timestamp > since);
+  }
+
+  sendStudioFrame(room: string, frame: string) {
+    this.studioFrames.set(room, { frame, timestamp: Date.now() });
+    return { success: true };
+  }
+
+  getStudioFrame(room: string) {
+    return this.studioFrames.get(room) || null;
   }
 }
