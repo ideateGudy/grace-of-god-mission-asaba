@@ -17,10 +17,11 @@ export default async function PhoneCameraPage({
   searchParams: Promise<{ room?: string }>;
 }) {
   const { room } = await searchParams;
+  const activeRoom = room && room.trim() ? room.trim() : "cam-1";
 
   return (
     <main className="w-full h-[100dvh] bg-black overflow-hidden">
-      <PhoneCameraTransmitter roomCode={room} />
+      <PhoneCameraTransmitter roomCode={activeRoom} />
     </main>
   );
 }

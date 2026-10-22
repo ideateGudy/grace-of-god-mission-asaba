@@ -24,7 +24,17 @@ import {
 import { WebRtcBroadcaster } from "@/lib/studio/studio-webrtc";
 import { api } from "@/lib/api/client";
 
-export function PhoneCameraTransmitter({ roomCode = "ggm-cam" }: { roomCode?: string }) {
+const PHONE_CAMERA_PRESETS = [
+  { id: "cam-1", label: "CAM 1 (Altar)" },
+  { id: "cam-2", label: "CAM 2 (Choir)" },
+  { id: "cam-3", label: "CAM 3 (Audience)" },
+  { id: "cam-4", label: "CAM 4 (Close-Up)" },
+];
+
+export function PhoneCameraTransmitter({ roomCode: initialRoom = "cam-1" }: { roomCode?: string }) {
+  const [roomCode, setRoomCode] = useState<string>(() => {
+    return initialRoom && initialRoom.trim() ? initialRoom.trim() : "cam-1";
+  });
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -34,7 +44,7 @@ export function PhoneCameraTransmitter({ roomCode = "ggm-cam" }: { roomCode?: st
   const [torchEnabled, setTorchEnabled] = useState<boolean>(false);
   const [hasTorch, setHasTorch] = useState<boolean>(false);
   const [isOnAir, setIsOnAir] = useState<boolean>(false);
-  const [isStaged, setIsStaged] = useState<boolean>(true);
+  const [isStaged, setIsStaged] = useState<boolean>(false);
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [cameraStatus, setCameraStatus] = useState<string>("Ready to connect");
   const [fpsCount, setFpsCount] = useState<number>(0);
@@ -299,34 +309,75 @@ export function PhoneCameraTransmitter({ roomCode = "ggm-cam" }: { roomCode?: st
         className="absolute inset-0 w-full h-full object-cover"
       />
 
-      {/* Top Bar: Live Tally Indicator for Cameraman */}
-      <div className="relative z-20 p-4 flex items-center justify-between bg-gradient-to-b from-black/85 via-black/40 to-transparent">
-        <div
-          className={`px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-2xl transition-all duration-300 ${
-            isOnAir
-              ? "bg-red-600 text-white animate-pulse ring-4 ring-red-500/50"
-              : isStaged
-              ? "bg-amber-400 text-black ring-2 ring-amber-400/50"
-              : "bg-zinc-800/90 text-zinc-300"
-          }`}
-        >
-          <span
-            className={`w-2.5 h-2.5 rounded-full ${
-              isOnAir ? "bg-white" : isStaged ? "bg-black" : "bg-zinc-500"
+      {/* Top Bar: Live Tally & Slot Selector for Cameraman */}
+      <div className="relative z-20 p-3 sm:p-4 flex flex-col gap-2 bg-gradient-to-b from-black/90 via-black/60 to-transparent">
+        <div className="flex items-center justify-between gap-2">
+          {/* Broadcaster Tally Badge */}
+          <div
+            className={`px-3 py-1.5 rounded-full font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-2xl transition-all duration-300 ${
+              isOnAir
+                ? "bg-red-600 text-white animate-pulse ring-4 ring-red-500/50"
+                : isStaged
+                ? "bg-amber-400 text-black ring-2 ring-amber-400/50"
+                : cameraActive
+                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                : "bg-zinc-800/90 text-zinc-400"
             }`}
-          />
-          {isOnAir ? "🔴 ON AIR (LIVE FEED)" : isStaged ? "🟡 STANDBY (PREVIEW)" : "⚪ READY"}
+          >
+            <span
+              className={`w-2.5 h-2.5 rounded-full ${
+                isOnAir
+                  ? "bg-white animate-ping"
+                  : isStaged
+                  ? "bg-black"
+                  : cameraActive
+                  ? "bg-emerald-400 animate-pulse"
+                  : "bg-zinc-600"
+              }`}
+            />
+            <span>
+              {isOnAir
+                ? "🔴 LIVE ON AIR"
+                : isStaged
+                ? "🟡 PREVIEW (STAGED)"
+                : cameraActive
+                ? "🟢 TRANSMITTING"
+                : "⚪ STANDBY (IDLE)"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {cameraActive && (
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold">
+                {fpsCount} FPS
+              </span>
+            )}
+            <div className="text-[11px] font-mono px-2.5 py-1 rounded bg-black/60 text-amber-300 backdrop-blur-sm border border-amber-400/30">
+              SLOT: {roomCode.toUpperCase()}
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {cameraActive && (
-            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold">
-              {fpsCount} FPS
-            </span>
-          )}
-          <div className="text-[11px] font-mono px-2.5 py-1 rounded bg-black/60 text-zinc-300 backdrop-blur-sm border border-white/10">
-            ROOM: {roomCode.toUpperCase()}
-          </div>
+        {/* Quick Camera Slot Selector for Multi-Phone Setups */}
+        <div className="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar">
+          <span className="text-[10px] font-mono text-zinc-400 mr-1 flex-shrink-0">SWITCH SLOT:</span>
+          {PHONE_CAMERA_PRESETS.map((preset) => {
+            const isSelected = roomCode === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => setRoomCode(preset.id)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-all flex-shrink-0 ${
+                  isSelected
+                    ? "bg-amber-400 text-black shadow-md font-black"
+                    : "bg-zinc-900/80 text-zinc-300 border border-white/10 hover:border-white/30"
+                }`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -429,9 +480,9 @@ export function PhoneCameraTransmitter({ roomCode = "ggm-cam" }: { roomCode?: st
         )}
 
         <div className="text-center">
-          <span className="text-[10px] text-zinc-400 block font-mono">STATUS</span>
+          <span className="text-[10px] text-zinc-400 block font-mono">FEED STATUS</span>
           <span className={`text-xs font-bold ${cameraActive ? "text-emerald-400" : "text-amber-400"}`}>
-            {cameraActive ? "LIVE FEED" : "STANDBY"}
+            {cameraActive ? `TRANSMITTING (${roomCode.toUpperCase()})` : "STANDBY (CAMERA PAUSED)"}
           </span>
         </div>
       </div>
