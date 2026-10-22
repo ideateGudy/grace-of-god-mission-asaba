@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { EventEmitter } from 'node:events';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { ConfigService } from '@nestjs/config';
@@ -201,12 +202,15 @@ export class CountdownService {
   private readonly studioSignals = new Map<string, Array<{ type: string; sender: string; data: any; timestamp: number }>>();
   private readonly studioFrames = new Map<string, { frame: string; timestamp: number; label?: string }>();
   private readonly studioCameras = new Map<string, { id: string; label: string; lastSeen: number }>();
+  public readonly studioEvents = new EventEmitter();
 
   sendStudioSignal(room: string, message: { type: string; sender: string; data: any }) {
     const list = this.studioSignals.get(room) || [];
-    list.push({ ...message, timestamp: Date.now() });
+    const signalItem = { ...message, timestamp: Date.now() };
+    list.push(signalItem);
     if (list.length > 50) list.shift();
     this.studioSignals.set(room, list);
+    this.studioEvents.emit(`signal:${room}`, signalItem);
     return { success: true };
   }
 
@@ -217,12 +221,14 @@ export class CountdownService {
 
   sendStudioFrame(room: string, frame: string, label?: string) {
     const now = Date.now();
-    this.studioFrames.set(room, { frame, timestamp: now, label });
+    const frameObj = { frame, timestamp: now, label };
+    this.studioFrames.set(room, frameObj);
     this.studioCameras.set(room, {
       id: room,
       label: label || `Camera (${room})`,
       lastSeen: now,
     });
+    this.studioEvents.emit(`frame:${room}`, frameObj);
     return { success: true };
   }
 

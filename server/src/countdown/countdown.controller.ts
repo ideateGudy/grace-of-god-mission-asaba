@@ -1,4 +1,5 @@
-import { Controller, Get, Patch, Post, Body, Req, Param, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Body, Req, Param, Query, Sse } from '@nestjs/common';
+import { Observable } from 'rxjs';
 import { SkipThrottle } from '@nestjs/throttler';
 import { CountdownService } from './countdown.service.js';
 import { PublicRoute } from '../auth/decorators/public-route.decorator.js';
@@ -61,6 +62,34 @@ export class CountdownController {
   @Get('studio/frame/:room')
   getStudioFrame(@Param('room') room: string) {
     return { data: this.countdownService.getStudioFrame(room) };
+  }
+
+  @PublicRoute()
+  @Sse('studio/stream/:room')
+  streamStudio(@Param('room') room: string): Observable<{ data: any }> {
+    return new Observable((observer) => {
+      // Send immediate latest frame if present
+      const current = this.countdownService.getStudioFrame(room);
+      if (current) {
+        observer.next({ data: { type: 'frame', ...current } });
+      }
+
+      const onFrame = (frameObj: any) => {
+        observer.next({ data: { type: 'frame', ...frameObj } });
+      };
+
+      const onSignal = (signalObj: any) => {
+        observer.next({ data: { type: 'signal', ...signalObj } });
+      };
+
+      this.countdownService.studioEvents.on(`frame:${room}`, onFrame);
+      this.countdownService.studioEvents.on(`signal:${room}`, onSignal);
+
+      return () => {
+        this.countdownService.studioEvents.off(`frame:${room}`, onFrame);
+        this.countdownService.studioEvents.off(`signal:${room}`, onSignal);
+      };
+    });
   }
 
   @PublicRoute()
