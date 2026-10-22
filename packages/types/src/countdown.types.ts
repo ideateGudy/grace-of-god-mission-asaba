@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export type CountdownMode = "activity" | "event-date" | "target-time" | "duration";
 
 export type CountdownThemeId =
@@ -89,7 +91,58 @@ export const COUNTDOWN_THEMES: Record<CountdownThemeId, CountdownTheme> = {
   },
 };
 
-import { z } from "zod";
+export type StudioInputType =
+  | "countdown"
+  | "scripture"
+  | "media"
+  | "lower-third"
+  | "camera"
+  | "black";
+
+export type BibleTranslation =
+  | "KJV"
+  | "NKJV"
+  | "ESV"
+  | "AMP"
+  | "NIV"
+  | "MSG"
+  | "BSB";
+
+export interface StudioScriptureState {
+  reference: string;
+  book: string;
+  chapter: number;
+  verse: number;
+  endVerse?: number;
+  text: string;
+  translation: BibleTranslation;
+  displayMode: "fullscreen" | "lower-third";
+}
+
+export interface StudioMediaItem {
+  id: string;
+  url: string;
+  title: string;
+  category: "flyer" | "sermon" | "offering" | "announcement" | "general";
+  thumbnailUrl?: string;
+  uploadedAt: string;
+}
+
+export interface StudioOverlayState {
+  enabled: boolean;
+  type: "speaker" | "giving" | "ticker" | "scripture" | "custom";
+  title: string;
+  subtitle: string;
+  extra?: string;
+}
+
+export interface StudioCameraState {
+  enabled: boolean;
+  deviceId?: string;
+  streamType: "webcam" | "youtube" | "ndi" | "phone";
+  youtubeId?: string;
+  roomCode?: string;
+}
 
 export const updateCountdownSchema = z.object({
   title: z.string().trim().max(300).optional(),
@@ -109,6 +162,17 @@ export const updateCountdownSchema = z.object({
   isRunning: z.boolean().optional(),
   remainingSeconds: z.number().int().optional(),
   targetEndTime: z.number().nullable().optional(),
+  // Extended studio fields (all optional for backward compatibility)
+  activeType: z.enum(["countdown", "scripture", "media", "lower-third", "camera", "black"]).optional(),
+  previewType: z.enum(["countdown", "scripture", "media", "lower-third", "camera", "black"]).optional(),
+  scripture: z.any().optional(),
+  mediaList: z.array(z.any()).optional(),
+  activeMediaId: z.string().optional(),
+  overlay: z.any().optional(),
+  camera: z.any().optional(),
+  isBlackout: z.boolean().optional(),
+  transitionType: z.enum(["cut", "fade"]).optional(),
+  transitionDurationMs: z.number().optional(),
 });
 
 export type UpdateCountdownDto = z.infer<typeof updateCountdownSchema>;
@@ -118,7 +182,79 @@ export interface PublicCountdownDto extends ChurchCountdownState {
   remainingSeconds: number;
   targetEndTime: number | null;
   updatedAt: string;
+  // Studio extensions (optional on base countdown DTO)
+  activeType?: StudioInputType;
+  previewType?: StudioInputType;
+  scripture?: StudioScriptureState;
+  mediaList?: StudioMediaItem[];
+  activeMediaId?: string;
+  overlay?: StudioOverlayState;
+  camera?: StudioCameraState;
+  isBlackout?: boolean;
+  transitionType?: "cut" | "fade";
+  transitionDurationMs?: number;
 }
+
+export interface BroadcastStudioState extends PublicCountdownDto {
+  activeType: StudioInputType;
+  previewType: StudioInputType;
+  scripture: StudioScriptureState;
+  mediaList: StudioMediaItem[];
+  activeMediaId?: string;
+  overlay: StudioOverlayState;
+  camera: StudioCameraState;
+  isBlackout: boolean;
+  transitionType: "cut" | "fade";
+  transitionDurationMs: number;
+}
+
+export const DEFAULT_STUDIO_STATE: BroadcastStudioState = {
+  title: "SUNDAY CELEBRATION SERVICE",
+  subtitle: "Service Starts In...",
+  scriptureRef: "ISAIAH 60:1",
+  scriptureText: "Arise, shine; for thy light is come, and the glory of the LORD is risen upon thee.",
+  mode: "target-time",
+  targetTimeString: "08:00",
+  targetDate: "",
+  durationSeconds: 1800,
+  theme: "royal-gold",
+  soundEnabled: true,
+  overtimeEnabled: false,
+  showScripture: false,
+  showLogo: true,
+  stageMode: false,
+  isRunning: true,
+  remainingSeconds: 1800,
+  targetEndTime: null,
+  updatedAt: new Date().toISOString(),
+  activeType: "countdown",
+  previewType: "scripture",
+  scripture: {
+    reference: "ISAIAH 60:1",
+    book: "Isaiah",
+    chapter: 60,
+    verse: 1,
+    text: "Arise, shine; for thy light is come, and the glory of the LORD is risen upon thee.",
+    translation: "KJV",
+    displayMode: "fullscreen",
+  },
+  mediaList: [],
+  activeMediaId: undefined,
+  overlay: {
+    enabled: false,
+    type: "speaker",
+    title: "PASTOR DAVID OGBUELI",
+    subtitle: "Senior Pastor · Grace of God Mission Asaba",
+    extra: "Theme: The Reigning Church",
+  },
+  camera: {
+    enabled: false,
+    streamType: "webcam",
+  },
+  isBlackout: false,
+  transitionType: "fade",
+  transitionDurationMs: 500,
+};
 
 export interface ChurchCountdownState {
   title: string;
