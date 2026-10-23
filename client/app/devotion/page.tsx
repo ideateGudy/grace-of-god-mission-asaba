@@ -249,33 +249,38 @@ export default async function DevotionPage() {
                   year: "numeric",
                 });
                 return (
-                  <GlassCard
+                  <Link
                     key={d.id}
-                    surface="solid"
-                    padding="md"
-                    className="border border-border hover:border-primary/40 transition flex flex-col justify-between"
+                    href={`/devotion/${d.id}`}
+                    className="group block focus:outline-none"
                   >
-                    <div className="space-y-1.5">
-                      <span className="text-[11px] font-semibold text-muted-foreground">
-                        {dateLabel} · <strong className="text-primary">{d.scriptureRef}</strong>
-                      </span>
-                      <h4 className="font-display text-base font-bold text-foreground">
-                        {d.title}
-                      </h4>
-                      {d.textRef && (
-                        <p className="text-[11px] font-bold text-gold">TEXT: {d.textRef}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                        {d.content}
-                      </p>
-                    </div>
+                    <GlassCard
+                      surface="solid"
+                      padding="md"
+                      className="border border-border group-hover:border-primary/40 group-focus-visible:border-primary/60 transition-colors h-full flex flex-col justify-between"
+                    >
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] font-semibold text-muted-foreground">
+                          {dateLabel} · <strong className="text-primary">{d.scriptureRef}</strong>
+                        </span>
+                        <h4 className="font-display text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                          {d.title}
+                        </h4>
+                        {d.textRef && (
+                          <p className="text-[11px] font-bold text-gold">TEXT: {d.textRef}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                          {d.content}
+                        </p>
+                      </div>
 
-                    <div className="mt-3 pt-2 border-t border-border/40 text-right">
-                      <span className="text-xs font-semibold text-primary inline-flex items-center">
-                        Read reflection <ChevronRight className="h-3 w-3 ml-0.5" />
-                      </span>
-                    </div>
-                  </GlassCard>
+                      <div className="mt-3 pt-2 border-t border-border/40 text-right">
+                        <span className="text-xs font-semibold text-primary inline-flex items-center group-hover:underline underline-offset-2">
+                          Read reflection <ChevronRight className="h-3 w-3 ml-0.5" />
+                        </span>
+                      </div>
+                    </GlassCard>
+                  </Link>
                 );
               })}
             </div>
