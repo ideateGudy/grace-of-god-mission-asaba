@@ -23,6 +23,7 @@ import {
   Zap,
   Sliders,
   Check,
+  Palette,
 } from "lucide-react";
 import {
   type BroadcastStudioState,
@@ -51,6 +52,7 @@ import { toast } from "sonner";
 import { WebRtcReceiver } from "@/lib/studio/studio-webrtc";
 import { api } from "@/lib/api/client";
 import { cleanVerseText } from "@/lib/studio/bible-service";
+import { StudioThemeModal } from "@/components/studio/StudioThemeModal";
 
 function formatTwoDigits(n: number): string {
   return Math.max(0, Math.floor(n)).toString().padStart(2, "0");
@@ -65,6 +67,7 @@ export function BroadcastStudio() {
   const [isFading, setIsFading] = useState<boolean>(false);
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [phoneFrame, setPhoneFrame] = useState<string | null>(null);
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
 
   const channelRef = useRef<BroadcastChannel | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -652,8 +655,23 @@ export function BroadcastStudio() {
           </div>
         </div>
 
-        {/* Quick Actions (OBS copy, Pop-out, Chime Soundboard) */}
+        {/* Quick Actions (Theme & BG Manager, OBS copy, Pop-out, Chime Soundboard) */}
         <div className="flex items-center gap-1.5">
+          {/* Prominent Theme & Background Styling Button */}
+          <button
+            type="button"
+            onClick={() => setIsThemeModalOpen(true)}
+            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-amber-600/30 hover:from-amber-500/30 hover:to-amber-600/40 border border-amber-400/50 text-amber-300 hover:text-amber-200 text-xs font-black flex items-center gap-1.5 transition-all shadow-sm"
+            title="Configure Sacred Theme Colors & Background Image Overlays"
+          >
+            <Palette className="w-3.5 h-3.5 text-amber-400" />
+            <span>Theme &amp; BG</span>
+            <span
+              className="w-2.5 h-2.5 rounded-full border border-white/20 ml-0.5 hidden sm:inline-block"
+              style={{ backgroundColor: currentTheme.primaryAccent }}
+            />
+          </button>
+
           <button
             type="button"
             onClick={() => copyObsUrl(true)}
@@ -1228,6 +1246,19 @@ export function BroadcastStudio() {
             <Camera className="w-4 h-4" />
             <span>5. Camera / NDI / Phone</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setIsThemeModalOpen(true)}
+            className="ml-auto px-4 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 transition-all whitespace-nowrap bg-zinc-900/80 hover:bg-zinc-800 text-amber-300 border border-amber-400/30 hover:border-amber-400/60 shadow-sm"
+          >
+            <Palette className="w-4 h-4 text-amber-400" />
+            <span>Theme &amp; BG Colors</span>
+            <span
+              className="w-2.5 h-2.5 rounded-full border border-white/20 inline-block"
+              style={{ backgroundColor: currentTheme.primaryAccent }}
+            />
+          </button>
         </div>
 
         {/* Active Input Panel Container */}
@@ -1273,6 +1304,14 @@ export function BroadcastStudio() {
           )}
         </div>
       </main>
+
+      {/* Global Studio Theme & Background Modal */}
+      <StudioThemeModal
+        state={state}
+        isOpen={isThemeModalOpen}
+        onClose={() => setIsThemeModalOpen(false)}
+        onChange={updateStudioState}
+      />
     </div>
   );
 }
