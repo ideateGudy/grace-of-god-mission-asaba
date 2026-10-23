@@ -7,6 +7,7 @@ export type CountdownThemeId =
   | "pentecost-fire"
   | "celestial-blue"
   | "emerald-grace"
+  | "dark-obsidian"
   | "obs-transparent";
 
 export interface CountdownTheme {
@@ -36,6 +37,19 @@ export const COUNTDOWN_THEMES: Record<CountdownThemeId, CountdownTheme> = {
     digitColor: "#FFFFFF",
     labelColor: "#D9A441",
     borderColor: "rgba(217, 164, 65, 0.3)",
+  },
+  "dark-obsidian": {
+    id: "dark-obsidian",
+    name: "Dark Onyx & Platinum",
+    tagline: "Sleek minimal dark mode with deep black, titanium glow, and crisp platinum digits",
+    bgDark: "#000000",
+    bgGradient: "radial-gradient(ellipse at 50% 25%, #181922 0%, #0c0d12 45%, #000000 100%)",
+    primaryAccent: "#E2E8F0",
+    secondaryAccent: "#94A3B8",
+    accentGlow: "rgba(226, 232, 240, 0.35)",
+    digitColor: "#FFFFFF",
+    labelColor: "#CBD5E1",
+    borderColor: "rgba(255, 255, 255, 0.22)",
   },
   "pentecost-fire": {
     id: "pentecost-fire",
@@ -161,7 +175,7 @@ export const updateCountdownSchema = z.object({
   targetTimeString: z.string().trim().max(20).optional(),
   targetDate: z.string().trim().max(100).optional(),
   durationSeconds: z.number().int().min(0).max(86400).optional(),
-  theme: z.enum(["royal-gold", "pentecost-fire", "celestial-blue", "emerald-grace", "obs-transparent"]).optional(),
+  theme: z.enum(["royal-gold", "dark-obsidian", "pentecost-fire", "celestial-blue", "emerald-grace", "obs-transparent"]).optional(),
   soundEnabled: z.boolean().optional(),
   overtimeEnabled: z.boolean().optional(),
   showScripture: z.boolean().optional(),

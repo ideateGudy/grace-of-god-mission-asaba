@@ -17,13 +17,14 @@ describe("Church Countdown Engine & Offline Presets", () => {
   it("provides complete design tokens for all 5 sacred countdown themes", () => {
     const themeIds: CountdownThemeId[] = [
       "royal-gold",
+      "dark-obsidian",
       "pentecost-fire",
       "celestial-blue",
       "emerald-grace",
       "obs-transparent",
     ];
 
-    expect(Object.keys(COUNTDOWN_THEMES)).toHaveLength(5);
+    expect(Object.keys(COUNTDOWN_THEMES)).toHaveLength(6);
 
     themeIds.forEach((id) => {
       const theme = COUNTDOWN_THEMES[id];
