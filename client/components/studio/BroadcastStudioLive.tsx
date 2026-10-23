@@ -157,7 +157,7 @@ export function BroadcastStudioLive() {
 
           setIsRunning(remote.isRunning);
 
-          // Update remainingSeconds from remote
+          // Update remainingSeconds from remote only if drift is significant (> 1s) to prevent visual jitter/glitch
           if (remote.mode === "event-date" && remote.targetDate) {
             setRemainingSeconds(calculateSecondsUntilDate(remote.targetDate));
           } else if (remote.mode === "target-time" && remote.targetTimeString) {
@@ -165,8 +165,9 @@ export function BroadcastStudioLive() {
           } else if (remote.remainingSeconds !== undefined) {
             if (remote.targetEndTime && remote.isRunning) {
               const calculated = Math.round((remote.targetEndTime - Date.now()) / 1000);
-              setRemainingSeconds(!remote.overtimeEnabled && calculated <= 0 ? 0 : calculated);
-            } else {
+              const targetSecs = !remote.overtimeEnabled && calculated <= 0 ? 0 : calculated;
+              setRemainingSeconds((curr) => (Math.abs(curr - targetSecs) > 1 ? targetSecs : curr));
+            } else if (!remote.isRunning) {
               setRemainingSeconds(remote.remainingSeconds);
             }
           }
@@ -178,7 +179,7 @@ export function BroadcastStudioLive() {
     return () => clearInterval(interval);
   }, [isMounted]);
 
-  // 4. Runtime 1-Second Timer Tick
+  // 4. Runtime 1-Second Timer Tick (High accuracy, rock-solid, no glitching)
   useEffect(() => {
     if (!isMounted) return;
 
@@ -188,6 +189,24 @@ export function BroadcastStudioLive() {
           return calculateSecondsUntilDate(state.targetDate);
         } else if (state.mode === "target-time" && state.targetTimeString) {
           return calculateSecondsUntilTarget(state.targetTimeString);
+        }
+
+        // If targetEndTime is defined and timer is running, calculate directly against current epoch for zero-drift
+        if (state.isRunning && state.targetEndTime) {
+          const calculated = Math.round((state.targetEndTime - Date.now()) / 1000);
+          if (!state.overtimeEnabled && calculated <= 0) {
+            if (prev > 0 && chimePlayedRef.current === false && state.soundEnabled) {
+              audioSynth.playCathedralChimes();
+              chimePlayedRef.current = true;
+            }
+            setIsRunning(false);
+            return 0;
+          }
+          if (calculated > 0 && calculated <= 10 && lastSecondRef.current !== calculated && state.soundEnabled) {
+            audioSynth.playTick();
+            lastSecondRef.current = calculated;
+          }
+          return calculated;
         }
 
         if (!isRunning) return prev;
@@ -218,7 +237,7 @@ export function BroadcastStudioLive() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isMounted, isRunning, state.mode, state.targetDate, state.targetTimeString, state.overtimeEnabled, state.soundEnabled]);
+  }, [isMounted, isRunning, state.isRunning, state.targetEndTime, state.mode, state.targetDate, state.targetTimeString, state.overtimeEnabled, state.soundEnabled]);
 
   // 5. Connect Camera Stream if camera is active
   useEffect(() => {
@@ -484,108 +503,165 @@ export function BroadcastStudioLive() {
 
             {/* Main Stage Display: Normal Timer (TIME UP) vs Event Timer (Message or 00:00:00) vs Active Counting */}
             {isNormalTimer && isTimeUp ? (
-              /* Normal Countdown Timer Reached Zero: Giant Flashing TIME UP */
-              <div className="my-auto flex flex-col items-center gap-4 animate-in zoom-in-95 duration-500">
-                <div className="px-8 py-5 sm:px-14 sm:py-8 rounded-3xl bg-red-600/90 text-white border-4 border-red-400 shadow-[0_0_80px_rgba(239,68,68,0.8)] animate-pulse">
-                  <span className="text-5xl sm:text-8xl md:text-9xl font-black tracking-wider uppercase font-mono block">
-                    TIME UP
+              /* Normal Countdown Timer Reached Zero: Giant CountdownKings "TIME'S UP!" Red Alert Screen */
+              <div className="my-auto flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500 w-full max-w-5xl px-4">
+                <div className="w-full py-10 sm:py-16 md:py-20 px-6 sm:px-12 rounded-3xl bg-red-600/95 text-white border-4 border-red-300 shadow-[0_0_120px_rgba(239,68,68,0.9)] animate-pulse flex flex-col items-center justify-center">
+                  <span className="text-6xl sm:text-9xl md:text-[11rem] font-black tracking-tight uppercase font-sans drop-shadow-[0_8px_16px_rgba(0,0,0,0.8)] leading-none select-none">
+                    TIME&apos;S UP!
+                  </span>
+                  <span className="text-sm sm:text-2xl md:text-3xl font-extrabold tracking-widest uppercase mt-4 text-red-100 font-mono">
+                    00:00:00
                   </span>
                 </div>
                 {state.overtimeEnabled && (
-                  <div className="px-5 py-2 rounded-full bg-black/80 border border-red-500 text-red-300 text-sm sm:text-lg font-mono font-bold tracking-widest shadow-xl">
+                  <div className="px-6 py-2.5 rounded-full bg-black/90 border-2 border-red-500 text-red-400 text-base sm:text-2xl font-mono font-black tracking-widest shadow-2xl">
                     OVERTIME: +{formatTwoDigits(timeBreakdown.minutes)}:{formatTwoDigits(timeBreakdown.seconds)}
                   </div>
                 )}
               </div>
             ) : isEventTimer && isEventCompleted && state.completionMessage ? (
               /* Event / Occasion Countdown Reached Zero with Custom Message */
-              <div className="my-auto flex flex-col items-center gap-4 animate-in zoom-in-95 duration-500 max-w-4xl px-4">
+              <div className="my-auto flex flex-col items-center gap-4 animate-in zoom-in-95 duration-500 max-w-5xl px-4 w-full">
                 <div
-                  className="px-8 py-6 sm:px-14 sm:py-10 rounded-3xl shadow-2xl backdrop-blur-xl border-2 text-center"
+                  className="w-full py-10 sm:py-16 px-6 sm:px-12 rounded-3xl shadow-2xl backdrop-blur-2xl border-4 text-center"
                   style={{
-                    backgroundColor: "rgba(0, 0, 0, 0.85)",
+                    backgroundColor: "rgba(0, 0, 0, 0.9)",
                     borderColor: currentTheme.primaryAccent,
-                    boxShadow: `0 0 60px ${currentTheme.accentGlow}`,
+                    boxShadow: `0 0 80px ${currentTheme.accentGlow}`,
                   }}
                 >
                   <span
-                    className="text-3xl sm:text-6xl md:text-7xl font-black tracking-wider uppercase drop-shadow-xl block font-sans"
+                    className="text-4xl sm:text-7xl md:text-8xl font-black tracking-tight uppercase drop-shadow-2xl block font-sans"
                     style={{ color: currentTheme.primaryAccent }}
                   >
                     {state.completionMessage}
                   </span>
-                  <span className="text-xs sm:text-sm text-zinc-300 font-mono tracking-widest uppercase block mt-3">
+                  <span className="text-xs sm:text-base text-zinc-300 font-mono tracking-widest uppercase block mt-4">
                     00:00:00 · Welcome to Sanctuary
                   </span>
                 </div>
               </div>
             ) : (
-              /* Standard Giant Glassmorphism Digits Display */
-              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 my-auto">
-                {timeBreakdown.days > 0 && (
-                  <div className="flex flex-col items-center px-4 py-3 sm:px-6 sm:py-5 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md shadow-2xl min-w-[90px] sm:min-w-[140px]">
+              /* Giant High-Visibility Digits Display (CountdownKings "Big Time" Style) */
+              <div className="flex flex-col items-center justify-center my-auto w-full px-2">
+                <div
+                  className={`flex items-center justify-center gap-2 sm:gap-4 md:gap-6 p-4 sm:p-8 md:p-12 rounded-3xl backdrop-blur-xl border transition-all duration-500 max-w-7xl w-full ${
+                    remainingSeconds <= 30 && remainingSeconds > 0
+                      ? "bg-red-950/40 border-red-500/70 shadow-[0_0_60px_rgba(239,68,68,0.35)]"
+                      : remainingSeconds <= 120 && remainingSeconds > 0
+                      ? "bg-amber-950/30 border-amber-500/50 shadow-[0_0_50px_rgba(245,158,11,0.25)]"
+                      : "bg-black/60 border-white/10 shadow-[0_16px_50px_rgba(0,0,0,0.8)]"
+                  }`}
+                >
+                  {/* Days Card (if > 0) */}
+                  {timeBreakdown.days > 0 && (
+                    <>
+                      <div className="flex flex-col items-center flex-1 max-w-[220px]">
+                        <span
+                          className="text-5xl sm:text-8xl md:text-9xl lg:text-[11rem] font-black tracking-tighter leading-none select-none drop-shadow-2xl font-mono"
+                          style={{
+                            color:
+                              remainingSeconds <= 30 && remainingSeconds > 0
+                                ? "#EF4444"
+                                : remainingSeconds <= 120 && remainingSeconds > 0
+                                ? "#F59E0B"
+                                : currentTheme.digitColor,
+                          }}
+                        >
+                          {formatTwoDigits(timeBreakdown.days)}
+                        </span>
+                        <span
+                          className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-widest mt-2 sm:mt-3"
+                          style={{ color: currentTheme.labelColor }}
+                        >
+                          Days
+                        </span>
+                      </div>
+                      <span className="text-4xl sm:text-7xl md:text-9xl font-bold opacity-30 select-none -translate-y-2 sm:-translate-y-4">
+                        :
+                      </span>
+                    </>
+                  )}
+
+                  {/* Hours Card (always shown unless 0 days and 0 hours on duration timers) */}
+                  {(timeBreakdown.days > 0 || timeBreakdown.hours > 0 || state.mode === "event-date") && (
+                    <>
+                      <div className="flex flex-col items-center flex-1 max-w-[220px]">
+                        <span
+                          className="text-5xl sm:text-8xl md:text-9xl lg:text-[11rem] font-black tracking-tighter leading-none select-none drop-shadow-2xl font-mono"
+                          style={{
+                            color:
+                              remainingSeconds <= 30 && remainingSeconds > 0
+                                ? "#EF4444"
+                                : remainingSeconds <= 120 && remainingSeconds > 0
+                                ? "#F59E0B"
+                                : currentTheme.digitColor,
+                          }}
+                        >
+                          {formatTwoDigits(timeBreakdown.hours)}
+                        </span>
+                        <span
+                          className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-widest mt-2 sm:mt-3"
+                          style={{ color: currentTheme.labelColor }}
+                        >
+                          Hours
+                        </span>
+                      </div>
+                      <span className="text-4xl sm:text-7xl md:text-9xl font-bold opacity-30 select-none -translate-y-2 sm:-translate-y-4">
+                        :
+                      </span>
+                    </>
+                  )}
+
+                  {/* Minutes Card */}
+                  <div className="flex flex-col items-center flex-1 max-w-[220px]">
                     <span
-                      className="text-4xl sm:text-7xl md:text-9xl font-black tracking-tighter drop-shadow-2xl font-mono"
-                      style={{ color: currentTheme.digitColor }}
+                      className="text-5xl sm:text-8xl md:text-9xl lg:text-[11rem] font-black tracking-tighter leading-none select-none drop-shadow-2xl font-mono"
+                      style={{
+                        color:
+                          remainingSeconds <= 30 && remainingSeconds > 0
+                            ? "#EF4444"
+                            : remainingSeconds <= 120 && remainingSeconds > 0
+                            ? "#F59E0B"
+                            : currentTheme.digitColor,
+                      }}
                     >
-                      {formatTwoDigits(timeBreakdown.days)}
+                      {formatTwoDigits(timeBreakdown.minutes)}
                     </span>
                     <span
-                      className="text-[10px] sm:text-sm font-bold uppercase tracking-widest mt-1"
+                      className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-widest mt-2 sm:mt-3"
                       style={{ color: currentTheme.labelColor }}
                     >
-                      Days
+                      Minutes
                     </span>
                   </div>
-                )}
 
-                <div className="flex flex-col items-center px-4 py-3 sm:px-6 sm:py-5 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md shadow-2xl min-w-[90px] sm:min-w-[140px]">
-                  <span
-                    className="text-4xl sm:text-7xl md:text-9xl font-black tracking-tighter drop-shadow-2xl font-mono"
-                    style={{ color: currentTheme.digitColor }}
-                  >
-                    {formatTwoDigits(timeBreakdown.hours)}
+                  <span className="text-4xl sm:text-7xl md:text-9xl font-bold opacity-30 select-none -translate-y-2 sm:-translate-y-4">
+                    :
                   </span>
-                  <span
-                    className="text-[10px] sm:text-sm font-bold uppercase tracking-widest mt-1"
-                    style={{ color: currentTheme.labelColor }}
-                  >
-                    Hours
-                  </span>
-                </div>
 
-                <span className="text-3xl sm:text-6xl md:text-8xl font-thin opacity-30 select-none">:</span>
-
-                <div className="flex flex-col items-center px-4 py-3 sm:px-6 sm:py-5 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md shadow-2xl min-w-[90px] sm:min-w-[140px]">
-                  <span
-                    className="text-4xl sm:text-7xl md:text-9xl font-black tracking-tighter drop-shadow-2xl font-mono"
-                    style={{ color: currentTheme.digitColor }}
-                  >
-                    {formatTwoDigits(timeBreakdown.minutes)}
-                  </span>
-                  <span
-                    className="text-[10px] sm:text-sm font-bold uppercase tracking-widest mt-1"
-                    style={{ color: currentTheme.labelColor }}
-                  >
-                    Minutes
-                  </span>
-                </div>
-
-                <span className="text-3xl sm:text-6xl md:text-8xl font-thin opacity-30 select-none">:</span>
-
-                <div className="flex flex-col items-center px-4 py-3 sm:px-6 sm:py-5 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md shadow-2xl min-w-[90px] sm:min-w-[140px]">
-                  <span
-                    className="text-4xl sm:text-7xl md:text-9xl font-black tracking-tighter drop-shadow-2xl font-mono"
-                    style={{ color: currentTheme.digitColor }}
-                  >
-                    {formatTwoDigits(timeBreakdown.seconds)}
-                  </span>
-                  <span
-                    className="text-[10px] sm:text-sm font-bold uppercase tracking-widest mt-1"
-                    style={{ color: currentTheme.labelColor }}
-                  >
-                    Seconds
-                  </span>
+                  {/* Seconds Card */}
+                  <div className="flex flex-col items-center flex-1 max-w-[220px]">
+                    <span
+                      className="text-5xl sm:text-8xl md:text-9xl lg:text-[11rem] font-black tracking-tighter leading-none select-none drop-shadow-2xl font-mono"
+                      style={{
+                        color:
+                          remainingSeconds <= 30 && remainingSeconds > 0
+                            ? "#EF4444"
+                            : remainingSeconds <= 120 && remainingSeconds > 0
+                            ? "#F59E0B"
+                            : currentTheme.digitColor,
+                      }}
+                    >
+                      {formatTwoDigits(timeBreakdown.seconds)}
+                    </span>
+                    <span
+                      className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-widest mt-2 sm:mt-3"
+                      style={{ color: currentTheme.labelColor }}
+                    >
+                      Seconds
+                    </span>
+                  </div>
                 </div>
               </div>
             )}

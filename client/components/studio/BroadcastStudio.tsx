@@ -115,7 +115,13 @@ export function BroadcastStudio() {
 
         if (!prev.isRunning) return prev;
 
-        const next = prev.remainingSeconds - 1;
+        // Use epoch-based targetEndTime if available for 100% rock-solid drift-free precision
+        let next: number;
+        if (prev.targetEndTime) {
+          next = Math.round((prev.targetEndTime - Date.now()) / 1000);
+        } else {
+          next = prev.remainingSeconds - 1;
+        }
 
         if (!prev.overtimeEnabled && next <= 0) {
           const zeroedState = {
