@@ -751,7 +751,7 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
                     }}
                     className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200 border border-white/5 transition-colors"
                   >
-                    Next Sun 8:00 AM
+                    Next Sun 7:00 AM
                   </button>
                   <button
                     type="button"
@@ -763,7 +763,7 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
                     }}
                     className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200 border border-white/5 transition-colors"
                   >
-                    Next Wed 5:30 PM
+                    Next Wed 5:00 PM
                   </button>
                 </div>
               </div>

@@ -510,9 +510,6 @@ export function BroadcastStudioLive() {
                 >
                   {state.completionMessage}
                 </span>
-                <span className="text-xs sm:text-base text-zinc-400 font-medium tracking-widest uppercase">
-                  Service in Session
-                </span>
               </div>
             ) : (
               /* Fliqlo-Inspired Modern Flip Card Timer (Compact, Bold, Split-Flap Seam, Premium Depth) */

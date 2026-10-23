@@ -13,7 +13,7 @@ const DEFAULT_COUNTDOWN: PublicCountdownDto = {
   scriptureRef: 'ISAIAH 60:1',
   scriptureText: 'Arise, shine; for thy light is come, and the glory of the LORD is risen upon thee.',
   mode: 'target-time',
-  targetTimeString: '08:00',
+  targetTimeString: '07:00',
   targetDate: '',
   durationSeconds: 1800,
   theme: 'royal-gold',
@@ -61,10 +61,10 @@ export class CountdownService {
       if (raw.targetDate) {
         remainingSeconds = calculateSecondsUntilDate(raw.targetDate);
       } else {
-        remainingSeconds = calculateSecondsUntilTarget(raw.targetTimeString || '08:00');
+        remainingSeconds = calculateSecondsUntilTarget(raw.targetTimeString || '07:00');
       }
     } else if (mode === 'target-time') {
-      remainingSeconds = calculateSecondsUntilTarget(raw.targetTimeString || '08:00');
+      remainingSeconds = calculateSecondsUntilTarget(raw.targetTimeString || '07:00');
     } else if ((mode === 'activity' || mode === 'duration') && isRunning && targetEndTime) {
       remainingSeconds = Math.round((targetEndTime - Date.now()) / 1000);
       if (!raw.overtimeEnabled && remainingSeconds <= 0) {

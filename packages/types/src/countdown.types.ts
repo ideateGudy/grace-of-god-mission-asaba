@@ -228,7 +228,7 @@ export const DEFAULT_STUDIO_STATE: BroadcastStudioState = {
   scriptureRef: "ISAIAH 60:1",
   scriptureText: "Arise, shine; for thy light is come, and the glory of the LORD is risen upon thee.",
   mode: "target-time",
-  targetTimeString: "08:00",
+  targetTimeString: "07:00",
   targetDate: "",
   durationSeconds: 1800,
   theme: "royal-gold",
@@ -569,7 +569,7 @@ export const PROGRAMME_PRESETS: ProgrammePreset[] = [
  * If the target time passed earlier today by more than 2 hours, it rolls forward to tomorrow.
  */
 export function calculateSecondsUntilTarget(targetHHMM: string): number {
-  const [targetH, targetM] = (targetHHMM || "08:00").split(":").map(Number);
+  const [targetH, targetM] = (targetHHMM || "07:00").split(":").map(Number);
   const safeTargetH = isNaN(targetH) ? 8 : targetH;
   const safeTargetM = isNaN(targetM) ? 0 : targetM;
 
@@ -647,34 +647,34 @@ export function formatToLocalIso(date: Date): string {
 }
 
 /**
- * Returns the upcoming Sunday 08:00 AM date in local ISO format.
+ * Returns the upcoming Sunday 07:00 AM date in local ISO format.
  */
 export function getNextSundayServiceDate(): string {
   const now = new Date();
   const result = new Date(now);
   const day = result.getDay();
   let daysUntilSunday = (7 - day) % 7;
-  if (day === 0 && (now.getHours() > 8 || (now.getHours() === 8 && now.getMinutes() > 0))) {
+  if (day === 0 && (now.getHours() > 7 || (now.getHours() === 7 && now.getMinutes() > 0))) {
     daysUntilSunday = 7;
   }
   result.setDate(result.getDate() + daysUntilSunday);
-  result.setHours(8, 0, 0, 0);
+  result.setHours(7, 0, 0, 0);
   return formatToLocalIso(result);
 }
 
 /**
- * Returns the upcoming Wednesday 17:30 Midweek Service date in local ISO format.
+ * Returns the upcoming Wednesday 17:00 (5:00 PM) Midweek Service date in local ISO format.
  */
 export function getNextMidweekServiceDate(): string {
   const now = new Date();
   const result = new Date(now);
   const day = result.getDay();
   let daysUntilWed = (3 - day + 7) % 7;
-  if (day === 3 && (now.getHours() > 17 || (now.getHours() === 17 && now.getMinutes() > 30))) {
+  if (day === 3 && (now.getHours() > 17 || (now.getHours() === 17 && now.getMinutes() > 0))) {
     daysUntilWed = 7;
   }
   result.setDate(result.getDate() + daysUntilWed);
-  result.setHours(17, 30, 0, 0);
+  result.setHours(17, 0, 0, 0);
   return formatToLocalIso(result);
 }
 
