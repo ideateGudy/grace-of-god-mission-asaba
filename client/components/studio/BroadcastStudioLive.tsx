@@ -35,9 +35,30 @@ export function BroadcastStudioLive() {
   const isStageMode = searchParams.get("mode") === "stage";
 
   const [isMounted, setIsMounted] = useState<boolean>(false);
-  const [state, setState] = useState<BroadcastStudioState>(DEFAULT_STUDIO_STATE);
-  const [remainingSeconds, setRemainingSeconds] = useState<number>(1800);
-  const [isRunning, setIsRunning] = useState<boolean>(true);
+  const [state, setState] = useState<BroadcastStudioState>(() => {
+    if (typeof window !== "undefined") {
+      return loadStudioStateFromStorage();
+    }
+    return DEFAULT_STUDIO_STATE;
+  });
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const restored = loadStudioStateFromStorage();
+      if (restored.mode === "event-date" && restored.targetDate) {
+        return calculateSecondsUntilDate(restored.targetDate);
+      } else if (restored.mode === "target-time" && restored.targetTimeString) {
+        return calculateSecondsUntilTarget(restored.targetTimeString);
+      }
+      return restored.remainingSeconds;
+    }
+    return 1800;
+  });
+  const [isRunning, setIsRunning] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return loadStudioStateFromStorage().isRunning;
+    }
+    return true;
+  });
   const [phoneFrame, setPhoneFrame] = useState<string | null>(null);
 
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -46,10 +67,11 @@ export function BroadcastStudioLive() {
 
   const currentTheme = COUNTDOWN_THEMES[state.theme] || COUNTDOWN_THEMES["royal-gold"];
 
-  // 1. Initial State Restoration on Mount
+  // 1. Initial State Restoration & Immediate Remote Fetch on Mount
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // First load from localStorage to guarantee persistence
     const restored = loadStudioStateFromStorage();
     setState(restored);
     setIsRunning(restored.isRunning);
@@ -62,7 +84,53 @@ export function BroadcastStudioLive() {
       setRemainingSeconds(restored.remainingSeconds);
     }
 
-    setIsMounted(true);
+    // Immediately fetch remote state from server to eliminate any stale flash on separate devices
+    api.countdown.get().then((response) => {
+      if (response?.data) {
+        const remote = response.data;
+        setState((prev) => ({
+          ...prev,
+          title: remote.title || prev.title,
+          subtitle: remote.subtitle || prev.subtitle,
+          scriptureRef: remote.scriptureRef || prev.scriptureRef,
+          scriptureText: remote.scriptureText || prev.scriptureText,
+          mode: remote.mode || prev.mode,
+          targetTimeString: remote.targetTimeString || prev.targetTimeString,
+          targetDate: remote.targetDate || prev.targetDate,
+          durationSeconds: remote.durationSeconds || prev.durationSeconds,
+          theme: remote.theme || prev.theme,
+          bgImageUrl: remote.bgImageUrl !== undefined ? remote.bgImageUrl : prev.bgImageUrl,
+          bgImageOpacity: remote.bgImageOpacity !== undefined ? remote.bgImageOpacity : prev.bgImageOpacity,
+          soundEnabled: remote.soundEnabled ?? prev.soundEnabled,
+          overtimeEnabled: remote.overtimeEnabled ?? prev.overtimeEnabled,
+          showScripture: remote.showScripture ?? prev.showScripture,
+          showLogo: remote.showLogo ?? prev.showLogo,
+          stageMode: remote.stageMode ?? prev.stageMode,
+          completionMessage: remote.completionMessage ?? prev.completionMessage,
+          activeType: remote.activeType || prev.activeType,
+          previewType: remote.previewType || prev.previewType,
+          scripture: remote.scripture || prev.scripture,
+          mediaList: remote.mediaList && remote.mediaList.length > 0 ? remote.mediaList : prev.mediaList,
+          activeMediaId: remote.activeMediaId || prev.activeMediaId,
+          overlay: remote.overlay || prev.overlay,
+          camera: remote.camera || prev.camera,
+          isBlackout: remote.isBlackout ?? prev.isBlackout,
+          targetEndTime: remote.targetEndTime ?? prev.targetEndTime,
+        }));
+
+        setIsRunning(remote.isRunning);
+
+        if (remote.mode === "event-date" && remote.targetDate) {
+          setRemainingSeconds(calculateSecondsUntilDate(remote.targetDate));
+        } else if (remote.mode === "target-time" && remote.targetTimeString) {
+          setRemainingSeconds(calculateSecondsUntilTarget(remote.targetTimeString));
+        } else if (remote.remainingSeconds !== undefined) {
+          setRemainingSeconds(remote.remainingSeconds);
+        }
+      }
+    }).catch(() => {}).finally(() => {
+      setIsMounted(true);
+    });
   }, []);
 
   // 2. BroadcastChannel & Local Storage Sync (0ms Local Sync)
@@ -386,50 +454,58 @@ export function BroadcastStudioLive() {
   const activeCardsCount = (showDays ? 1 : 0) + (showHours ? 1 : 0) + 2;
 
   // Responsive Fliqlo card dimensions based on activeCardsCount
-  // Mobile-first responsive sizing: fits within narrow phone widths without horizontal overflow while keeping generous margins
+  // Mobile-first responsive sizing: maximizes screen presence on mobile while keeping clean margins
   const cardTileClass =
     activeCardsCount <= 2
-      ? "rounded-2xl sm:rounded-3xl md:rounded-[2.25rem] px-3.5 py-4 sm:px-8 sm:py-9 md:px-12 md:py-12 lg:px-16 lg:py-14 min-w-[38vw] max-w-[42vw] sm:min-w-[190px] sm:max-w-none md:min-w-[260px] lg:min-w-[310px] max-h-[50vh] shadow-[0_16px_50px_rgba(0,0,0,0.9)]"
+      ? "rounded-2xl sm:rounded-3xl md:rounded-[2.25rem] px-4 py-5 sm:px-8 sm:py-9 md:px-12 md:py-12 lg:px-16 lg:py-14 min-w-[40vw] max-w-[44vw] sm:min-w-[190px] sm:max-w-none md:min-w-[260px] lg:min-w-[310px] max-h-[50vh] shadow-[0_16px_50px_rgba(0,0,0,0.9)]"
       : activeCardsCount === 3
-      ? "rounded-xl sm:rounded-2xl md:rounded-3xl px-2.5 py-3 sm:px-6 sm:py-6 md:px-9 md:py-8 lg:px-11 lg:py-10 min-w-[25vw] max-w-[28vw] sm:min-w-[130px] sm:max-w-none md:min-w-[170px] lg:min-w-[210px] max-h-[46vh] shadow-[0_14px_45px_rgba(0,0,0,0.85)]"
-      : "rounded-lg sm:rounded-2xl md:rounded-3xl px-2 py-2 sm:px-4 sm:py-3.5 md:px-6 md:py-5 lg:px-7 lg:py-6 min-w-[19vw] max-w-[22vw] sm:min-w-[90px] sm:max-w-none md:min-w-[120px] lg:min-w-[140px] max-h-[42vh] shadow-[0_12px_40px_rgba(0,0,0,0.8)]";
+      ? "rounded-xl sm:rounded-2xl md:rounded-3xl px-3 py-4 sm:px-6 sm:py-6 md:px-9 md:py-8 lg:px-11 lg:py-10 min-w-[28vw] max-w-[30vw] sm:min-w-[130px] sm:max-w-none md:min-w-[170px] lg:min-w-[210px] max-h-[46vh] shadow-[0_14px_45px_rgba(0,0,0,0.85)]"
+      : "rounded-xl sm:rounded-2xl md:rounded-3xl px-2 py-3.5 sm:px-4 sm:py-4 md:px-6 md:py-5 lg:px-7 lg:py-6 min-w-[21vw] max-w-[23vw] sm:min-w-[90px] sm:max-w-none md:min-w-[120px] lg:min-w-[140px] max-h-[44vh] shadow-[0_12px_40px_rgba(0,0,0,0.8)]";
 
   const cardDigitClass =
     activeCardsCount <= 2
-      ? "text-5xl sm:text-8xl md:text-[10.5rem] lg:text-[12.5rem] xl:text-[14.5rem]"
+      ? "text-6xl sm:text-8xl md:text-[10.5rem] lg:text-[12.5rem] xl:text-[14.5rem]"
       : activeCardsCount === 3
-      ? "text-3xl sm:text-6xl md:text-7xl lg:text-9xl xl:text-[10rem]"
-      : "text-2xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl";
+      ? "text-4xl sm:text-6xl md:text-7xl lg:text-9xl xl:text-[10rem]"
+      : "text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl";
 
   const cardLabelClass =
     activeCardsCount <= 2
-      ? "text-[10px] sm:text-xs md:text-sm lg:text-base font-black tracking-[0.25em] sm:tracking-[0.3em] mt-2 sm:mt-4"
+      ? "text-[11px] sm:text-xs md:text-sm lg:text-base font-black tracking-[0.25em] sm:tracking-[0.3em] mt-2 sm:mt-4"
       : activeCardsCount === 3
-      ? "text-[9px] sm:text-[11px] md:text-xs lg:text-sm font-black tracking-[0.2em] sm:tracking-[0.25em] mt-1.5 sm:mt-2.5"
-      : "text-[8px] sm:text-[10px] md:text-xs font-black tracking-[0.15em] sm:tracking-[0.2em] mt-1 sm:mt-2";
+      ? "text-[10px] sm:text-[11px] md:text-xs lg:text-sm font-black tracking-[0.2em] sm:tracking-[0.25em] mt-1.5 sm:mt-2.5"
+      : "text-[9px] sm:text-[10px] md:text-xs font-black tracking-[0.15em] sm:tracking-[0.2em] mt-1.5 sm:mt-2";
 
   const colonDotClass =
     activeCardsCount <= 2
       ? "w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4 lg:w-5 lg:h-5"
       : activeCardsCount === 3
       ? "w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 lg:w-4 lg:h-4"
-      : "w-1 h-1 sm:w-1.5 sm:h-1.5 md:w-2 md:h-2 lg:w-3 lg:h-3";
+      : "w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5 lg:w-3 lg:h-3";
 
   const colonContainerClass =
     activeCardsCount <= 2
       ? "flex flex-col gap-2 sm:gap-4 md:gap-6 pb-5 sm:pb-9 md:pb-12 opacity-60 shrink-0"
       : activeCardsCount === 3
       ? "flex flex-col gap-1.5 sm:gap-3 md:gap-4 pb-4 sm:pb-7 md:pb-9 opacity-60 shrink-0"
-      : "flex flex-col gap-1 sm:gap-2.5 md:gap-3 pb-3 sm:pb-6 opacity-60 shrink-0";
+      : "flex flex-col gap-1 sm:gap-2.5 md:gap-3 pb-3.5 sm:pb-6 opacity-60 shrink-0";
 
   const cardContainerGap =
     activeCardsCount <= 2
       ? "gap-2 sm:gap-6 md:gap-10 lg:gap-14 max-w-6xl"
       : activeCardsCount === 3
       ? "gap-1.5 sm:gap-4 md:gap-7 lg:gap-9 max-w-5xl"
-      : "gap-1 sm:gap-2.5 md:gap-4 lg:gap-5 max-w-5xl";
+      : "gap-1.5 sm:gap-3 md:gap-4 lg:gap-5 max-w-5xl";
 
-  // Emergency Blackout Check
+  // Emergency Blackout Check or Unmounted Initial State Gate
+  if (!isMounted) {
+    return (
+      <div className="w-full h-screen bg-[#060714] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin opacity-40" />
+      </div>
+    );
+  }
+
   if (state.isBlackout) {
     return <div className="w-full h-screen bg-black" />;
   }
