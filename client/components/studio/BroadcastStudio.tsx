@@ -657,22 +657,22 @@ export function BroadcastStudio() {
                 )}
                 {state.camera.streamType === "phone" && (
                   <div className="relative w-full h-full flex items-center justify-center bg-black">
-                    {/* Zero-latency WebRTC video track */}
-                    <video
-                      ref={previewPhoneVideoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className={`w-full h-full object-contain ${webrtcConnected ? "block" : "hidden"}`}
-                    />
-                    {/* Ultra-fast Frame Relay fallback */}
-                    {!webrtcConnected && phoneFrame && (
+                    {/* Ultra-fast Frame Relay (always displayed as base image so it never flashes black) */}
+                    {phoneFrame && (
                       <img
                         src={phoneFrame}
                         alt="Phone Camera Live Preview"
                         className="w-full h-full object-contain"
                       />
                     )}
+                    {/* Zero-latency WebRTC video track (layered on top when connected) */}
+                    <video
+                      ref={previewPhoneVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`absolute inset-0 w-full h-full object-contain ${webrtcConnected ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                    />
                     {/* Standby waiting screen */}
                     {!webrtcConnected && !phoneFrame && (
                       <div className="text-center p-4 text-zinc-400">
@@ -835,22 +835,22 @@ export function BroadcastStudio() {
                     )}
                     {state.camera.streamType === "phone" && (
                       <div className="relative w-full h-full flex items-center justify-center bg-black">
-                        {/* Zero-latency WebRTC video track */}
-                        <video
-                          ref={programPhoneVideoRef}
-                          autoPlay
-                          playsInline
-                          muted
-                          className={`w-full h-full object-contain ${webrtcConnected ? "block" : "hidden"}`}
-                        />
-                        {/* Ultra-fast Frame Relay fallback */}
-                        {!webrtcConnected && phoneFrame && (
+                        {/* Ultra-fast Frame Relay (always displayed as base image so it never flashes black) */}
+                        {phoneFrame && (
                           <img
                             src={phoneFrame}
                             alt="Phone Camera Program Feed"
                             className="w-full h-full object-contain"
                           />
                         )}
+                        {/* Zero-latency WebRTC video track (layered on top when connected) */}
+                        <video
+                          ref={programPhoneVideoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className={`absolute inset-0 w-full h-full object-contain ${webrtcConnected ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                        />
                         {/* Standby waiting screen */}
                         {!webrtcConnected && !phoneFrame && (
                           <div className="text-center p-4 text-zinc-400">
