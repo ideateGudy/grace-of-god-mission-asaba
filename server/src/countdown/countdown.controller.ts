@@ -20,6 +20,15 @@ export class CountdownController {
     return { data };
   }
 
+  @PublicRoute()
+  @Patch('studio/countdown')
+  async updateStudioCountdown(
+    @Body(new ZodValidationPipe(updateCountdownSchema)) dto: UpdateCountdownDto,
+  ) {
+    const data = await this.countdownService.updateCountdown({ id: 'studio-operator', name: 'Studio Operator', role: 'OPERATOR' } as any, dto);
+    return { data };
+  }
+
   @RequirePermissions('LIVESTREAM_MANAGE')
   @Patch('admin/countdown')
   async updateCountdown(

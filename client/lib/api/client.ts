@@ -238,7 +238,7 @@ export const api = {
   countdown: {
     get: () => fetcher<{ data: PublicCountdownDto }>("/countdown", { cache: "no-store" }),
     update: (data: UpdateCountdownDto) =>
-      fetcher<{ data: PublicCountdownDto }>("/admin/countdown", {
+      fetcher<{ data: PublicCountdownDto }>("/studio/countdown", {
         method: "PATCH",
         body: JSON.stringify(data),
         cache: "no-store",
@@ -247,7 +247,7 @@ export const api = {
   studio: {
     get: () => fetcher<{ data: PublicCountdownDto }>("/countdown", { cache: "no-store" }),
     update: (data: UpdateCountdownDto) =>
-      fetcher<{ data: PublicCountdownDto }>("/admin/countdown", {
+      fetcher<{ data: PublicCountdownDto }>("/studio/countdown", {
         method: "PATCH",
         body: JSON.stringify(data),
         cache: "no-store",
