@@ -222,7 +222,7 @@ export const SANCTUARY_OFFLINE_VAULT: Record<string, Partial<Record<BibleTransla
   },
 };
 
-const BIBLE_CACHE_STORAGE_KEY = "ggm_bible_scripture_cache_v2";
+const BIBLE_CACHE_STORAGE_KEY = "ggm_bible_scripture_cache_v3";
 
 /**
  * In-memory map cache for 0ms lookup latency
@@ -388,7 +388,7 @@ export async function fetchScriptureVerse(
       if (Array.isArray(data)) {
         const found = data.find((item: { verse: number; text: string }) => item.verse === verse);
         if (found?.text) {
-          const cleanText = cleanVerseText(found.text);
+          const cleanText = cleanVerseText(found.text, foundBook.name, verse);
           if (cleanText && !isNoticeOrErrorText(cleanText)) {
             persistToStorage(cacheKey, cleanText);
             return {
@@ -420,7 +420,7 @@ export async function fetchScriptureVerse(
     if (res.ok) {
       const data = await res.json();
       if (data?.text) {
-        const cleanText = cleanVerseText(data.text);
+        const cleanText = cleanVerseText(data.text, foundBook.name, verse);
         if (cleanText && !isNoticeOrErrorText(cleanText)) {
           persistToStorage(cacheKey, cleanText);
           return {
@@ -458,7 +458,7 @@ export async function fetchScriptureVerse(
             .join("")
             .trim();
 
-          const cleanText = cleanVerseText(joinedText);
+          const cleanText = cleanVerseText(joinedText, foundBook.name, verse);
           if (cleanText && !isNoticeOrErrorText(cleanText)) {
             persistToStorage(cacheKey, cleanText);
             return {
@@ -512,12 +512,13 @@ export async function fetchScriptureVerse(
  * - Strips Strong's concordance tags & inner numbers e.g. <S>1063</S>, <S>4210</S>
  * - Strips Strong's numbers concatenated directly with letters e.g. "For1063" -> "For", "world2889," -> "world,"
  * - Strips standalone manuscript/footnote numbers e.g. [1], {12}
+ * - Strips Psalm superscriptions / title prefixes (e.g. "A Psalm of David.", "To the chief Musician...", "A Song of degrees...")
  * - Strips all HTML formatting tags like <i>, <b>, <br>
  * - Normalizes quotes and excess whitespace
  */
-export function cleanVerseText(raw: string): string {
+export function cleanVerseText(raw: string, bookName?: string, verseNum?: number): string {
   if (!raw) return "";
-  return raw
+  let text = raw
     // 1. Remove Strong's concordance tags and their inner numbers (<S>1063</S> or <S> 4210 </S>)
     .replace(/<S>\s*\d+\s*<\/S>/gi, "")
     // 2. Remove any remaining <S...> tags if malformed
@@ -540,6 +541,23 @@ export function cleanVerseText(raw: string): string {
     // 8. Collapse multiple whitespaces into a single space
     .replace(/\s+/g, " ")
     .trim();
+
+  // 9. Remove Psalm superscriptions / chapter header prefixes that APIs attach to verse 1
+  const isPsalm = !bookName || /psalm/i.test(bookName);
+  if (isPsalm && (!verseNum || verseNum === 1)) {
+    text = text
+      .replace(
+        /^(?:(?:To the (?:chief Musician|Overseer)[^.]*\.)|(?:A Psalm of [^.]*\.)|(?:A Song of [^.]*\.)|(?:A Song and Psalm of [^.]*\.)|(?:A Prayer of [^.]*\.)|(?:A David psalm)|(?:Maschil of [^.]*\.)|(?:Michtam of [^.]*\.))\s*/gi,
+        ""
+      )
+      .replace(
+        /^(?:(?:To the (?:chief Musician|Overseer)[^.]*\.)|(?:A Psalm of [^.]*\.)|(?:A Song of [^.]*\.)|(?:A Song and Psalm of [^.]*\.)|(?:A Prayer of [^.]*\.)|(?:A David psalm)|(?:Maschil of [^.]*\.)|(?:Michtam of [^.]*\.))\s*/gi,
+        ""
+      )
+      .trim();
+  }
+
+  return text;
 }
 
 /**
