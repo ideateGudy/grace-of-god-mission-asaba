@@ -119,11 +119,18 @@ export interface StudioScriptureState {
   displayMode: "fullscreen" | "lower-third";
 }
 
+export interface StudioPlaylist {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 export interface StudioMediaItem {
   id: string;
   url: string;
   title: string;
   category: "flyer" | "sermon" | "offering" | "announcement" | "general";
+  playlistId?: string; // Optional playlist/project reference
   thumbnailUrl?: string;
   uploadedAt: string;
 }
@@ -168,6 +175,7 @@ export const updateCountdownSchema = z.object({
   scripture: z.any().optional(),
   mediaList: z.array(z.any()).optional(),
   activeMediaId: z.string().optional(),
+  previewMediaId: z.string().optional(),
   overlay: z.any().optional(),
   camera: z.any().optional(),
   isBlackout: z.boolean().optional(),
@@ -188,6 +196,7 @@ export interface PublicCountdownDto extends ChurchCountdownState {
   scripture?: StudioScriptureState;
   mediaList?: StudioMediaItem[];
   activeMediaId?: string;
+  previewMediaId?: string;
   overlay?: StudioOverlayState;
   camera?: StudioCameraState;
   isBlackout?: boolean;
@@ -201,6 +210,7 @@ export interface BroadcastStudioState extends PublicCountdownDto {
   scripture: StudioScriptureState;
   mediaList: StudioMediaItem[];
   activeMediaId?: string;
+  previewMediaId?: string;
   overlay: StudioOverlayState;
   camera: StudioCameraState;
   isBlackout: boolean;
@@ -580,8 +590,9 @@ export function calculateSecondsUntilTarget(targetHHMM: string): number {
 
     let diffSecs = targetSecondsToday - nowSecondsToday;
 
-    // If target time passed earlier today by more than 2 hours (-7200s), roll forward to tomorrow (+86400s)
-    if (diffSecs < -2 * 3600) {
+    // If target time is past, check if it's within a past service window or next service
+    // For service countdowns, if target time has passed (diffSecs <= 0), roll over to tomorrow if past the overtime window
+    if (diffSecs <= -2 * 3600) {
       diffSecs += 86400;
     }
 

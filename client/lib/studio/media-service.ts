@@ -1,4 +1,4 @@
-import type { StudioMediaItem } from "@ggm/types";
+import type { StudioMediaItem, StudioPlaylist } from "@ggm/types";
 import { authFetch } from "@/lib/api/client";
 
 export interface ServiceProjectDeck {
@@ -8,31 +8,35 @@ export interface ServiceProjectDeck {
   items: StudioMediaItem[];
 }
 
-export const DEFAULT_CHURCH_SLIDES: StudioMediaItem[] = [
-  {
-    id: "welcome-slide",
-    title: "WELCOME TO CHURCH · GRACE OF GOD MISSION",
-    category: "flyer",
-    url: "/images/flyers/sunday-celebration-hero.webp",
-    uploadedAt: new Date().toISOString(),
-  },
-  {
-    id: "offering-slide",
-    title: "TITHES & KINGDOM OFFERINGS · ZENITH BANK",
-    category: "offering",
-    url: "/images/flyers/communion-service-hero.webp",
-    uploadedAt: new Date().toISOString(),
-  },
-  {
-    id: "first-timers-slide",
-    title: "WELCOME FIRST TIMERS · GLAD TO HAVE YOU",
-    category: "announcement",
-    url: "/images/flyers/miracle-vigil-hero.webp",
-    uploadedAt: new Date().toISOString(),
-  },
+export const INITIAL_STUDIO_PLAYLISTS: StudioPlaylist[] = [
+  { id: "church-service", name: "Church Service", createdAt: new Date().toISOString() },
+  { id: "announcements", name: "Announcements", createdAt: new Date().toISOString() },
+  { id: "birthday-pictures", name: "Birthday Pictures", createdAt: new Date().toISOString() },
 ];
 
+export const DEFAULT_CHURCH_SLIDES: StudioMediaItem[] = [];
+
+const PLAYLISTS_STORAGE_KEY = "ggm_broadcast_playlists_v2";
 const DECKS_STORAGE_KEY = "ggm_broadcast_service_decks_v1";
+
+export function loadSavedPlaylists(): StudioPlaylist[] {
+  if (typeof window === "undefined") return INITIAL_STUDIO_PLAYLISTS;
+  try {
+    const raw = localStorage.getItem(PLAYLISTS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return INITIAL_STUDIO_PLAYLISTS;
+}
+
+export function saveSavedPlaylists(playlists: StudioPlaylist[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(PLAYLISTS_STORAGE_KEY, JSON.stringify(playlists));
+  } catch {}
+}
 
 export function loadSavedProjectDecks(): ServiceProjectDeck[] {
   if (typeof window === "undefined") return [];
@@ -43,13 +47,12 @@ export function loadSavedProjectDecks(): ServiceProjectDeck[] {
     }
   } catch {}
 
-  // Provide initial default Sunday service project
   return [
     {
       id: "sunday-service-default",
-      name: "Sunday Celebration Service Project",
+      name: "Sunday Service Presentation",
       date: new Date().toISOString().split("T")[0],
-      items: DEFAULT_CHURCH_SLIDES,
+      items: [],
     },
   ];
 }

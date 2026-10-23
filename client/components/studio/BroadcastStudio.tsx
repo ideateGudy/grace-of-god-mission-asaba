@@ -387,6 +387,7 @@ export function BroadcastStudio() {
       return {
         ...prev,
         activeType: nextType,
+        activeMediaId: prev.previewMediaId || prev.activeMediaId,
         isBlackout: false,
       };
     });
@@ -399,6 +400,7 @@ export function BroadcastStudio() {
       updateStudioState((prev) => ({
         ...prev,
         activeType: prev.previewType,
+        activeMediaId: prev.previewMediaId || prev.activeMediaId,
         isBlackout: false,
       }));
       setIsFading(false);
@@ -489,6 +491,9 @@ export function BroadcastStudio() {
   const currentTheme = COUNTDOWN_THEMES[state.theme] || COUNTDOWN_THEMES["royal-gold"];
   const timeBreakdown = calculateTimeBreakdown(state.remainingSeconds);
   const activeMedia = state.mediaList.find((m) => m.id === state.activeMediaId) || state.mediaList[0];
+  const previewMedia =
+    state.mediaList.find((m) => m.id === (state.previewMediaId || state.activeMediaId)) ||
+    state.mediaList[0];
 
   return (
     <div className="min-h-screen bg-[#070913] text-white flex flex-col font-sans select-none">
@@ -625,11 +630,11 @@ export function BroadcastStudio() {
               </div>
             )}
 
-            {state.previewType === "media" && activeMedia && (
+            {state.previewType === "media" && previewMedia && (
               <div className="relative w-full h-full">
                 <SafeMediaImage
-                  src={activeMedia.url}
-                  alt={activeMedia.title}
+                  src={previewMedia.url}
+                  alt={previewMedia.title}
                   fill
                   className="object-contain"
                 />
@@ -947,7 +952,7 @@ export function BroadcastStudio() {
             }`}
           >
             <ImageIcon className="w-4 h-4" />
-            <span>3. Cloudinary Media Deck</span>
+            <span>3. Media Deck</span>
           </button>
 
           <button

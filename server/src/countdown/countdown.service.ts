@@ -150,6 +150,7 @@ export class CountdownService {
       scripture: dto.scripture ?? current.scripture,
       mediaList: dto.mediaList ?? current.mediaList,
       activeMediaId: dto.activeMediaId ?? current.activeMediaId,
+      previewMediaId: dto.previewMediaId ?? current.previewMediaId,
       overlay: dto.overlay ?? current.overlay,
       camera: dto.camera ?? current.camera,
       isBlackout: dto.isBlackout !== undefined ? dto.isBlackout : current.isBlackout,
