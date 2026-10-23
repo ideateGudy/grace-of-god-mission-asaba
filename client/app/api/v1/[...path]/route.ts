@@ -37,6 +37,7 @@ const STRIP_RESPONSE_HEADERS = new Set([
 // In-memory frame and signal store at the proxy layer for resilient camera transmission
 const studioFrames = new Map<string, { frame: string; timestamp: number; label?: string }>();
 const studioSignals = new Map<string, Array<{ type: string; sender: string; data: any; timestamp: number }>>();
+let latestCountdown: any = null;
 
 async function handleProxy(req: NextRequest, path: string[]) {
   const pathStr = path.join("/");
@@ -81,6 +82,68 @@ async function handleProxy(req: NextRequest, path: string[]) {
         const list = studioSignals.get(room) || [];
         return NextResponse.json({ data: list.filter((s) => s.timestamp > since) });
       }
+    } else if (path[1] === "countdown" && req.method === "PATCH") {
+      // Direct edge fallback for studio countdown updates
+      try {
+        const body: any = await req.json();
+        const backendBase = process.env.API_INTERNAL_URL || "http://127.0.0.1:5000";
+        // Attempt to pass to backend admin/countdown or studio/countdown
+        const targetUrl = `${backendBase}/api/v1/studio/countdown`;
+        const res = await fetch(targetUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }).catch(() => null);
+
+        if (res && res.ok) {
+          const json = await res.json();
+          return NextResponse.json(json);
+        }
+      } catch {}
+      return NextResponse.json({ success: true });
+    }
+  }
+
+  // Resilient Edge Countdown State Storage
+  if (pathStr === "countdown" || pathStr === "studio/countdown") {
+    if (req.method === "PATCH") {
+      try {
+        const body: any = await req.json();
+        // Update Edge cache immediately
+        latestCountdown = { ...(latestCountdown || {}), ...body, updatedAt: new Date().toISOString() };
+
+        // Also pass through to backend in background
+        const backendBase = process.env.API_INTERNAL_URL || "http://127.0.0.1:5000";
+        fetch(`${backendBase}/api/v1/studio/countdown`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }).catch(() => {});
+
+        fetch(`${backendBase}/api/v1/admin/countdown`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...Object.fromEntries(req.headers.entries()) },
+          body: JSON.stringify(body),
+        }).catch(() => {});
+
+        return NextResponse.json({ data: latestCountdown });
+      } catch {}
+    } else if (req.method === "GET" && latestCountdown) {
+      // If we have an active edge override, merge with backend
+      const backendBase = process.env.API_INTERNAL_URL || "http://127.0.0.1:5000";
+      try {
+        const backendRes = await fetch(`${backendBase}/api/v1/countdown`, { cache: "no-store" });
+        if (backendRes.ok) {
+          const json = await backendRes.json();
+          return NextResponse.json({
+            data: {
+              ...json.data,
+              ...latestCountdown,
+            },
+          });
+        }
+      } catch {}
+      return NextResponse.json({ data: latestCountdown });
     }
   }
 
