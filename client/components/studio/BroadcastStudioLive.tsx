@@ -451,26 +451,26 @@ export function BroadcastStudioLive() {
   return (
     <div
       onDoubleClick={toggleFullscreen}
-      className="relative w-full h-screen overflow-hidden select-none bg-black"
+      className="relative w-full h-screen overflow-hidden select-none"
     >
       {/* 1. Underlying Base Dark Backdrop */}
       {!isTransparentMode && !isChromaGreen && (
         <div
-          className="pointer-events-none absolute inset-0 -z-30 bg-[#060714]"
+          className="pointer-events-none absolute inset-0 z-0 bg-[#060714]"
         />
       )}
 
       {/* 2. Optional Editable Background Image Overlay Layer */}
       {state.bgImageUrl && !isTransparentMode && !isChromaGreen && (
         <div
-          className="pointer-events-none absolute inset-0 -z-20 overflow-hidden"
+          className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
           style={{ opacity: state.bgImageOpacity ?? 0.35 }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={state.bgImageUrl}
             alt="Atmospheric Sanctuary Background"
-            className="w-full h-full object-cover object-center filter brightness-105 contrast-110"
+            className="w-full h-full object-cover object-center filter brightness-110 contrast-110"
           />
         </div>
       )}
@@ -478,12 +478,12 @@ export function BroadcastStudioLive() {
       {/* 3. Sacred Ambient Radial Gradient Overlay (semi-transparent tint so image remains clearly visible) */}
       {!isTransparentMode && !isChromaGreen && (
         <div
-          className="pointer-events-none absolute inset-0 -z-10"
+          className="pointer-events-none absolute inset-0 z-0"
           style={{
             background: isTimeUp
               ? "radial-gradient(ellipse at 50% 20%, rgba(69,10,10,0.85) 0%, rgba(28,3,5,0.92) 50%, rgba(10,0,1,0.97) 100%)"
               : state.bgImageUrl
-              ? `radial-gradient(ellipse at 50% 30%, ${currentTheme.accentGlow.replace(/[\d.]+\)$/, "0.2)")} 0%, rgba(6,7,20,0.7) 60%, rgba(3,4,12,0.92) 100%)`
+              ? `radial-gradient(ellipse at 50% 30%, ${currentTheme.accentGlow.replace(/[\d.]+\)$/, "0.2)")} 0%, rgba(6,7,20,0.65) 60%, rgba(3,4,12,0.88) 100%)`
               : currentTheme.bgGradient,
           }}
         />
