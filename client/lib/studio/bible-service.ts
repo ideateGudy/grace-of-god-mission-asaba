@@ -222,7 +222,7 @@ export const SANCTUARY_OFFLINE_VAULT: Record<string, Partial<Record<BibleTransla
   },
 };
 
-const BIBLE_CACHE_STORAGE_KEY = "ggm_bible_scripture_cache_v3";
+const BIBLE_CACHE_STORAGE_KEY = "ggm_bible_scripture_cache_v4";
 
 /**
  * In-memory map cache for 0ms lookup latency
@@ -373,7 +373,39 @@ export async function fetchScriptureVerse(
     };
   }
 
-  // 2. Tier 1: bolls.life API (Supports KJV, NKJV, ESV, AMP, MSG, BSB)
+  // 2. Tier 1: bible-api.com (World-renowned, pure unformatted prose without Strong's or footnote tags - used for KJV)
+  if (translation === "KJV") {
+    try {
+      const cleanRef = encodeURIComponent(`${foundBook.name} ${chapter}:${verse}`);
+      const url = `https://bible-api.com/${cleanRef}?translation=kjv`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3500);
+
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.text) {
+          const cleanText = cleanVerseText(data.text, foundBook.name, verse);
+          if (cleanText && !isNoticeOrErrorText(cleanText)) {
+            persistToStorage(cacheKey, cleanText);
+            return {
+              reference: `${foundBook.name} ${chapter}:${verse}`,
+              book: foundBook.name,
+              chapter,
+              verse,
+              text: cleanText,
+              translation,
+              source: "bible-api",
+            };
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Tier 2: bolls.life API (Supports NKJV, ESV, AMP, MSG, BSB, KJV fallback)
   try {
     const bollsTrans = translation === "BSB" ? "BSB" : translation;
     const url = `https://bolls.life/get-text/${bollsTrans}/${foundBook.number}/${chapter}/`;
@@ -406,11 +438,10 @@ export async function fetchScriptureVerse(
     }
   } catch {}
 
-  // 3. Tier 2: bible-api.com (Reliable, clean fallback for KJV, WEB, etc.)
+  // 4. Tier 3: bible-api.com general fallback
   try {
-    const bibleApiTrans = translation === "KJV" ? "kjv" : "web";
     const cleanRef = encodeURIComponent(`${foundBook.name} ${chapter}:${verse}`);
-    const url = `https://bible-api.com/${cleanRef}?translation=${bibleApiTrans}`;
+    const url = `https://bible-api.com/${cleanRef}?translation=kjv`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3500);
 
@@ -519,26 +550,29 @@ export async function fetchScriptureVerse(
 export function cleanVerseText(raw: string, bookName?: string, verseNum?: number): string {
   if (!raw) return "";
   let text = raw
-    // 1. Remove Strong's concordance tags and their inner numbers (<S>1063</S> or <S> 4210 </S>)
-    .replace(/<S>\s*\d+\s*<\/S>/gi, "")
-    // 2. Remove any remaining <S...> tags if malformed
+    // 1. Remove <sup>...</sup> and <sub>...</sub> tags ALONG WITH their inner footnote text (e.g. <sup>green: Heb. pastures of tender grass</sup>)
+    .replace(/<sup\b[^>]*>[\s\S]*?<\/sup>/gi, "")
+    .replace(/<sub\b[^>]*>[\s\S]*?<\/sub>/gi, "")
+    // 2. Remove Strong's concordance tags and their inner numbers (<S>1063</S> or <S> 4210 </S>)
+    .replace(/<S\b[^>]*>[\s\S]*?<\/S>/gi, "")
+    // 3. Remove any remaining <S...> tags if malformed
     .replace(/<\/?S[^>]*>/gi, "")
-    // 3. Remove all other HTML tags (<br>, <i>, <b>, <p>, etc.)
+    // 4. Remove all other HTML tags (<br>, <i>, <b>, <p>, etc.)
     .replace(/<[^>]+>/g, "")
-    // 4. Remove digits attached directly to word characters (e.g. For1063 -> For, loved25 -> loved, world2889, -> world,)
+    // 5. Remove digits attached directly to word characters (e.g. For1063 -> For, loved25 -> loved, world2889, -> world,)
     .replace(/(?<=[a-zA-Z])\d+/g, "")
-    // 5. Remove standalone digits that might be leftover Strong's numbers or footnote markers
+    // 6. Remove standalone digits that might be leftover Strong's numbers or footnote markers
     .replace(/(?<![a-zA-Z0-9])\d{2,5}(?![a-zA-Z0-9])/g, "")
-    // 6. Remove bracketed or braced footnote/reference numbers e.g. [1], [12], {3}
+    // 7. Remove bracketed or braced footnote/reference numbers e.g. [1], [12], {3}
     .replace(/\[\d+\]/g, "")
     .replace(/\{\d+\}/g, "")
-    // 7. Clean up HTML entities
+    // 8. Clean up HTML entities
     .replace(/&nbsp;/g, " ")
     .replace(/&quot;/g, '"')
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
-    // 8. Collapse multiple whitespaces into a single space
+    // 9. Collapse multiple whitespaces into a single space
     .replace(/\s+/g, " ")
     .trim();
 
