@@ -80,12 +80,14 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
   const handleLaunchNormalTimer = (overrideMins?: number, overrideTitle?: string) => {
     const minsToUse = overrideMins || draftMins;
     const titleToUse = overrideTitle || draftNormalTitle;
+    const secs = minsToUse * 60;
 
     onChange((prev) => ({
       ...prev,
       mode: "activity",
-      durationSeconds: minsToUse * 60,
-      remainingSeconds: minsToUse * 60,
+      durationSeconds: secs,
+      remainingSeconds: secs,
+      targetEndTime: Date.now() + secs * 1000,
       title: titleToUse,
       subtitle: draftNormalSubtitle,
       isRunning: true, // Start immediately on launch
@@ -123,10 +125,14 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
 
   // Adjust remaining runtime seconds
   const adjustSeconds = (delta: number) => {
-    onChange((prev) => ({
-      ...prev,
-      remainingSeconds: Math.max(0, prev.remainingSeconds + delta),
-    }));
+    onChange((prev) => {
+      const nextRemaining = Math.max(0, prev.remainingSeconds + delta);
+      return {
+        ...prev,
+        remainingSeconds: nextRemaining,
+        targetEndTime: prev.isRunning ? Date.now() + nextRemaining * 1000 : null,
+      };
+    });
   };
 
   // Quick preset apply for Event / Occasion
@@ -234,7 +240,24 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
           {/* Start / Pause */}
           <button
             type="button"
-            onClick={() => onChange((prev) => ({ ...prev, isRunning: !prev.isRunning }))}
+            onClick={() =>
+              onChange((prev) => {
+                const nextRunning = !prev.isRunning;
+                let nextTargetEnd = prev.targetEndTime;
+                if (nextRunning) {
+                  // Resuming: recalculate targetEndTime from current remaining seconds
+                  nextTargetEnd = Date.now() + Math.max(0, prev.remainingSeconds) * 1000;
+                } else {
+                  // Pausing: clear targetEndTime
+                  nextTargetEnd = null;
+                }
+                return {
+                  ...prev,
+                  isRunning: nextRunning,
+                  targetEndTime: nextTargetEnd,
+                };
+              })
+            }
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-bold text-xs shadow-md transition-all ${
               state.isRunning
                 ? "bg-amber-500 text-black hover:bg-amber-400"
@@ -254,12 +277,14 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
                   return {
                     ...prev,
                     remainingSeconds: calculateSecondsUntilDate(prev.targetDate),
+                    targetEndTime: null,
                     isRunning: false,
                   };
                 }
                 return {
                   ...prev,
                   remainingSeconds: prev.durationSeconds,
+                  targetEndTime: null,
                   isRunning: false,
                 };
               })

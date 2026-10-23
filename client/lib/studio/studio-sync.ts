@@ -75,10 +75,13 @@ export function loadStudioStateFromStorage(): BroadcastStudioState {
   if (typeof window === "undefined") return DEFAULT_STUDIO_STATE;
 
   try {
+    const isZeroed = localStorage.getItem(COUNTDOWN_ZEROED_KEY) === "true";
+    let state: BroadcastStudioState | null = null;
+
     const raw = localStorage.getItem(STUDIO_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      return {
+      state = {
         ...DEFAULT_STUDIO_STATE,
         ...parsed,
         scripture: {
@@ -94,16 +97,39 @@ export function loadStudioStateFromStorage(): BroadcastStudioState {
           ...(parsed.camera || {}),
         },
       };
+    } else {
+      // Fallback to legacy countdown storage if available
+      const legacyRaw = localStorage.getItem(COUNTDOWN_STORAGE_KEY);
+      if (legacyRaw) {
+        const legacyParsed = JSON.parse(legacyRaw);
+        state = {
+          ...DEFAULT_STUDIO_STATE,
+          ...legacyParsed,
+        };
+      }
     }
 
-    // Fallback to legacy countdown storage if available
-    const legacyRaw = localStorage.getItem(COUNTDOWN_STORAGE_KEY);
-    if (legacyRaw) {
-      const legacyParsed = JSON.parse(legacyRaw);
-      return {
-        ...DEFAULT_STUDIO_STATE,
-        ...legacyParsed,
-      };
+    if (state) {
+      // If timer reached zero and was marked zeroed, preserve 0 and stopped state
+      if (isZeroed || state.remainingSeconds === 0) {
+        state.remainingSeconds = 0;
+        state.isRunning = false;
+        state.targetEndTime = null;
+      } else if (
+        (state.mode === "activity" || state.mode === "duration") &&
+        state.isRunning &&
+        state.targetEndTime
+      ) {
+        const calculated = Math.round((state.targetEndTime - Date.now()) / 1000);
+        if (!state.overtimeEnabled && calculated <= 0) {
+          state.remainingSeconds = 0;
+          state.isRunning = false;
+          state.targetEndTime = null;
+        } else {
+          state.remainingSeconds = calculated;
+        }
+      }
+      return state;
     }
   } catch {}
 

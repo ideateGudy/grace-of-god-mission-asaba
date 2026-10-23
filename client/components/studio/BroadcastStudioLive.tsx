@@ -143,21 +143,38 @@ export function BroadcastStudioLive() {
             showScripture: remote.showScripture ?? prev.showScripture,
             showLogo: remote.showLogo ?? prev.showLogo,
             stageMode: remote.stageMode ?? prev.stageMode,
+            completionMessage: remote.completionMessage ?? prev.completionMessage,
             activeType: remote.activeType || prev.activeType,
             previewType: remote.previewType || prev.previewType,
             scripture: remote.scripture || prev.scripture,
+            mediaList: remote.mediaList && remote.mediaList.length > 0 ? remote.mediaList : prev.mediaList,
             activeMediaId: remote.activeMediaId || prev.activeMediaId,
             overlay: remote.overlay || prev.overlay,
             camera: remote.camera || prev.camera,
             isBlackout: remote.isBlackout ?? prev.isBlackout,
+            targetEndTime: remote.targetEndTime ?? prev.targetEndTime,
           }));
 
           setIsRunning(remote.isRunning);
+
+          // Update remainingSeconds from remote
+          if (remote.mode === "event-date" && remote.targetDate) {
+            setRemainingSeconds(calculateSecondsUntilDate(remote.targetDate));
+          } else if (remote.mode === "target-time" && remote.targetTimeString) {
+            setRemainingSeconds(calculateSecondsUntilTarget(remote.targetTimeString));
+          } else if (remote.remainingSeconds !== undefined) {
+            if (remote.targetEndTime && remote.isRunning) {
+              const calculated = Math.round((remote.targetEndTime - Date.now()) / 1000);
+              setRemainingSeconds(!remote.overtimeEnabled && calculated <= 0 ? 0 : calculated);
+            } else {
+              setRemainingSeconds(remote.remainingSeconds);
+            }
+          }
         }
       } catch {}
     };
 
-    const interval = setInterval(syncFromRemote, 2500);
+    const interval = setInterval(syncFromRemote, 2000);
     return () => clearInterval(interval);
   }, [isMounted]);
 
@@ -191,7 +208,8 @@ export function BroadcastStudioLive() {
           lastSecondRef.current = next;
         }
 
-        if (!state.overtimeEnabled && next < 0) {
+        if (!state.overtimeEnabled && next <= 0) {
+          setIsRunning(false);
           return 0;
         }
 

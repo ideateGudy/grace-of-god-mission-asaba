@@ -117,8 +117,28 @@ export function BroadcastStudio() {
 
         const next = prev.remainingSeconds - 1;
 
-        if (!prev.overtimeEnabled && next < 0) {
-          return { ...prev, remainingSeconds: 0, isRunning: false };
+        if (!prev.overtimeEnabled && next <= 0) {
+          const zeroedState = {
+            ...prev,
+            remainingSeconds: 0,
+            isRunning: false,
+            targetEndTime: null,
+          };
+          // Persist zeroed state immediately so reloads don't reset back
+          broadcastStudioState(channelRef.current, {
+            type: "SYNC_STUDIO",
+            state: zeroedState,
+          });
+          if (navigator.onLine) {
+            api.countdown
+              .update({
+                remainingSeconds: 0,
+                isRunning: false,
+                targetEndTime: null,
+              })
+              .catch(() => {});
+          }
+          return zeroedState;
         }
 
         return { ...prev, remainingSeconds: next };
