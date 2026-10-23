@@ -245,8 +245,9 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
                 const nextRunning = !prev.isRunning;
                 let nextTargetEnd = prev.targetEndTime;
                 if (nextRunning) {
-                  // Resuming: recalculate targetEndTime from current remaining seconds
-                  nextTargetEnd = Date.now() + Math.max(0, prev.remainingSeconds) * 1000;
+                  // Resuming: recalculate targetEndTime from current remaining seconds (supports overtime when negative)
+                  const secs = prev.overtimeEnabled ? prev.remainingSeconds : Math.max(0, prev.remainingSeconds);
+                  nextTargetEnd = Date.now() + secs * 1000;
                 } else {
                   // Pausing: clear targetEndTime
                   nextTargetEnd = null;

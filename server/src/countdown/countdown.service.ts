@@ -112,8 +112,10 @@ export class CountdownService {
 
     let targetEndTime: number | null = null;
     if (mode === 'activity' || mode === 'duration') {
-      if (isRunning) {
-        targetEndTime = Date.now() + Math.max(remainingSeconds, 0) * 1000;
+      if (dto.targetEndTime !== undefined) {
+        targetEndTime = dto.targetEndTime;
+      } else if (isRunning) {
+        targetEndTime = Date.now() + remainingSeconds * 1000;
       }
     } else if (mode === 'event-date') {
       const dateToCalc = dto.targetDate ?? current.targetDate;

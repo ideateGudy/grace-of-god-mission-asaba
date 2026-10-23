@@ -503,21 +503,34 @@ export function BroadcastStudioLive() {
 
             {/* Main Stage Display: Normal Timer (TIME UP) vs Event Timer (Message or 00:00:00) vs Active Counting */}
             {isNormalTimer && isTimeUp ? (
-              /* Normal Countdown Timer Reached Zero: Giant CountdownKings "TIME'S UP!" Red Alert Screen */
+              /* Normal Countdown Timer Reached Zero: Big TIME UP display with real-time Overtime */
               <div className="my-auto flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500 w-full max-w-5xl px-4">
-                <div className="w-full py-10 sm:py-16 md:py-20 px-6 sm:px-12 rounded-3xl bg-red-600/95 text-white border-4 border-red-300 shadow-[0_0_120px_rgba(239,68,68,0.9)] animate-pulse flex flex-col items-center justify-center">
-                  <span className="text-6xl sm:text-9xl md:text-[11rem] font-black tracking-tight uppercase font-sans drop-shadow-[0_8px_16px_rgba(0,0,0,0.8)] leading-none select-none">
-                    TIME&apos;S UP!
+                <div
+                  className="w-full py-10 sm:py-16 md:py-20 px-6 sm:px-12 rounded-3xl border-4 shadow-2xl flex flex-col items-center justify-center transition-all"
+                  style={{
+                    background: "rgba(185, 28, 28, 0.95)",
+                    borderColor: "#FCA5A5",
+                    boxShadow: "0 0 100px rgba(239, 68, 68, 0.7)",
+                  }}
+                >
+                  <span className="text-6xl sm:text-9xl md:text-[11rem] font-black tracking-tight uppercase font-sans drop-shadow-[0_8px_16px_rgba(0,0,0,0.8)] leading-none select-none text-white animate-pulse">
+                    TIME UP
                   </span>
-                  <span className="text-sm sm:text-2xl md:text-3xl font-extrabold tracking-widest uppercase mt-4 text-red-100 font-mono">
-                    00:00:00
-                  </span>
+
+                  {/* If Overtime is enabled, show the live running overtime clock inside the banner */}
+                  {state.overtimeEnabled && (
+                    <div className="mt-6 flex flex-col items-center">
+                      <span className="text-xs sm:text-base font-black uppercase tracking-widest text-red-200">
+                        OVERTIME ELAPSED
+                      </span>
+                      <span className="text-4xl sm:text-7xl md:text-8xl font-black font-mono text-white tracking-wider mt-1 drop-shadow-lg">
+                        +{formatTwoDigits(timeBreakdown.hours > 0 ? timeBreakdown.hours : timeBreakdown.minutes)}:
+                        {formatTwoDigits(timeBreakdown.hours > 0 ? timeBreakdown.minutes : timeBreakdown.seconds)}
+                        {timeBreakdown.hours > 0 && `:${formatTwoDigits(timeBreakdown.seconds)}`}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                {state.overtimeEnabled && (
-                  <div className="px-6 py-2.5 rounded-full bg-black/90 border-2 border-red-500 text-red-400 text-base sm:text-2xl font-mono font-black tracking-widest shadow-2xl">
-                    OVERTIME: +{formatTwoDigits(timeBreakdown.minutes)}:{formatTwoDigits(timeBreakdown.seconds)}
-                  </div>
-                )}
               </div>
             ) : isEventTimer && isEventCompleted && state.completionMessage ? (
               /* Event / Occasion Countdown Reached Zero with Custom Message */
@@ -542,16 +555,25 @@ export function BroadcastStudioLive() {
                 </div>
               </div>
             ) : (
-              /* Giant High-Visibility Digits Display (CountdownKings "Big Time" Style) */
+              /* Giant High-Visibility Digits Display (CountdownKings "Big Time" Style themed to Studio) */
               <div className="flex flex-col items-center justify-center my-auto w-full px-2">
                 <div
-                  className={`flex items-center justify-center gap-2 sm:gap-4 md:gap-6 p-4 sm:p-8 md:p-12 rounded-3xl backdrop-blur-xl border transition-all duration-500 max-w-7xl w-full ${
-                    remainingSeconds <= 30 && remainingSeconds > 0
-                      ? "bg-red-950/40 border-red-500/70 shadow-[0_0_60px_rgba(239,68,68,0.35)]"
-                      : remainingSeconds <= 120 && remainingSeconds > 0
-                      ? "bg-amber-950/30 border-amber-500/50 shadow-[0_0_50px_rgba(245,158,11,0.25)]"
-                      : "bg-black/60 border-white/10 shadow-[0_16px_50px_rgba(0,0,0,0.8)]"
-                  }`}
+                  className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 p-4 sm:p-8 md:p-12 rounded-3xl backdrop-blur-2xl border transition-all duration-500 max-w-7xl w-full"
+                  style={{
+                    backgroundColor: "rgba(0, 0, 0, 0.75)",
+                    borderColor:
+                      remainingSeconds <= 30 && remainingSeconds > 0
+                        ? "#EF4444"
+                        : remainingSeconds <= 120 && remainingSeconds > 0
+                        ? "#F59E0B"
+                        : currentTheme.borderColor,
+                    boxShadow:
+                      remainingSeconds <= 30 && remainingSeconds > 0
+                        ? "0 0 60px rgba(239,68,68,0.4)"
+                        : remainingSeconds <= 120 && remainingSeconds > 0
+                        ? "0 0 50px rgba(245,158,11,0.3)"
+                        : `0 16px 60px ${currentTheme.accentGlow}`,
+                  }}
                 >
                   {/* Days Card (if > 0) */}
                   {timeBreakdown.days > 0 && (
@@ -577,7 +599,10 @@ export function BroadcastStudioLive() {
                           Days
                         </span>
                       </div>
-                      <span className="text-4xl sm:text-7xl md:text-9xl font-bold opacity-30 select-none -translate-y-2 sm:-translate-y-4">
+                      <span
+                        className="text-4xl sm:text-7xl md:text-9xl font-bold opacity-30 select-none -translate-y-2 sm:-translate-y-4"
+                        style={{ color: currentTheme.labelColor }}
+                      >
                         :
                       </span>
                     </>
@@ -607,7 +632,10 @@ export function BroadcastStudioLive() {
                           Hours
                         </span>
                       </div>
-                      <span className="text-4xl sm:text-7xl md:text-9xl font-bold opacity-30 select-none -translate-y-2 sm:-translate-y-4">
+                      <span
+                        className="text-4xl sm:text-7xl md:text-9xl font-bold opacity-30 select-none -translate-y-2 sm:-translate-y-4"
+                        style={{ color: currentTheme.labelColor }}
+                      >
                         :
                       </span>
                     </>
@@ -636,7 +664,10 @@ export function BroadcastStudioLive() {
                     </span>
                   </div>
 
-                  <span className="text-4xl sm:text-7xl md:text-9xl font-bold opacity-30 select-none -translate-y-2 sm:-translate-y-4">
+                  <span
+                    className="text-4xl sm:text-7xl md:text-9xl font-bold opacity-30 select-none -translate-y-2 sm:-translate-y-4"
+                    style={{ color: currentTheme.labelColor }}
+                  >
                     :
                   </span>
 

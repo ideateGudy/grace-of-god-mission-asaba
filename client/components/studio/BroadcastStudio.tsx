@@ -683,10 +683,16 @@ export function BroadcastStudio() {
                     {state.isRunning ? "Ticking" : "Paused"}
                   </span>
                 </div>
-                <div className="text-3xl sm:text-5xl font-black font-mono tracking-wider text-white drop-shadow">
+                <div className={`text-3xl sm:text-5xl font-black font-mono tracking-wider drop-shadow ${timeBreakdown.isOvertime ? "text-red-400" : "text-white"}`}>
+                  {timeBreakdown.isOvertime && "+"}
                   {formatTwoDigits(timeBreakdown.hours)}:{formatTwoDigits(timeBreakdown.minutes)}:
                   {formatTwoDigits(timeBreakdown.seconds)}
                 </div>
+                {timeBreakdown.isOvertime && (
+                  <span className="text-[10px] font-black text-red-400 uppercase tracking-widest animate-pulse block">
+                    OVERTIME ACTIVE
+                  </span>
+                )}
                 <span className="text-[10px] text-zinc-400 block">{state.subtitle}</span>
               </div>
             )}
@@ -883,10 +889,16 @@ export function BroadcastStudio() {
                         {state.isRunning ? "Live Countdown" : "Paused"}
                       </span>
                     </div>
-                    <div className="text-3xl sm:text-5xl font-black font-mono tracking-wider text-white drop-shadow">
+                    <div className={`text-3xl sm:text-5xl font-black font-mono tracking-wider drop-shadow ${timeBreakdown.isOvertime ? "text-red-400" : "text-white"}`}>
+                      {timeBreakdown.isOvertime && "+"}
                       {formatTwoDigits(timeBreakdown.hours)}:{formatTwoDigits(timeBreakdown.minutes)}:
                       {formatTwoDigits(timeBreakdown.seconds)}
                     </div>
+                    {timeBreakdown.isOvertime && (
+                      <span className="text-[10px] font-black text-red-400 uppercase tracking-widest animate-pulse block">
+                        OVERTIME ACTIVE
+                      </span>
+                    )}
                     <span className="text-[10px] text-zinc-400 block">{state.subtitle}</span>
                   </div>
                 )}
