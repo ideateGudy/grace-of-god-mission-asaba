@@ -386,49 +386,49 @@ export function BroadcastStudioLive() {
   const activeCardsCount = (showDays ? 1 : 0) + (showHours ? 1 : 0) + 2;
 
   // Responsive Fliqlo card dimensions based on activeCardsCount
-  // 2 units (MM:SS): Massive, immersive Fliqlo centerpiece that fills the screen gracefully
-  // 3 units (HH:MM:SS): Substantial, well-proportioned tiles
+  // 2 units (MM:SS): Substantial hero scale with clean breathing room top/bottom/sides
+  // 3 units (HH:MM:SS): Medium-large balanced tiles
   // 4 units (DD:HH:MM:SS): Standard compact harmonious tiles (as in user screenshot)
   const cardTileClass =
     activeCardsCount <= 2
-      ? "rounded-[2rem] sm:rounded-[2.75rem] md:rounded-[3.5rem] px-8 py-8 sm:px-14 sm:py-14 md:px-20 md:py-20 lg:px-24 lg:py-24 min-w-[170px] sm:min-w-[280px] md:min-w-[360px] lg:min-w-[420px] shadow-[0_25px_80px_rgba(0,0,0,0.95)]"
+      ? "rounded-2xl sm:rounded-3xl md:rounded-[2.25rem] px-6 py-6 sm:px-10 sm:py-10 md:px-14 md:py-12 lg:px-16 lg:py-14 min-w-[130px] sm:min-w-[210px] md:min-w-[280px] lg:min-w-[320px] max-h-[58vh] shadow-[0_20px_60px_rgba(0,0,0,0.9)]"
       : activeCardsCount === 3
-      ? "rounded-2xl sm:rounded-3xl md:rounded-[2rem] px-5 py-4 sm:px-9 sm:py-8 md:px-12 md:py-11 lg:px-14 lg:py-13 min-w-[110px] sm:min-w-[170px] md:min-w-[220px] lg:min-w-[250px] shadow-[0_18px_60px_rgba(0,0,0,0.85)]"
-      : "rounded-2xl md:rounded-3xl px-3 py-2.5 sm:px-5 sm:py-4 md:px-7 md:py-6 lg:px-8 lg:py-7 min-w-[70px] sm:min-w-[100px] md:min-w-[130px] lg:min-w-[145px] shadow-[0_12px_40px_rgba(0,0,0,0.8)]";
+      ? "rounded-2xl sm:rounded-3xl px-4 py-3 sm:px-7 sm:py-6 md:px-10 md:py-8 lg:px-12 lg:py-10 min-w-[100px] sm:min-w-[150px] md:min-w-[190px] lg:min-w-[220px] max-h-[52vh] shadow-[0_16px_50px_rgba(0,0,0,0.85)]"
+      : "rounded-2xl md:rounded-3xl px-3 py-2.5 sm:px-5 sm:py-4 md:px-7 md:py-6 lg:px-8 lg:py-7 min-w-[70px] sm:min-w-[100px] md:min-w-[130px] lg:min-w-[145px] max-h-[45vh] shadow-[0_12px_40px_rgba(0,0,0,0.8)]";
 
   const cardDigitClass =
     activeCardsCount <= 2
-      ? "text-8xl sm:text-[12rem] md:text-[16rem] lg:text-[19rem] xl:text-[22rem]"
+      ? "text-7xl sm:text-9xl md:text-[11rem] lg:text-[13rem] xl:text-[14.5rem]"
       : activeCardsCount === 3
-      ? "text-6xl sm:text-8xl md:text-[10rem] lg:text-[12rem] xl:text-[13.5rem]"
+      ? "text-5xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10.5rem]"
       : "text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl";
 
   const cardLabelClass =
     activeCardsCount <= 2
-      ? "text-sm sm:text-lg md:text-xl font-black tracking-[0.35em] mt-2 sm:mt-4"
+      ? "text-xs sm:text-sm md:text-base font-black tracking-[0.3em] mt-3 sm:mt-5"
       : activeCardsCount === 3
-      ? "text-xs sm:text-sm md:text-base font-black tracking-[0.3em] mt-1 sm:mt-2"
-      : "text-[10px] sm:text-xs md:text-sm font-black tracking-[0.25em]";
+      ? "text-[11px] sm:text-xs md:text-sm font-black tracking-[0.25em] mt-2 sm:mt-3"
+      : "text-[10px] sm:text-xs md:text-sm font-black tracking-[0.25em] mt-1 sm:mt-2";
 
   const colonDotClass =
     activeCardsCount <= 2
-      ? "w-4 h-4 sm:w-6 sm:h-6 md:w-8 md:h-8"
+      ? "w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5"
       : activeCardsCount === 3
-      ? "w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 md:w-5 md:h-5"
+      ? "w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4"
       : "w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3";
 
   const colonContainerClass =
     activeCardsCount <= 2
-      ? "flex flex-col gap-4 sm:gap-7 md:gap-10 pb-10 sm:pb-16 md:pb-20 opacity-60"
+      ? "flex flex-col gap-3 sm:gap-5 md:gap-7 pb-8 sm:pb-12 md:pb-14 opacity-60"
       : activeCardsCount === 3
-      ? "flex flex-col gap-3 sm:gap-5 md:gap-7 pb-8 sm:pb-12 opacity-60"
+      ? "flex flex-col gap-2.5 sm:gap-4 md:gap-5 pb-6 sm:pb-9 opacity-60"
       : "flex flex-col gap-2.5 sm:gap-4 pb-6 sm:pb-8 opacity-60";
 
   const cardContainerGap =
     activeCardsCount <= 2
-      ? "gap-6 sm:gap-10 md:gap-14 lg:gap-16 max-w-7xl"
+      ? "gap-5 sm:gap-8 md:gap-12 lg:gap-14 max-w-6xl"
       : activeCardsCount === 3
-      ? "gap-4 sm:gap-6 md:gap-8 lg:gap-10 max-w-6xl"
+      ? "gap-3 sm:gap-5 md:gap-7 lg:gap-9 max-w-5xl"
       : "gap-2 sm:gap-3 md:gap-4 lg:gap-5 max-w-5xl";
 
   // Emergency Blackout Check
