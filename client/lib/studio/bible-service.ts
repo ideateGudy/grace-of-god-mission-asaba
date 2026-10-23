@@ -373,13 +373,13 @@ export async function fetchScriptureVerse(
     };
   }
 
-  // 2. Tier 1: bible-api.com (World-renowned, pure unformatted prose without Strong's or footnote tags - used for KJV)
+  // 2. Tier 1: bible-api.com (Pure prose, no rate limits, used for KJV)
   if (translation === "KJV") {
     try {
       const cleanRef = encodeURIComponent(`${foundBook.name} ${chapter}:${verse}`);
       const url = `https://bible-api.com/${cleanRef}?translation=kjv`;
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3500);
+      const timeout = setTimeout(() => controller.abort(), 3000);
 
       const res = await fetch(url, { signal: controller.signal });
       clearTimeout(timeout);
@@ -405,47 +405,62 @@ export async function fetchScriptureVerse(
     } catch {}
   }
 
-  // 3. Tier 2: bolls.life API (Supports NKJV, ESV, AMP, MSG, BSB, KJV fallback)
-  try {
-    const bollsTrans = translation === "BSB" ? "BSB" : translation;
-    const url = `https://bolls.life/get-text/${bollsTrans}/${foundBook.number}/${chapter}/`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
+  // 3. Tier 2: bible.helloao.org (Cloudflare CDN-backed open-access Bible, 0 rate limits, 100% free)
+  // High quality source for BSB and KJV
+  if (translation === "BSB" || translation === "KJV") {
+    try {
+      const helloTrans = translation === "BSB" ? "BSB" : "eng_kjv";
+      const url = `https://bible.helloao.org/api/${helloTrans}/${foundBook.id}/${chapter}.json`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
 
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeout);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
 
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        const found = data.find((item: { verse: number; text: string }) => item.verse === verse);
-        if (found?.text) {
-          const cleanText = cleanVerseText(found.text, foundBook.name, verse);
-          if (cleanText && !isNoticeOrErrorText(cleanText)) {
-            persistToStorage(cacheKey, cleanText);
+      if (res.ok) {
+        const data = await res.json();
+        const content = data?.chapter?.content;
+        if (Array.isArray(content)) {
+          // Cache all verses in the chapter to avoid further network requests!
+          for (const item of content) {
+            if (item.type === "verse" && item.number && Array.isArray(item.content)) {
+              const joined = item.content
+                .map((chunk: any) => (typeof chunk === "string" ? chunk : chunk?.text || ""))
+                .join("")
+                .trim();
+              const cleaned = cleanVerseText(joined, foundBook.name, item.number);
+              if (cleaned) {
+                const itemKey = getCacheKey(translation, foundBook.id, chapter, item.number);
+                persistToStorage(itemKey, cleaned);
+              }
+            }
+          }
+
+          const foundInCache = memoryCache.get(cacheKey);
+          if (foundInCache) {
             return {
               reference: `${foundBook.name} ${chapter}:${verse}`,
               book: foundBook.name,
               chapter,
               verse,
-              text: cleanText,
+              text: foundInCache,
               translation,
-              source: "bolls",
+              source: "helloao",
             };
           }
         }
       }
-    }
-  } catch {}
+    } catch {}
+  }
 
-  // 4. Tier 3: bible-api.com general fallback
+  // 4. Tier 3: bolls.life Direct Single Verse endpoint (Lightweight 100x less bandwidth than chapter, prevents 429)
   try {
-    const cleanRef = encodeURIComponent(`${foundBook.name} ${chapter}:${verse}`);
-    const url = `https://bible-api.com/${cleanRef}?translation=kjv`;
+    const bollsTrans = translation === "BSB" ? "BSB" : translation;
+    const singleVerseUrl = `https://bolls.life/get-verse/${bollsTrans}/${foundBook.number}/${chapter}/${verse}/`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3500);
 
-    const res = await fetch(url, { signal: controller.signal });
+    const res = await fetch(singleVerseUrl, { signal: controller.signal });
     clearTimeout(timeout);
 
     if (res.ok) {
@@ -461,7 +476,47 @@ export async function fetchScriptureVerse(
             verse,
             text: cleanText,
             translation,
-            source: "bible-api",
+            source: "bolls",
+          };
+        }
+      }
+    }
+  } catch {}
+
+  // 5. Tier 4: bolls.life Chapter Batch (Populates all sibling verses in local storage)
+  try {
+    const bollsTrans = translation === "BSB" ? "BSB" : translation;
+    const chapterUrl = `https://bolls.life/get-text/${bollsTrans}/${foundBook.number}/${chapter}/`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
+    const res = await fetch(chapterUrl, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        // Cache whole chapter into storage so subsequent verses are 0ms instant without any network calls!
+        for (const item of data) {
+          if (item?.verse && item?.text) {
+            const cleaned = cleanVerseText(item.text, foundBook.name, item.verse);
+            if (cleaned && !isNoticeOrErrorText(cleaned)) {
+              const itemKey = getCacheKey(translation, foundBook.id, chapter, item.verse);
+              persistToStorage(itemKey, cleaned);
+            }
+          }
+        }
+
+        const foundInCache = memoryCache.get(cacheKey);
+        if (foundInCache) {
+          return {
+            reference: `${foundBook.name} ${chapter}:${verse}`,
+            book: foundBook.name,
+            chapter,
+            verse,
+            text: foundInCache,
+            translation,
+            source: "bolls",
           };
         }
       }
