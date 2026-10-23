@@ -98,6 +98,7 @@ export function PhoneCameraTransmitter({ roomCode: initialRoom = "cam-1" }: { ro
             facingMode: { ideal: mode },
             width: { ideal: 1280 },
             height: { ideal: 720 },
+            frameRate: { ideal: 30, max: 30 },
           },
           audio: false,
         });
@@ -105,7 +106,10 @@ export function PhoneCameraTransmitter({ roomCode: initialRoom = "cam-1" }: { ro
         if (err?.message === "SECURE_CONTEXT_REQUIRED") throw err;
         try {
           stream = await requestMediaStream({
-            video: { facingMode: { ideal: mode } },
+            video: {
+              facingMode: { ideal: mode },
+              frameRate: { ideal: 30 },
+            },
             audio: false,
           });
         } catch (err2: any) {
@@ -147,14 +151,18 @@ export function PhoneCameraTransmitter({ roomCode: initialRoom = "cam-1" }: { ro
     }
   }, [isSecure, requestMediaStream]);
 
-  // Try auto-starting, but user can always tap the prominent start button
+  // Try auto-starting, and hot-swap stream into active WebRTC broadcaster on flip
   useEffect(() => {
-    void startCamera(facingMode);
+    let cancelled = false;
+    void (async () => {
+      await startCamera(facingMode);
+      if (!cancelled && streamRef.current && broadcasterRef.current) {
+        await broadcasterRef.current.replaceStream(streamRef.current).catch(() => {});
+      }
+    })();
 
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-      }
+      cancelled = true;
     };
   }, [facingMode, startCamera]);
 
@@ -194,6 +202,12 @@ export function PhoneCameraTransmitter({ roomCode: initialRoom = "cam-1" }: { ro
       framesSent = 0;
     }, 1000);
 
+    // 2. Adaptive Frame Transmitter:
+    // When WebRTC P2P (0-latency 30fps) is connected, send HTTP heartbeat at 500ms to keep discovery active
+    // without saturating uplink bandwidth. When WebRTC is connecting/fallback, stream at 30fps (~33ms).
+    const isP2pActive = webrtcState === "connected";
+    const relayIntervalMs = isP2pActive ? 500 : 33;
+
     const sendFrameLoop = () => {
       const video = videoRef.current;
       if (!video || video.readyState < 2 || !ctx || isSendingFrameRef.current) return;
@@ -204,7 +218,8 @@ export function PhoneCameraTransmitter({ roomCode: initialRoom = "cam-1" }: { ro
       canvas.height = h;
 
       ctx.drawImage(video, 0, 0, w, h);
-      const frameData = canvas.toDataURL("image/jpeg", 0.55);
+      const quality = isP2pActive ? 0.4 : 0.6;
+      const frameData = canvas.toDataURL("image/jpeg", quality);
 
       isSendingFrameRef.current = true;
       const label = `Phone Camera (${roomCode})`;
@@ -217,14 +232,14 @@ export function PhoneCameraTransmitter({ roomCode: initialRoom = "cam-1" }: { ro
       framesSent++;
     };
 
-    frameIntervalRef.current = setInterval(sendFrameLoop, 50);
+    frameIntervalRef.current = setInterval(sendFrameLoop, relayIntervalMs);
 
     return () => {
       if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
       clearInterval(fpsTimer);
       broadcaster.stop();
     };
-  }, [cameraActive, roomCode]);
+  }, [cameraActive, roomCode, webrtcState]);
 
   // Sync tally status with studio (via BroadcastChannel for same device & remote API for cross-device)
   useEffect(() => {

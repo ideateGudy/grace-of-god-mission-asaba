@@ -6,6 +6,8 @@ const ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun2.l.google.com:19302" },
   { urls: "stun:stun3.l.google.com:19302" },
   { urls: "stun:stun4.l.google.com:19302" },
+  { urls: "stun:stun.cloudflare.com:3478" },
+  { urls: "stun:openrelay.metered.ca:80" },
 ];
 
 /**
@@ -140,6 +142,21 @@ export class WebRtcBroadcaster {
     }, 1000);
   }
 
+  /**
+   * Seamlessly replace the video track in-place when flipping between front and back cameras,
+   * avoiding WebRTC renegotiation, teardown, or screen flashes.
+   */
+  public async replaceStream(newStream: MediaStream) {
+    this.stream = newStream;
+    const newVideoTrack = newStream.getVideoTracks()[0];
+    if (!newVideoTrack || !this.pc) return;
+
+    const sender = this.pc.getSenders().find((s) => s.track && s.track.kind === "video");
+    if (sender) {
+      await sender.replaceTrack(newVideoTrack);
+    }
+  }
+
   public stop() {
     if (this.sseSource) {
       this.sseSource.close();
@@ -186,6 +203,11 @@ export class WebRtcReceiver {
       iceCandidatePoolSize: 4,
     });
 
+    // Explicitly add video transceiver for fast track negotiation
+    try {
+      this.pc.addTransceiver("video", { direction: "recvonly" });
+    } catch {}
+
     this.pc.oniceconnectionstatechange = () => {
       this.onStateChange?.(this.pc?.iceConnectionState || "disconnected");
     };
@@ -193,6 +215,9 @@ export class WebRtcReceiver {
     this.pc.ontrack = (event) => {
       if (event.streams && event.streams[0]) {
         this.onRemoteStream?.(event.streams[0]);
+      } else if (event.track) {
+        const stream = new MediaStream([event.track]);
+        this.onRemoteStream?.(stream);
       }
     };
 
