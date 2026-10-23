@@ -27,7 +27,7 @@ export function DevotionActions({ devotion, formattedDate }: DevotionActionsProp
       : "";
     const prayerLine = devotion.prayer ? `\n\nPRAYER: ${devotion.prayer}` : "";
 
-    return `${seriesText}, ${formattedDate.toUpperCase()}.\n\n${devotion.title.toUpperCase()}${textRefLine}\n\nVERSE OF THE DAY: "${devotion.scriptureText}" - ${devotion.scriptureRef}\n\n${devotion.content}${prayerLine}${bible365Line}${actionPointLine}\n\nRead online: https://graceofgodasaba.org/devotion\nGrace of God Mission Asaba`;
+    return `${seriesText}, ${formattedDate.toUpperCase()}.\n\n${devotion.title.toUpperCase()}${textRefLine}\n\nVERSE OF THE DAY: "${devotion.scriptureText}" - ${devotion.scriptureRef}\n\n${devotion.content}${prayerLine}${bible365Line}${actionPointLine}\n\nRead online: https://ggmasaba.vercel.app/devotion\nGrace of God Mission Asaba`;
   };
 
   const handleCopy = async () => {
@@ -48,7 +48,7 @@ export function DevotionActions({ devotion, formattedDate }: DevotionActionsProp
         await navigator.share({
           title: `${devotion.series || "DAILY GRACE"} - ${devotion.title}`,
           text,
-          url: "https://graceofgodasaba.org/devotion",
+          url: "https://ggmasaba.vercel.app/devotion",
         });
       } catch (err: unknown) {
         if ((err as Error)?.name !== "AbortError") {
