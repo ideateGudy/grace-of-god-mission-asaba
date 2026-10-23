@@ -548,7 +548,11 @@ export function BroadcastStudioLive() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={state.bgImageUrl}
-            alt="Atmospheric Sanctuary Background"
+            alt=""
+            aria-hidden="true"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
             className="w-full h-full object-cover object-center filter brightness-110 contrast-110"
           />
         </div>
