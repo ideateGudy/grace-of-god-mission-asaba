@@ -473,7 +473,7 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
                       : "bg-black/50 text-zinc-300 border-white/5 hover:border-white/20"
                   }`}
                 >
-                  🚫 None (Color Only)
+                  🚫 None (Pure Dark BG)
                 </button>
                 {[
                   {

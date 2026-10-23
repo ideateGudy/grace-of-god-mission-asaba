@@ -532,7 +532,7 @@ export function BroadcastStudioLive() {
       {/* 1. Underlying Base Dark Backdrop */}
       {!isTransparentMode && !isChromaGreen && (
         <div
-          className="pointer-events-none absolute inset-0 z-0 bg-[#060714]"
+          className="pointer-events-none absolute inset-0 z-0 bg-[#05060c]"
         />
       )}
 
@@ -551,7 +551,7 @@ export function BroadcastStudioLive() {
         </div>
       )}
 
-      {/* 3. Sacred Ambient Radial Gradient Overlay (semi-transparent tint so image remains clearly visible) */}
+      {/* 3. Ambient Vignette / Tint Overlay (Dark background when no image selected) */}
       {!isTransparentMode && !isChromaGreen && (
         <div
           className="pointer-events-none absolute inset-0 z-0"
@@ -560,7 +560,7 @@ export function BroadcastStudioLive() {
               ? "radial-gradient(ellipse at 50% 20%, rgba(69,10,10,0.85) 0%, rgba(28,3,5,0.92) 50%, rgba(10,0,1,0.97) 100%)"
               : state.bgImageUrl
               ? `radial-gradient(ellipse at 50% 30%, ${currentTheme.accentGlow.replace(/[\d.]+\)$/, "0.2)")} 0%, rgba(6,7,20,0.65) 60%, rgba(3,4,12,0.88) 100%)`
-              : currentTheme.bgGradient,
+              : "radial-gradient(ellipse at 50% 35%, #0d0f1a 0%, #06070d 65%, #020306 100%)",
           }}
         />
       )}
