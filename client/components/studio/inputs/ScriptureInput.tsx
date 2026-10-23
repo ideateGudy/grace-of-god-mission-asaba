@@ -16,6 +16,7 @@ import {
   type BroadcastStudioState,
   type BibleTranslation,
   type StudioScriptureState,
+  COUNTDOWN_THEMES,
 } from "@ggm/types";
 import {
   BIBLE_BOOKS,
@@ -355,22 +356,84 @@ export function ScriptureInput({ state, onChange, onTakeLive }: ScriptureInputPr
         </div>
       </div>
 
-      {/* Active Scripture Preview Card */}
-      <div className="p-3 bg-black/60 rounded-xl border border-amber-400/30 space-y-1.5">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-black text-amber-300 tracking-wider">
-            {currentScripture.reference} ({currentScripture.translation})
-          </span>
-          {lastSource && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-300 border border-amber-400/20 uppercase font-mono">
-              Source: {lastSource}
-            </span>
-          )}
-        </div>
-        <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-serif italic">
-          &ldquo;{cleanVerseText(currentScripture.text)}&rdquo;
-        </p>
-      </div>
+      {/* Active Scripture Preview Card with Quick Take Live & Stage Actions */}
+      {(() => {
+        const theme = COUNTDOWN_THEMES[state.theme] || COUNTDOWN_THEMES["emerald-grace"];
+        const isLive = state.activeType === "scripture";
+        const isStaged = state.previewType === "scripture";
+
+        return (
+          <div
+            className="p-3.5 bg-black/60 rounded-xl border space-y-2.5 transition-all"
+            style={{
+              borderColor: isLive ? "#ef4444" : isStaged ? "#10b981" : `${theme.primaryAccent}40`,
+              boxShadow: isLive ? "0 0 15px rgba(239,68,68,0.2)" : undefined,
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span
+                className="text-xs font-black tracking-wider uppercase flex items-center gap-2"
+                style={{ color: theme.primaryAccent }}
+              >
+                <span>{currentScripture.reference} ({currentScripture.translation})</span>
+                {isLive && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-600 text-white font-black tracking-widest uppercase animate-pulse">
+                    LIVE ON AIR
+                  </span>
+                )}
+                {!isLive && isStaged && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-black tracking-widest uppercase border border-emerald-500/40">
+                    STAGED IN PREVIEW
+                  </span>
+                )}
+              </span>
+              {lastSource && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-zinc-400 border border-white/10 uppercase font-mono">
+                  Source: {lastSource}
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-serif italic">
+              &ldquo;{cleanVerseText(currentScripture.text)}&rdquo;
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => {
+                  onChange((prev) => ({
+                    ...prev,
+                    previewType: "scripture",
+                  }));
+                }}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold uppercase transition-all flex items-center justify-center gap-1.5 ${
+                  isStaged
+                    ? "bg-emerald-500/30 text-emerald-300 border border-emerald-500/50"
+                    : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                }`}
+              >
+                Stage to Preview
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onChange((prev) => ({
+                    ...prev,
+                    previewType: "scripture",
+                    activeType: "scripture",
+                    isBlackout: false,
+                  }));
+                }}
+                className="flex-1 py-1.5 px-3 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wider shadow active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              >
+                🔴 Take Live (Cut)
+              </button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

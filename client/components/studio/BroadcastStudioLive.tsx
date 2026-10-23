@@ -835,21 +835,31 @@ export function BroadcastStudioLive() {
         )}
 
         {/* 2. SCENE: FULLSCREEN SCRIPTURE */}
-        {state.activeType === "scripture" && state.scripture.displayMode === "fullscreen" && (
-          <div className="w-full h-full flex flex-col justify-center items-center p-8 sm:p-20 text-center animate-in fade-in zoom-in-95 duration-500 max-w-5xl mx-auto">
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300 text-xs sm:text-sm font-black tracking-widest uppercase shadow-lg">
+        {state.activeType === "scripture" && (
+          <div className="w-full h-full flex flex-col justify-center items-center p-6 sm:p-14 md:p-20 text-center animate-in fade-in zoom-in-95 duration-500 max-w-5xl mx-auto">
+            <div className="space-y-6 max-w-4xl px-4">
+              <div
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs sm:text-sm font-black tracking-widest uppercase shadow-lg backdrop-blur-md"
+                style={{
+                  backgroundColor: `${currentTheme.accentGlow.replace(/[\d.]+\)$/, "0.15)")}`,
+                  borderColor: currentTheme.primaryAccent,
+                  color: currentTheme.primaryAccent,
+                }}
+              >
                 <span>📖 SCRIPTURE READING</span>
                 <span>·</span>
-                <span>{state.scripture.translation}</span>
+                <span>{state.scripture?.translation || "AMP"}</span>
               </div>
 
-              <blockquote className="text-2xl sm:text-4xl md:text-5xl font-serif text-white leading-relaxed tracking-wide drop-shadow-xl">
-                &ldquo;{cleanVerseText(state.scripture.text)}&rdquo;
+              <blockquote className="text-xl sm:text-3xl md:text-5xl font-serif text-white leading-relaxed tracking-wide drop-shadow-xl font-medium">
+                &ldquo;{cleanVerseText(state.scripture?.text || state.scriptureText || "Arise, shine; for thy light is come, and the glory of the LORD is risen upon thee.")}&rdquo;
               </blockquote>
 
-              <div className="text-lg sm:text-2xl md:text-3xl font-black text-amber-400 uppercase tracking-widest drop-shadow-md">
-                — {state.scripture.reference}
+              <div
+                className="text-base sm:text-2xl md:text-3xl font-black uppercase tracking-widest drop-shadow-md"
+                style={{ color: currentTheme.primaryAccent }}
+              >
+                — {state.scripture?.reference || state.scriptureRef || "Isaiah 60:1"}
               </div>
             </div>
           </div>
@@ -936,17 +946,22 @@ export function BroadcastStudioLive() {
       {/* Positioned cleanly above bottom screen boundary so it never cuts off */}
       {/* ======================================================== */}
       <div className="absolute bottom-3 sm:bottom-6 md:bottom-8 left-0 right-0 z-30 w-full px-3 sm:px-6 md:px-10 pointer-events-none">
-        {/* Scripture Lower-Third (when scripture is in lower-third mode) */}
-        {state.scripture.displayMode === "lower-third" && (
+        {/* Scripture Lower-Third (when scripture is in lower-third mode and active or enabled) */}
+        {state.activeType !== "scripture" && state.scripture?.displayMode === "lower-third" && (
           <div className="max-w-4xl mx-auto mb-2 animate-in slide-in-from-bottom duration-500">
             <div
-              className="p-3 sm:p-4 rounded-xl border-l-4 border-amber-400 shadow-2xl backdrop-blur-md"
+              className="p-3 sm:p-4 rounded-xl border-l-4 shadow-2xl backdrop-blur-md"
               style={{
+                borderLeftColor: currentTheme.primaryAccent,
                 background: "linear-gradient(90deg, rgba(6,7,20,0.95) 0%, rgba(16,19,41,0.92) 100%)",
+                boxShadow: `0 10px 30px ${currentTheme.accentGlow.replace(/[\d.]+\)$/, "0.25)")}`,
               }}
             >
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[11px] sm:text-xs md:text-sm font-black text-amber-400 uppercase tracking-widest">
+                <span
+                  className="text-[11px] sm:text-xs md:text-sm font-black uppercase tracking-widest"
+                  style={{ color: currentTheme.primaryAccent }}
+                >
                   📖 {state.scripture.reference} ({state.scripture.translation})
                 </span>
               </div>

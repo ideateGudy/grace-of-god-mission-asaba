@@ -709,9 +709,42 @@ export function BroadcastStudio() {
           </div>
 
           <div className="relative aspect-video w-full rounded-xl overflow-hidden border-2 border-emerald-500/60 bg-black shadow-lg flex items-center justify-center">
+            {/* Background in Preview Monitor: Dark overwrite, image overlay, or theme color gradient */}
+            {state.bgImageUrl === "dark" ? (
+              <div className="pointer-events-none absolute inset-0 z-0 bg-[#000000]" />
+            ) : state.bgImageUrl ? (
+              <>
+                <div
+                  className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+                  style={{ opacity: state.bgImageOpacity ?? 0.35 }}
+                >
+                  <img
+                    src={state.bgImageUrl}
+                    alt=""
+                    aria-hidden="true"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                    className="w-full h-full object-cover object-center filter brightness-110"
+                  />
+                </div>
+                <div
+                  className="pointer-events-none absolute inset-0 z-0"
+                  style={{
+                    background: `radial-gradient(ellipse at 50% 30%, transparent 0%, rgba(6,7,20,0.6) 70%, rgba(3,4,12,0.85) 100%)`,
+                  }}
+                />
+              </>
+            ) : (
+              <div
+                className="pointer-events-none absolute inset-0 z-0"
+                style={{ background: currentTheme.bgGradient }}
+              />
+            )}
+
             {/* Preview Staged Representation */}
             {state.previewType === "countdown" && (
-              <div className="text-center p-4 space-y-1">
+              <div className="relative z-10 text-center p-4 space-y-1">
                 <div className="flex items-center justify-center gap-2">
                   <span className="text-[10px] uppercase font-bold text-amber-400">
                     {state.title}
@@ -746,11 +779,18 @@ export function BroadcastStudio() {
             )}
 
             {state.previewType === "scripture" && (
-              <div className="p-4 text-center max-w-sm">
-                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 font-black uppercase">
+              <div className="relative z-10 p-4 text-center max-w-sm">
+                <span
+                  className="text-[10px] px-2.5 py-0.5 rounded font-black uppercase inline-block border backdrop-blur-sm"
+                  style={{
+                    backgroundColor: `${currentTheme.accentGlow.replace(/[\d.]+\)$/, "0.15)")}`,
+                    borderColor: currentTheme.primaryAccent,
+                    color: currentTheme.primaryAccent,
+                  }}
+                >
                   {state.scripture.reference} ({state.scripture.translation})
                 </span>
-                <p className="text-xs text-zinc-200 font-serif italic mt-2 line-clamp-3">
+                <p className="text-xs text-zinc-100 font-serif italic mt-2 line-clamp-3 leading-relaxed drop-shadow-sm font-medium">
                   &ldquo;{cleanVerseText(state.scripture.text)}&rdquo;
                 </p>
               </div>
@@ -984,12 +1024,20 @@ export function BroadcastStudio() {
                   </div>
                 )}
 
+                {/* Active Program Scene: Scripture */}
                 {state.activeType === "scripture" && (
-                  <div className="p-4 text-center max-w-sm">
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 font-black uppercase">
+                  <div className="relative z-10 p-4 text-center max-w-sm animate-in fade-in zoom-in-95 duration-300">
+                    <span
+                      className="text-[10px] px-2.5 py-0.5 rounded font-black uppercase inline-block border backdrop-blur-sm"
+                      style={{
+                        backgroundColor: `${currentTheme.accentGlow.replace(/[\d.]+\)$/, "0.15)")}`,
+                        borderColor: currentTheme.primaryAccent,
+                        color: currentTheme.primaryAccent,
+                      }}
+                    >
                       {state.scripture.reference} ({state.scripture.translation})
                     </span>
-                    <p className="text-xs text-zinc-200 font-serif italic mt-2 line-clamp-3">
+                    <p className="text-xs text-zinc-100 font-serif italic mt-2 line-clamp-3 leading-relaxed drop-shadow-sm font-medium">
                       &ldquo;{cleanVerseText(state.scripture.text)}&rdquo;
                     </p>
                   </div>
