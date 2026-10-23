@@ -99,6 +99,35 @@ export function BroadcastStudio() {
     };
   }, []);
 
+  // 1b. Active 1-Second Timer Ticker for Studio Preview & Program Monitors
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const timer = setInterval(() => {
+      setState((prev) => {
+        if (prev.mode === "event-date" && prev.targetDate) {
+          const nextSecs = calculateSecondsUntilDate(prev.targetDate);
+          return { ...prev, remainingSeconds: nextSecs };
+        } else if (prev.mode === "target-time" && prev.targetTimeString) {
+          const nextSecs = calculateSecondsUntilTarget(prev.targetTimeString);
+          return { ...prev, remainingSeconds: nextSecs };
+        }
+
+        if (!prev.isRunning) return prev;
+
+        const next = prev.remainingSeconds - 1;
+
+        if (!prev.overtimeEnabled && next < 0) {
+          return { ...prev, remainingSeconds: 0, isRunning: false };
+        }
+
+        return { ...prev, remainingSeconds: next };
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isMounted]);
+
   // Camera Stream Lifecycle Manager (OBS / vMix Style Preview & Program Feeds)
   useEffect(() => {
     if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia) return;
@@ -607,15 +636,31 @@ export function BroadcastStudio() {
           <div className="relative aspect-video w-full rounded-xl overflow-hidden border-2 border-emerald-500/60 bg-black shadow-lg flex items-center justify-center">
             {/* Preview Staged Representation */}
             {state.previewType === "countdown" && (
-              <div className="text-center p-4">
-                <span className="text-[10px] uppercase font-bold text-amber-400 block mb-1">
-                  {state.title}
-                </span>
-                <span className="text-3xl sm:text-4xl font-black font-mono text-white">
+              <div className="text-center p-4 space-y-1">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-[10px] uppercase font-bold text-amber-400">
+                    {state.title}
+                  </span>
+                  <span
+                    className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold uppercase flex items-center gap-1 ${
+                      state.isRunning
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                        : "bg-zinc-800 text-zinc-400 border border-white/10"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        state.isRunning ? "bg-emerald-400 animate-pulse" : "bg-zinc-500"
+                      }`}
+                    />
+                    {state.isRunning ? "Ticking" : "Paused"}
+                  </span>
+                </div>
+                <div className="text-3xl sm:text-5xl font-black font-mono tracking-wider text-white drop-shadow">
                   {formatTwoDigits(timeBreakdown.hours)}:{formatTwoDigits(timeBreakdown.minutes)}:
                   {formatTwoDigits(timeBreakdown.seconds)}
-                </span>
-                <span className="text-[10px] text-zinc-400 block mt-1">{state.subtitle}</span>
+                </div>
+                <span className="text-[10px] text-zinc-400 block">{state.subtitle}</span>
               </div>
             )}
 
@@ -791,16 +836,31 @@ export function BroadcastStudio() {
               <>
                 {/* Active Program Scene */}
                 {state.activeType === "countdown" && (
-                  <div className="text-center p-4">
-                    <span className="text-[10px] uppercase font-bold text-amber-400 block mb-1">
-                      {state.title}
-                    </span>
-                    <span className="text-3xl sm:text-4xl font-black font-mono text-white">
-                      {formatTwoDigits(timeBreakdown.hours)}:
-                      {formatTwoDigits(timeBreakdown.minutes)}:
+                  <div className="text-center p-4 space-y-1">
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-[10px] uppercase font-bold text-amber-400">
+                        {state.title}
+                      </span>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold uppercase flex items-center gap-1 ${
+                          state.isRunning
+                            ? "bg-red-500/20 text-red-300 border border-red-500/40"
+                            : "bg-zinc-800 text-zinc-400 border border-white/10"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            state.isRunning ? "bg-red-500 animate-ping" : "bg-zinc-500"
+                          }`}
+                        />
+                        {state.isRunning ? "Live Countdown" : "Paused"}
+                      </span>
+                    </div>
+                    <div className="text-3xl sm:text-5xl font-black font-mono tracking-wider text-white drop-shadow">
+                      {formatTwoDigits(timeBreakdown.hours)}:{formatTwoDigits(timeBreakdown.minutes)}:
                       {formatTwoDigits(timeBreakdown.seconds)}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 block mt-1">{state.subtitle}</span>
+                    </div>
+                    <span className="text-[10px] text-zinc-400 block">{state.subtitle}</span>
                   </div>
                 )}
 

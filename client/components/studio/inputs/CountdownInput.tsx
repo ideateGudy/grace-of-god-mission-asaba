@@ -7,27 +7,23 @@ import {
   RotateCcw,
   Volume2,
   VolumeX,
-  Clock,
   Calendar,
-  Sparkles,
   Palette,
   Timer,
-  ChevronRight,
-  Plus,
-  Minus,
+  Rocket,
+  Check,
 } from "lucide-react";
 import {
   type BroadcastStudioState,
   type CountdownThemeId,
   COUNTDOWN_THEMES,
   EVENT_DATE_PRESETS,
-  calculateSecondsUntilTarget,
   calculateSecondsUntilDate,
   formatToLocalIso,
   getNextSundayServiceDate,
   getNextMidweekServiceDate,
 } from "@ggm/types";
-import { audioSynth } from "@/lib/studio/audio-synth";
+import { toast } from "sonner";
 
 interface CountdownInputProps {
   state: BroadcastStudioState;
@@ -36,35 +32,83 @@ interface CountdownInputProps {
 }
 
 export function CountdownInput({ state, onChange }: CountdownInputProps) {
-  // Primary mode tabs: 1. Normal Activity Timer vs 2. Occasion/Event Timer
+  // Primary viewing tabs: 1. Normal Activity Timer vs 2. Occasion/Event Timer
+  // Switching this tab ONLY switches the UI viewing category — it DOES NOT touch or reset state.isRunning or state.remainingSeconds!
   const isEventMode = state.mode === "event-date" || state.mode === "target-time";
   const [activeCategory, setActiveCategory] = useState<"normal" | "occasion">(() =>
     isEventMode ? "occasion" : "normal"
   );
   const [showThemePicker, setShowThemePicker] = useState<boolean>(false);
 
+  // Staged / Draft settings for Mode 1: Normal Duration
+  const [draftMins, setDraftMins] = useState<number>(() =>
+    state.mode === "activity" ? Math.max(1, Math.round(state.durationSeconds / 60)) : 15
+  );
+  const [draftNormalTitle, setDraftNormalTitle] = useState<string>(() =>
+    state.mode === "activity" && state.title ? state.title : "SANCTUARY ACTIVITY"
+  );
+  const [draftNormalSubtitle, setDraftNormalSubtitle] = useState<string>(() =>
+    state.mode === "activity" && state.subtitle ? state.subtitle : "Activity In Progress"
+  );
+
+  // Staged / Draft settings for Mode 2: Occasion / Event
+  const [draftEventTitle, setDraftEventTitle] = useState<string>(() =>
+    isEventMode && state.title ? state.title : "SUNDAY CELEBRATION SERVICE"
+  );
+  const [draftEventSubtitle, setDraftEventSubtitle] = useState<string>(() =>
+    isEventMode && state.subtitle ? state.subtitle : "Service Starts In..."
+  );
+  const [draftEventDate, setDraftEventDate] = useState<string>(() =>
+    state.targetDate || getNextSundayServiceDate()
+  );
+
   // Quick duration selection presets for Normal Activity Timer
   const normalDurationPresets = [
-    { label: "5 Min", mins: 5, desc: "Offering / Announcements" },
-    { label: "10 Min", mins: 10, desc: "Praise & Worship Session" },
+    { label: "5 Min", mins: 5, desc: "Offering / Giving" },
+    { label: "10 Min", mins: 10, desc: "Praise & Worship" },
     { label: "15 Min", mins: 15, desc: "Choir Ministration" },
-    { label: "20 Min", mins: 20, desc: "Sunday School / Testimonies" },
-    { label: "30 Min", mins: 30, desc: "Sermon / Exhortation" },
-    { label: "45 Min", mins: 45, desc: "Keynote / Message" },
+    { label: "20 Min", mins: 20, desc: "Sunday School" },
+    { label: "30 Min", mins: 30, desc: "Sermon / Message" },
+    { label: "45 Min", mins: 45, desc: "Extended Keynote" },
     { label: "60 Min", mins: 60, desc: "1 Hour Encounter" },
   ];
 
-  // Quick apply normal duration
-  const handleSelectNormalDuration = (mins: number, defaultTitle?: string) => {
+  // Explicit Launch / Set for Normal Activity Timer (User must click to apply/reset)
+  const handleLaunchNormalTimer = (overrideMins?: number, overrideTitle?: string) => {
+    const minsToUse = overrideMins || draftMins;
+    const titleToUse = overrideTitle || draftNormalTitle;
+
     onChange((prev) => ({
       ...prev,
       mode: "activity",
-      durationSeconds: mins * 60,
-      remainingSeconds: mins * 60,
-      title: defaultTitle || prev.title || "SANCTUARY ACTIVITY",
-      subtitle: prev.subtitle || "Activity In Progress",
-      isRunning: false,
+      durationSeconds: minsToUse * 60,
+      remainingSeconds: minsToUse * 60,
+      title: titleToUse,
+      subtitle: draftNormalSubtitle,
+      isRunning: true, // Start immediately on launch
     }));
+
+    toast.success(`Launched ${minsToUse} Min Activity Timer!`);
+  };
+
+  // Explicit Launch / Set for Occasion / Event Timer (User must click to apply/reset)
+  const handleLaunchEventTimer = (overrideDate?: string, overrideTitle?: string, overrideSub?: string) => {
+    const dateToUse = overrideDate || draftEventDate;
+    const titleToUse = overrideTitle || draftEventTitle;
+    const subToUse = overrideSub || draftEventSubtitle;
+    const remaining = calculateSecondsUntilDate(dateToUse);
+
+    onChange((prev) => ({
+      ...prev,
+      mode: "event-date",
+      targetDate: dateToUse,
+      title: titleToUse,
+      subtitle: subToUse,
+      remainingSeconds: remaining,
+      isRunning: true,
+    }));
+
+    toast.success(`Launched Event Countdown for ${titleToUse}!`);
   };
 
   // Adjust remaining runtime seconds
@@ -81,38 +125,24 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
     if (!preset) return;
 
     const targetDate = preset.getTargetDate();
-    const remaining = calculateSecondsUntilDate(targetDate);
+    setDraftEventDate(targetDate);
+    setDraftEventTitle(preset.title);
+    setDraftEventSubtitle(preset.subtitle);
 
-    onChange((prev) => ({
-      ...prev,
-      mode: "event-date",
-      targetDate,
-      title: preset.title,
-      subtitle: preset.subtitle,
-      theme: preset.theme,
-      remainingSeconds: remaining,
-      isRunning: true,
-    }));
+    handleLaunchEventTimer(targetDate, preset.title, preset.subtitle);
   };
 
   return (
     <div className="space-y-4 text-white">
       {/* ======================================================== */}
       {/* 1. PRIMARY TIMER TYPE SELECTOR (2 Clean Modes)           */}
+      {/* Switching tabs NEVER resets a running timer!             */}
       {/* ======================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-black/60 rounded-xl border border-white/10">
         {/* Mode 1: Normal Countdown Timer */}
         <button
           type="button"
-          onClick={() => {
-            setActiveCategory("normal");
-            onChange((prev) => ({
-              ...prev,
-              mode: "activity",
-              durationSeconds: prev.durationSeconds || 1200,
-              remainingSeconds: prev.durationSeconds || 1200,
-            }));
-          }}
+          onClick={() => setActiveCategory("normal")}
           className={`flex items-start gap-3 p-3 rounded-lg text-left transition-all ${
             activeCategory === "normal"
               ? "bg-amber-400 text-black shadow-lg shadow-amber-400/20 ring-1 ring-amber-400"
@@ -133,7 +163,7 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
               </span>
               {activeCategory === "normal" && (
                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-black/30">
-                  Active
+                  Editing View
                 </span>
               )}
             </div>
@@ -150,18 +180,7 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
         {/* Mode 2: Countdown to Occasion or Event */}
         <button
           type="button"
-          onClick={() => {
-            setActiveCategory("occasion");
-            onChange((prev) => {
-              const defaultDate = prev.targetDate || getNextSundayServiceDate();
-              return {
-                ...prev,
-                mode: "event-date",
-                targetDate: defaultDate,
-                remainingSeconds: calculateSecondsUntilDate(defaultDate),
-              };
-            });
-          }}
+          onClick={() => setActiveCategory("occasion")}
           className={`flex items-start gap-3 p-3 rounded-lg text-left transition-all ${
             activeCategory === "occasion"
               ? "bg-amber-400 text-black shadow-lg shadow-amber-400/20 ring-1 ring-amber-400"
@@ -182,7 +201,7 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
               </span>
               {activeCategory === "occasion" && (
                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-black/30">
-                  Active
+                  Editing View
                 </span>
               )}
             </div>
@@ -355,28 +374,29 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
       {/* -------------------------------------------------------- */}
       {activeCategory === "normal" && (
         <div className="space-y-4">
-          {/* Quick Duration Buttons (Clean, Tap-to-Set) */}
+          {/* Quick Duration Buttons (Clean, Tap-to-Stage) */}
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
-              Quick Pick Duration:
+              Choose Activity Duration (Click to prepare, then click Launch Timer):
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
               {normalDurationPresets.map((preset) => {
-                const isCurrent =
-                  state.mode === "activity" && Math.round(state.durationSeconds / 60) === preset.mins;
+                const isSelectedDraft = draftMins === preset.mins;
                 return (
                   <button
                     key={preset.mins}
                     type="button"
-                    onClick={() => handleSelectNormalDuration(preset.mins, state.title)}
+                    onClick={() => {
+                      setDraftMins(preset.mins);
+                    }}
                     className={`p-2.5 rounded-xl border text-center transition-all ${
-                      isCurrent
+                      isSelectedDraft
                         ? "bg-amber-400 text-black border-amber-400 font-black shadow-lg"
                         : "bg-zinc-900/60 border-white/5 text-zinc-300 hover:border-white/20 hover:bg-zinc-800"
                     }`}
                   >
                     <div className="text-sm font-bold">{preset.label}</div>
-                    <div className={`text-[9px] truncate mt-0.5 ${isCurrent ? "text-black/80" : "text-zinc-500"}`}>
+                    <div className={`text-[9px] truncate mt-0.5 ${isSelectedDraft ? "text-black/80" : "text-zinc-500"}`}>
                       {preset.desc.split(" ")[0]}
                     </div>
                   </button>
@@ -385,60 +405,66 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
             </div>
           </div>
 
-          {/* Duration Custom Input & Title Configuration */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-zinc-900/60 rounded-xl border border-white/10">
-            {/* Minutes input */}
-            <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1">
-                Duration (Minutes)
-              </label>
-              <div className="flex items-center gap-2">
+          {/* Duration Custom Input, Title & Explicit Launch Button */}
+          <div className="p-4 bg-zinc-900/60 rounded-xl border border-white/10 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Minutes input */}
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Duration (Minutes)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="1440"
+                    value={draftMins}
+                    onChange={(e) => setDraftMins(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white font-mono font-bold focus:outline-none focus:border-amber-400"
+                  />
+                  <span className="text-xs text-zinc-400 font-semibold">Min</span>
+                </div>
+              </div>
+
+              {/* Display Title */}
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Display Title (e.g. SERMON, OFFERING)
+                </label>
                 <input
-                  type="number"
-                  min="1"
-                  max="1440"
-                  value={Math.round(state.durationSeconds / 60)}
-                  onChange={(e) => {
-                    const mins = Math.max(1, parseInt(e.target.value, 10) || 1);
-                    onChange((prev) => ({
-                      ...prev,
-                      mode: "activity",
-                      durationSeconds: mins * 60,
-                      remainingSeconds: mins * 60,
-                    }));
-                  }}
-                  className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white font-mono font-bold focus:outline-none focus:border-amber-400"
+                  type="text"
+                  value={draftNormalTitle}
+                  onChange={(e) => setDraftNormalTitle(e.target.value)}
+                  placeholder="e.g. PASTOR DAVID OGBUELI SERMON"
+                  className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
                 />
-                <span className="text-xs text-zinc-400 font-semibold">Min</span>
+              </div>
+
+              {/* Subtitle */}
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Status / Subtitle
+                </label>
+                <input
+                  type="text"
+                  value={draftNormalSubtitle}
+                  onChange={(e) => setDraftNormalSubtitle(e.target.value)}
+                  placeholder="e.g. Time Remaining"
+                  className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
+                />
               </div>
             </div>
 
-            {/* Display Title */}
-            <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1">
-                Display Title (e.g. SERMON, OFFERING)
-              </label>
-              <input
-                type="text"
-                value={state.title}
-                onChange={(e) => onChange((prev) => ({ ...prev, title: e.target.value }))}
-                placeholder="e.g. PASTOR DAVID OGBUELI SERMON"
-                className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
-              />
-            </div>
-
-            {/* Subtitle */}
-            <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1">
-                Status / Subtitle
-              </label>
-              <input
-                type="text"
-                value={state.subtitle}
-                onChange={(e) => onChange((prev) => ({ ...prev, subtitle: e.target.value }))}
-                placeholder="e.g. Time Remaining"
-                className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
-              />
+            {/* Launch / Apply Button */}
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => handleLaunchNormalTimer()}
+                className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-black font-black text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 shadow-lg transition-transform active:scale-95"
+              >
+                <Rocket className="w-4 h-4" />
+                <span>Launch {draftMins} Min Countdown Timer</span>
+              </button>
             </div>
           </div>
         </div>
@@ -452,7 +478,7 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
           {/* Quick Preset Cards (Sunday Service, Midweek, Vigil) */}
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
-              Church Programme Presets:
+              Church Programme Presets (Click any to launch):
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
               {EVENT_DATE_PRESETS.map((preset) => {
@@ -502,8 +528,8 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
                 </label>
                 <input
                   type="text"
-                  value={state.title}
-                  onChange={(e) => onChange((prev) => ({ ...prev, title: e.target.value }))}
+                  value={draftEventTitle}
+                  onChange={(e) => setDraftEventTitle(e.target.value)}
                   placeholder="e.g. SUNDAY CELEBRATION SERVICE"
                   className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
                 />
@@ -516,8 +542,8 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
                 </label>
                 <input
                   type="text"
-                  value={state.subtitle}
-                  onChange={(e) => onChange((prev) => ({ ...prev, subtitle: e.target.value }))}
+                  value={draftEventSubtitle}
+                  onChange={(e) => setDraftEventSubtitle(e.target.value)}
                   placeholder="e.g. Service Starts In..."
                   className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
                 />
@@ -533,21 +559,8 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
                 </label>
                 <input
                   type="datetime-local"
-                  value={
-                    state.targetDate
-                      ? state.targetDate.slice(0, 16)
-                      : formatToLocalIso(new Date()).slice(0, 16)
-                  }
-                  onChange={(e) => {
-                    const nextVal = e.target.value;
-                    const secs = calculateSecondsUntilDate(nextVal);
-                    onChange((prev) => ({
-                      ...prev,
-                      mode: "event-date",
-                      targetDate: nextVal,
-                      remainingSeconds: secs,
-                    }));
-                  }}
+                  value={draftEventDate ? draftEventDate.slice(0, 16) : ""}
+                  onChange={(e) => setDraftEventDate(e.target.value)}
                   className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
                 />
               </div>
@@ -555,45 +568,47 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
               {/* Quick Service Helper Shortcuts */}
               <div>
                 <label className="block text-xs font-bold text-zinc-300 mb-1">
-                  Quick Set Next Service Date
+                  Quick Set Helper
                 </label>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => {
                       const nextSun = getNextSundayServiceDate();
-                      onChange((prev) => ({
-                        ...prev,
-                        mode: "event-date",
-                        targetDate: nextSun,
-                        title: "SUNDAY CELEBRATION SERVICE",
-                        subtitle: "Service Starts In...",
-                        remainingSeconds: calculateSecondsUntilDate(nextSun),
-                      }));
+                      setDraftEventDate(nextSun);
+                      setDraftEventTitle("SUNDAY CELEBRATION SERVICE");
+                      setDraftEventSubtitle("Service Starts In...");
                     }}
                     className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200 border border-white/5 transition-colors"
                   >
-                    Next Sunday 8:00 AM
+                    Next Sun 8:00 AM
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       const nextWed = getNextMidweekServiceDate();
-                      onChange((prev) => ({
-                        ...prev,
-                        mode: "event-date",
-                        targetDate: nextWed,
-                        title: "MIDWEEK COMMUNION SERVICE",
-                        subtitle: "Service Starts In...",
-                        remainingSeconds: calculateSecondsUntilDate(nextWed),
-                      }));
+                      setDraftEventDate(nextWed);
+                      setDraftEventTitle("MIDWEEK COMMUNION SERVICE");
+                      setDraftEventSubtitle("Service Starts In...");
                     }}
                     className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200 border border-white/5 transition-colors"
                   >
-                    Next Wednesday 5:30 PM
+                    Next Wed 5:30 PM
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Launch / Apply Button */}
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => handleLaunchEventTimer()}
+                className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-black font-black text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 shadow-lg transition-transform active:scale-95"
+              >
+                <Rocket className="w-4 h-4" />
+                <span>Launch Occasion Countdown</span>
+              </button>
             </div>
           </div>
         </div>
