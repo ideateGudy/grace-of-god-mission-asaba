@@ -457,10 +457,10 @@ export function BroadcastStudioLive() {
   // Mobile-first responsive sizing: maximizes screen presence on mobile while keeping clean margins
   const cardTileClass =
     activeCardsCount <= 2
-      ? "rounded-2xl sm:rounded-3xl md:rounded-[2.25rem] px-4 py-5 sm:px-8 sm:py-9 md:px-12 md:py-12 lg:px-16 lg:py-14 min-w-[40vw] max-w-[44vw] sm:min-w-[190px] sm:max-w-none md:min-w-[260px] lg:min-w-[310px] max-h-[50vh] shadow-[0_16px_50px_rgba(0,0,0,0.9)]"
+      ? "rounded-2xl sm:rounded-3xl md:rounded-[2.25rem] px-4 py-6 sm:px-8 sm:py-9 md:px-12 md:py-12 lg:px-16 lg:py-14 min-w-[42vw] max-w-[45vw] sm:min-w-[190px] sm:max-w-none md:min-w-[260px] lg:min-w-[310px] max-h-[50vh] shadow-[0_16px_50px_rgba(0,0,0,0.9)]"
       : activeCardsCount === 3
-      ? "rounded-xl sm:rounded-2xl md:rounded-3xl px-3 py-4 sm:px-6 sm:py-6 md:px-9 md:py-8 lg:px-11 lg:py-10 min-w-[28vw] max-w-[30vw] sm:min-w-[130px] sm:max-w-none md:min-w-[170px] lg:min-w-[210px] max-h-[46vh] shadow-[0_14px_45px_rgba(0,0,0,0.85)]"
-      : "rounded-xl sm:rounded-2xl md:rounded-3xl px-2 py-3.5 sm:px-4 sm:py-4 md:px-6 md:py-5 lg:px-7 lg:py-6 min-w-[21vw] max-w-[23vw] sm:min-w-[90px] sm:max-w-none md:min-w-[120px] lg:min-w-[140px] max-h-[44vh] shadow-[0_12px_40px_rgba(0,0,0,0.8)]";
+      ? "rounded-xl sm:rounded-2xl md:rounded-3xl px-3 py-5 sm:px-6 sm:py-6 md:px-9 md:py-8 lg:px-11 lg:py-10 min-w-[29vw] max-w-[31vw] sm:min-w-[130px] sm:max-w-none md:min-w-[170px] lg:min-w-[210px] max-h-[46vh] shadow-[0_14px_45px_rgba(0,0,0,0.85)]"
+      : "rounded-xl sm:rounded-2xl md:rounded-3xl px-2 py-4 sm:px-4 sm:py-4 md:px-6 md:py-5 lg:px-7 lg:py-6 min-w-[22vw] max-w-[23.5vw] sm:min-w-[90px] sm:max-w-none md:min-w-[120px] lg:min-w-[140px] max-h-[44vh] shadow-[0_12px_40px_rgba(0,0,0,0.8)]";
 
   const cardDigitClass =
     activeCardsCount <= 2
@@ -471,10 +471,10 @@ export function BroadcastStudioLive() {
 
   const cardLabelClass =
     activeCardsCount <= 2
-      ? "text-[11px] sm:text-xs md:text-sm lg:text-base font-black tracking-[0.25em] sm:tracking-[0.3em] mt-2 sm:mt-4"
+      ? "text-xs sm:text-xs md:text-sm lg:text-base font-black tracking-[0.25em] sm:tracking-[0.3em] mt-2.5 sm:mt-4"
       : activeCardsCount === 3
-      ? "text-[10px] sm:text-[11px] md:text-xs lg:text-sm font-black tracking-[0.2em] sm:tracking-[0.25em] mt-1.5 sm:mt-2.5"
-      : "text-[9px] sm:text-[10px] md:text-xs font-black tracking-[0.15em] sm:tracking-[0.2em] mt-1.5 sm:mt-2";
+      ? "text-[11px] sm:text-[11px] md:text-xs lg:text-sm font-black tracking-[0.2em] sm:tracking-[0.25em] mt-2 sm:mt-2.5"
+      : "text-[10px] sm:text-[10px] md:text-xs font-black tracking-[0.15em] sm:tracking-[0.2em] mt-2 sm:mt-2";
 
   const colonDotClass =
     activeCardsCount <= 2
@@ -485,17 +485,17 @@ export function BroadcastStudioLive() {
 
   const colonContainerClass =
     activeCardsCount <= 2
-      ? "flex flex-col gap-2 sm:gap-4 md:gap-6 pb-5 sm:pb-9 md:pb-12 opacity-60 shrink-0"
+      ? "flex flex-col gap-2 sm:gap-4 md:gap-6 pb-6 sm:pb-9 md:pb-12 opacity-60 shrink-0"
       : activeCardsCount === 3
-      ? "flex flex-col gap-1.5 sm:gap-3 md:gap-4 pb-4 sm:pb-7 md:pb-9 opacity-60 shrink-0"
-      : "flex flex-col gap-1 sm:gap-2.5 md:gap-3 pb-3.5 sm:pb-6 opacity-60 shrink-0";
+      ? "flex flex-col gap-1.5 sm:gap-3 md:gap-4 pb-5 sm:pb-7 md:pb-9 opacity-60 shrink-0"
+      : "flex flex-col gap-1 sm:gap-2.5 md:gap-3 pb-4 sm:pb-6 opacity-60 shrink-0";
 
   const cardContainerGap =
     activeCardsCount <= 2
       ? "gap-2 sm:gap-6 md:gap-10 lg:gap-14 max-w-6xl"
       : activeCardsCount === 3
       ? "gap-1.5 sm:gap-4 md:gap-7 lg:gap-9 max-w-5xl"
-      : "gap-1.5 sm:gap-3 md:gap-4 lg:gap-5 max-w-5xl";
+      : "gap-1 sm:gap-3 md:gap-4 lg:gap-5 max-w-5xl";
 
   // Emergency Blackout Check or Unmounted Initial State Gate
   if (!isMounted) {
@@ -568,15 +568,15 @@ export function BroadcastStudioLive() {
       {/* ======================================================== */}
       {/* SCENE LAYER: Countdown, Scripture, Media, Camera Feed */}
       {/* ======================================================== */}
-      <div className="relative z-10 w-full h-full flex flex-col justify-between items-center">
+      <div className="relative z-10 w-full h-full flex flex-col justify-center items-center">
         {/* 1. SCENE: COUNTDOWN */}
         {state.activeType === "countdown" && (
-          <div className="w-full h-full flex flex-col justify-between items-center px-3 sm:px-8 md:px-12 py-4 sm:py-8 md:py-10 text-center animate-in fade-in duration-500 overflow-hidden">
+          <div className="w-full h-full flex flex-col justify-between md:justify-around items-center px-2 sm:px-8 md:px-12 py-6 sm:py-8 md:py-10 text-center animate-in fade-in duration-500 overflow-hidden">
             {/* Header: Church Logo & Programme Title */}
-            <div className="flex flex-col items-center gap-1.5 sm:gap-2.5 max-w-4xl pt-1 sm:pt-4">
+            <div className="flex flex-col items-center gap-1.5 sm:gap-2.5 max-w-4xl pt-2 sm:pt-4">
               {state.showLogo && !isTransparentMode && (
                 <div
-                  className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden p-1 bg-black/40 shadow-2xl backdrop-blur-md border border-white/10"
+                  className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden p-1 bg-black/40 shadow-2xl backdrop-blur-md border border-white/10"
                   style={{ borderColor: isTimeUp ? "rgba(239, 68, 68, 0.6)" : undefined }}
                 >
                   <Image
@@ -589,9 +589,9 @@ export function BroadcastStudioLive() {
                 </div>
               )}
 
-              <div className="space-y-1">
+              <div className="space-y-1 sm:space-y-1.5 px-3">
                 <h1
-                  className="text-xl sm:text-3xl md:text-5xl font-black tracking-tight uppercase"
+                  className="text-lg sm:text-3xl md:text-5xl font-black tracking-tight uppercase"
                   style={{
                     color: isTimeUp ? "#EF4444" : currentTheme.digitColor,
                     textShadow: isTimeUp ? "0 4px 24px rgba(239,68,68,0.5)" : `0 4px 30px ${currentTheme.accentGlow}`,
@@ -600,7 +600,7 @@ export function BroadcastStudioLive() {
                   {state.title}
                 </h1>
                 <p
-                  className="text-xs sm:text-sm md:text-base font-bold tracking-[0.2em] uppercase opacity-90"
+                  className="text-[11px] sm:text-sm md:text-base font-bold tracking-[0.2em] uppercase opacity-90 max-w-xl mx-auto"
                   style={{ color: isTimeUp ? "#F87171" : currentTheme.labelColor }}
                 >
                   {state.subtitle}
