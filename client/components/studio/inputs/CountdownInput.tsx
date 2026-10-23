@@ -7,22 +7,25 @@ import {
   RotateCcw,
   Volume2,
   VolumeX,
-  Plus,
-  Minus,
-  Sparkles,
   Clock,
   Calendar,
-  AlertTriangle,
+  Sparkles,
+  Palette,
+  Timer,
+  ChevronRight,
+  Plus,
+  Minus,
 } from "lucide-react";
 import {
   type BroadcastStudioState,
   type CountdownThemeId,
   COUNTDOWN_THEMES,
-  PROGRAMME_PRESETS,
-  ACTIVITY_PRESETS,
+  EVENT_DATE_PRESETS,
   calculateSecondsUntilTarget,
   calculateSecondsUntilDate,
+  formatToLocalIso,
   getNextSundayServiceDate,
+  getNextMidweekServiceDate,
 } from "@ggm/types";
 import { audioSynth } from "@/lib/studio/audio-synth";
 
@@ -32,55 +35,39 @@ interface CountdownInputProps {
   onTakeLive?: () => void;
 }
 
-export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputProps) {
-  const [activeTab, setActiveTab] = useState<"presets" | "custom" | "theme">("presets");
+export function CountdownInput({ state, onChange }: CountdownInputProps) {
+  // Primary mode tabs: 1. Normal Activity Timer vs 2. Occasion/Event Timer
+  const isEventMode = state.mode === "event-date" || state.mode === "target-time";
+  const [activeCategory, setActiveCategory] = useState<"normal" | "occasion">(() =>
+    isEventMode ? "occasion" : "normal"
+  );
+  const [showThemePicker, setShowThemePicker] = useState<boolean>(false);
 
-  const handleApplyPreset = (presetId: string) => {
-    const preset = PROGRAMME_PRESETS.find((p) => p.id === presetId);
-    if (!preset) return;
+  // Quick duration selection presets for Normal Activity Timer
+  const normalDurationPresets = [
+    { label: "5 Min", mins: 5, desc: "Offering / Announcements" },
+    { label: "10 Min", mins: 10, desc: "Praise & Worship Session" },
+    { label: "15 Min", mins: 15, desc: "Choir Ministration" },
+    { label: "20 Min", mins: 20, desc: "Sunday School / Testimonies" },
+    { label: "30 Min", mins: 30, desc: "Sermon / Exhortation" },
+    { label: "45 Min", mins: 45, desc: "Keynote / Message" },
+    { label: "60 Min", mins: 60, desc: "1 Hour Encounter" },
+  ];
 
-    onChange((prev) => {
-      const mode = preset.data.mode || "activity";
-      let remaining = preset.data.durationSeconds || 1800;
-      if (mode === "target-time") {
-        remaining = calculateSecondsUntilTarget(preset.data.targetTimeString || "08:00");
-      } else if (mode === "event-date") {
-        remaining = calculateSecondsUntilDate(preset.data.targetDate || getNextSundayServiceDate());
-      }
-
-      return {
-        ...prev,
-        title: preset.data.title || prev.title,
-        subtitle: preset.data.subtitle || prev.subtitle,
-        scriptureRef: preset.data.scriptureRef || prev.scriptureRef,
-        scriptureText: preset.data.scriptureText || prev.scriptureText,
-        mode,
-        targetTimeString: preset.data.targetTimeString || prev.targetTimeString,
-        targetDate: preset.data.targetDate || prev.targetDate,
-        durationSeconds: preset.data.durationSeconds || prev.durationSeconds,
-        theme: preset.data.theme || prev.theme,
-        remainingSeconds: remaining,
-        isRunning: true,
-      };
-    });
-  };
-
-  const handleApplyActivity = (activityId: string) => {
-    const act = ACTIVITY_PRESETS.find((a) => a.id === activityId);
-    if (!act) return;
-
+  // Quick apply normal duration
+  const handleSelectNormalDuration = (mins: number, defaultTitle?: string) => {
     onChange((prev) => ({
       ...prev,
-      title: act.title,
-      subtitle: act.subtitle,
       mode: "activity",
-      durationSeconds: act.durationMinutes * 60,
-      remainingSeconds: act.durationMinutes * 60,
-      theme: act.theme,
-      isRunning: true,
+      durationSeconds: mins * 60,
+      remainingSeconds: mins * 60,
+      title: defaultTitle || prev.title || "SANCTUARY ACTIVITY",
+      subtitle: prev.subtitle || "Activity In Progress",
+      isRunning: false,
     }));
   };
 
+  // Adjust remaining runtime seconds
   const adjustSeconds = (delta: number) => {
     onChange((prev) => ({
       ...prev,
@@ -88,238 +75,324 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
     }));
   };
 
+  // Quick preset apply for Event / Occasion
+  const handleSelectEventPreset = (presetId: string) => {
+    const preset = EVENT_DATE_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+
+    const targetDate = preset.getTargetDate();
+    const remaining = calculateSecondsUntilDate(targetDate);
+
+    onChange((prev) => ({
+      ...prev,
+      mode: "event-date",
+      targetDate,
+      title: preset.title,
+      subtitle: preset.subtitle,
+      theme: preset.theme,
+      remainingSeconds: remaining,
+      isRunning: true,
+    }));
+  };
+
   return (
     <div className="space-y-4 text-white">
-      {/* Tab Selectors */}
-      <div className="flex border-b border-white/10 gap-2 pb-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab("presets")}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-            activeTab === "presets"
-              ? "bg-amber-400/20 text-amber-300 border border-amber-400/40"
-              : "text-zinc-400 hover:text-white"
-          }`}
-        >
-          ⛪ Programme Presets
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("custom")}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-            activeTab === "custom"
-              ? "bg-amber-400/20 text-amber-300 border border-amber-400/40"
-              : "text-zinc-400 hover:text-white"
-          }`}
-        >
-          ⏱️ Custom Timer
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("theme")}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-            activeTab === "theme"
-              ? "bg-amber-400/20 text-amber-300 border border-amber-400/40"
-              : "text-zinc-400 hover:text-white"
-          }`}
-        >
-          🎨 Sacred Themes
-        </button>
-      </div>
-
-      {/* Timer Runtime Quick Controls */}
-      <div className="flex flex-wrap items-center gap-2 p-3 bg-zinc-900/80 rounded-xl border border-white/10">
-        <button
-          type="button"
-          onClick={() => onChange((prev) => ({ ...prev, isRunning: !prev.isRunning }))}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-xs shadow-md transition-all ${
-            state.isRunning
-              ? "bg-amber-500 text-black hover:bg-amber-400"
-              : "bg-emerald-600 text-white hover:bg-emerald-500"
-          }`}
-        >
-          {state.isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-          {state.isRunning ? "Pause Timer" : "Start Timer"}
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            onChange((prev) => ({
-              ...prev,
-              remainingSeconds: prev.durationSeconds,
-              isRunning: false,
-            }))
-          }
-          className="flex items-center gap-1 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-medium"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          Reset
-        </button>
-
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => adjustSeconds(-60)}
-            className="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs font-bold"
-            title="Subtract 1 minute"
-          >
-            -1m
-          </button>
-          <button
-            type="button"
-            onClick={() => adjustSeconds(60)}
-            className="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs font-bold"
-            title="Add 1 minute"
-          >
-            +1m
-          </button>
-          <button
-            type="button"
-            onClick={() => adjustSeconds(300)}
-            className="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs font-bold"
-            title="Add 5 minutes"
-          >
-            +5m
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => onChange((prev) => ({ ...prev, soundEnabled: !prev.soundEnabled }))}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-            state.soundEnabled
-              ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-              : "bg-zinc-800 text-zinc-400"
-          }`}
-          title="Toggle cathedral chime sound"
-        >
-          {state.soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-          Sound {state.soundEnabled ? "ON" : "OFF"}
-        </button>
-
+      {/* ======================================================== */}
+      {/* 1. PRIMARY TIMER TYPE SELECTOR (2 Clean Modes)           */}
+      {/* ======================================================== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-black/60 rounded-xl border border-white/10">
+        {/* Mode 1: Normal Countdown Timer */}
         <button
           type="button"
           onClick={() => {
-            audioSynth.playCathedralChimes();
+            setActiveCategory("normal");
+            onChange((prev) => ({
+              ...prev,
+              mode: "activity",
+              durationSeconds: prev.durationSeconds || 1200,
+              remainingSeconds: prev.durationSeconds || 1200,
+            }));
           }}
-          className="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs"
-          title="Test cathedral chime"
+          className={`flex items-start gap-3 p-3 rounded-lg text-left transition-all ${
+            activeCategory === "normal"
+              ? "bg-amber-400 text-black shadow-lg shadow-amber-400/20 ring-1 ring-amber-400"
+              : "bg-zinc-900/60 text-zinc-300 hover:bg-zinc-800/80"
+          }`}
         >
-          🔔 Test Chime
+          <div
+            className={`p-2 rounded-lg ${
+              activeCategory === "normal" ? "bg-black/20 text-black" : "bg-zinc-800 text-amber-400"
+            }`}
+          >
+            <Timer className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider">
+                1. Normal Countdown Timer
+              </span>
+              {activeCategory === "normal" && (
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-black/30">
+                  Active
+                </span>
+              )}
+            </div>
+            <p
+              className={`text-[11px] mt-0.5 line-clamp-1 ${
+                activeCategory === "normal" ? "text-black/80 font-medium" : "text-zinc-400"
+              }`}
+            >
+              Fixed minutes (10m, 20m, 30m) for sermon, offering, or worship. No date needed.
+            </p>
+          </div>
+        </button>
+
+        {/* Mode 2: Countdown to Occasion or Event */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveCategory("occasion");
+            onChange((prev) => {
+              const defaultDate = prev.targetDate || getNextSundayServiceDate();
+              return {
+                ...prev,
+                mode: "event-date",
+                targetDate: defaultDate,
+                remainingSeconds: calculateSecondsUntilDate(defaultDate),
+              };
+            });
+          }}
+          className={`flex items-start gap-3 p-3 rounded-lg text-left transition-all ${
+            activeCategory === "occasion"
+              ? "bg-amber-400 text-black shadow-lg shadow-amber-400/20 ring-1 ring-amber-400"
+              : "bg-zinc-900/60 text-zinc-300 hover:bg-zinc-800/80"
+          }`}
+        >
+          <div
+            className={`p-2 rounded-lg ${
+              activeCategory === "occasion" ? "bg-black/20 text-black" : "bg-zinc-800 text-amber-400"
+            }`}
+          >
+            <Calendar className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider">
+                2. Occasion &amp; Event Countdown
+              </span>
+              {activeCategory === "occasion" && (
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-black/30">
+                  Active
+                </span>
+              )}
+            </div>
+            <p
+              className={`text-[11px] mt-0.5 line-clamp-1 ${
+                activeCategory === "occasion" ? "text-black/80 font-medium" : "text-zinc-400"
+              }`}
+            >
+              Sunday Service, Midweek, Conference, or Vigil with target date &amp; starting time.
+            </p>
+          </div>
         </button>
       </div>
 
-      {/* Tab: Presets */}
-      {activeTab === "presets" && (
-        <div className="space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-            Sunday & Midweek Service Presets
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-            {PROGRAMME_PRESETS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => handleApplyPreset(p.id)}
-                className="flex flex-col text-left p-3 rounded-xl bg-zinc-900/60 hover:bg-zinc-800 border border-white/5 hover:border-amber-400/40 transition-all group"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors">
-                    {p.name}
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 uppercase">
-                    {p.data.mode}
-                  </span>
-                </div>
-                <p className="text-[11px] text-zinc-400 truncate mt-1">{p.data.subtitle}</p>
-              </button>
-            ))}
-          </div>
+      {/* ======================================================== */}
+      {/* 2. LIVE RUNTIME PLAYBACK & QUICK ADJUST BAR              */}
+      {/* ======================================================== */}
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-zinc-900/90 rounded-xl border border-white/10">
+        <div className="flex items-center gap-2">
+          {/* Start / Pause */}
+          <button
+            type="button"
+            onClick={() => onChange((prev) => ({ ...prev, isRunning: !prev.isRunning }))}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-bold text-xs shadow-md transition-all ${
+              state.isRunning
+                ? "bg-amber-500 text-black hover:bg-amber-400"
+                : "bg-emerald-600 text-white hover:bg-emerald-500"
+            }`}
+          >
+            {state.isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            <span>{state.isRunning ? "Pause" : "Start"}</span>
+          </button>
 
-          <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 pt-2">
-            Timed Activities (Sermon, Worship, Offering)
-          </h4>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {ACTIVITY_PRESETS.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => handleApplyActivity(a.id)}
-                className="p-2.5 rounded-lg bg-zinc-900/60 hover:bg-zinc-800 border border-white/5 hover:border-amber-400/30 text-left transition-all"
-              >
-                <div className="text-xs font-bold text-amber-300">{a.durationMinutes} Mins</div>
-                <div className="text-[11px] text-zinc-300 truncate">{a.name}</div>
-              </button>
-            ))}
+          {/* Reset */}
+          <button
+            type="button"
+            onClick={() =>
+              onChange((prev) => {
+                if (prev.mode === "event-date" && prev.targetDate) {
+                  return {
+                    ...prev,
+                    remainingSeconds: calculateSecondsUntilDate(prev.targetDate),
+                    isRunning: false,
+                  };
+                }
+                return {
+                  ...prev,
+                  remainingSeconds: prev.durationSeconds,
+                  isRunning: false,
+                };
+              })
+            }
+            className="flex items-center gap-1 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-semibold transition-colors"
+            title="Reset timer to start"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset</span>
+          </button>
+
+          {/* Quick Step Buttons (+/- 1m, 5m) */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => adjustSeconds(-60)}
+              className="px-2.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-colors"
+              title="Minus 1 minute"
+            >
+              -1m
+            </button>
+            <button
+              type="button"
+              onClick={() => adjustSeconds(60)}
+              className="px-2.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-colors"
+              title="Plus 1 minute"
+            >
+              +1m
+            </button>
+            <button
+              type="button"
+              onClick={() => adjustSeconds(300)}
+              className="px-2.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-colors"
+              title="Plus 5 minutes"
+            >
+              +5m
+            </button>
+          </div>
+        </div>
+
+        {/* Audio / Theme Shortcuts */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onChange((prev) => ({ ...prev, soundEnabled: !prev.soundEnabled }))}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+              state.soundEnabled
+                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                : "bg-zinc-800 text-zinc-400"
+            }`}
+          >
+            {state.soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">Sound</span> {state.soundEnabled ? "ON" : "OFF"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowThemePicker(!showThemePicker)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+              showThemePicker
+                ? "bg-amber-400 text-black font-bold"
+                : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+            }`}
+          >
+            <Palette className="w-3.5 h-3.5" />
+            <span>Theme: {COUNTDOWN_THEMES[state.theme]?.name?.split(" ")[0]}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Theme Picker Dropdown if toggled */}
+      {showThemePicker && (
+        <div className="p-3 bg-zinc-900/90 rounded-xl border border-amber-400/30 space-y-2 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+              Select Sacred Color Palette &amp; Overlay Styling
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowThemePicker(false)}
+              className="text-xs text-zinc-400 hover:text-white"
+            >
+              ✕ Close
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {(Object.keys(COUNTDOWN_THEMES) as CountdownThemeId[]).map((themeKey) => {
+              const th = COUNTDOWN_THEMES[themeKey];
+              const isSelected = state.theme === themeKey;
+              return (
+                <button
+                  key={themeKey}
+                  type="button"
+                  onClick={() => onChange((prev) => ({ ...prev, theme: themeKey }))}
+                  className={`p-2.5 rounded-lg border text-left transition-all flex items-center justify-between ${
+                    isSelected
+                      ? "border-amber-400 bg-amber-400/10 text-amber-300 font-bold"
+                      : "border-white/5 bg-black/40 text-zinc-300 hover:border-white/20"
+                  }`}
+                >
+                  <div className="min-w-0 pr-2">
+                    <div className="text-xs truncate">{th.name}</div>
+                    <div className="text-[10px] text-zinc-400 truncate">{th.tagline}</div>
+                  </div>
+                  <div
+                    className="w-4 h-4 rounded-full border border-white/20 shrink-0"
+                    style={{ backgroundColor: th.primaryAccent }}
+                  />
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Tab: Custom Timer */}
-      {activeTab === "custom" && (
-        <div className="space-y-4 p-4 bg-zinc-900/50 rounded-xl border border-white/10">
-          <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1">Service Title</label>
-            <input
-              type="text"
-              value={state.title}
-              onChange={(e) => onChange((prev) => ({ ...prev, title: e.target.value }))}
-              className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
-            />
-          </div>
+      {/* ======================================================== */}
+      {/* 3. SECTION CONTENT: BASED ON SELECTED MODE               */}
+      {/* ======================================================== */}
 
-          <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1">Subtitle / Status</label>
-            <input
-              type="text"
-              value={state.subtitle}
-              onChange={(e) => onChange((prev) => ({ ...prev, subtitle: e.target.value }))}
-              className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">Mode</label>
-              <select
-                value={state.mode}
-                onChange={(e) =>
-                  onChange((prev) => ({ ...prev, mode: e.target.value as any }))
-                }
-                className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
-              >
-                <option value="activity">Duration Timer (Minutes)</option>
-                <option value="target-time">Target Time (e.g. 08:00 AM)</option>
-                <option value="event-date">Event Date (e.g. Sunday Service)</option>
-              </select>
+      {/* -------------------------------------------------------- */}
+      {/* MODE 1: NORMAL COUNTDOWN TIMER (Duration in Minutes)     */}
+      {/* -------------------------------------------------------- */}
+      {activeCategory === "normal" && (
+        <div className="space-y-4">
+          {/* Quick Duration Buttons (Clean, Tap-to-Set) */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
+              Quick Pick Duration:
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+              {normalDurationPresets.map((preset) => {
+                const isCurrent =
+                  state.mode === "activity" && Math.round(state.durationSeconds / 60) === preset.mins;
+                return (
+                  <button
+                    key={preset.mins}
+                    type="button"
+                    onClick={() => handleSelectNormalDuration(preset.mins, state.title)}
+                    className={`p-2.5 rounded-xl border text-center transition-all ${
+                      isCurrent
+                        ? "bg-amber-400 text-black border-amber-400 font-black shadow-lg"
+                        : "bg-zinc-900/60 border-white/5 text-zinc-300 hover:border-white/20 hover:bg-zinc-800"
+                    }`}
+                  >
+                    <div className="text-sm font-bold">{preset.label}</div>
+                    <div className={`text-[9px] truncate mt-0.5 ${isCurrent ? "text-black/80" : "text-zinc-500"}`}>
+                      {preset.desc.split(" ")[0]}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
+          </div>
 
-            {state.mode === "target-time" ? (
-              <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Target Time (HH:MM)
-                </label>
-                <input
-                  type="time"
-                  value={state.targetTimeString}
-                  onChange={(e) => {
-                    const time = e.target.value;
-                    const secs = calculateSecondsUntilTarget(time);
-                    onChange((prev) => ({
-                      ...prev,
-                      targetTimeString: time,
-                      remainingSeconds: secs,
-                    }));
-                  }}
-                  className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Duration (Minutes)
-                </label>
+          {/* Duration Custom Input & Title Configuration */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-zinc-900/60 rounded-xl border border-white/10">
+            {/* Minutes input */}
+            <div>
+              <label className="block text-xs font-bold text-zinc-300 mb-1">
+                Duration (Minutes)
+              </label>
+              <div className="flex items-center gap-2">
                 <input
                   type="number"
                   min="1"
@@ -329,72 +402,227 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
                     const mins = Math.max(1, parseInt(e.target.value, 10) || 1);
                     onChange((prev) => ({
                       ...prev,
+                      mode: "activity",
                       durationSeconds: mins * 60,
                       remainingSeconds: mins * 60,
                     }));
                   }}
+                  className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white font-mono font-bold focus:outline-none focus:border-amber-400"
+                />
+                <span className="text-xs text-zinc-400 font-semibold">Min</span>
+              </div>
+            </div>
+
+            {/* Display Title */}
+            <div>
+              <label className="block text-xs font-bold text-zinc-300 mb-1">
+                Display Title (e.g. SERMON, OFFERING)
+              </label>
+              <input
+                type="text"
+                value={state.title}
+                onChange={(e) => onChange((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="e.g. PASTOR DAVID OGBUELI SERMON"
+                className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+
+            {/* Subtitle */}
+            <div>
+              <label className="block text-xs font-bold text-zinc-300 mb-1">
+                Status / Subtitle
+              </label>
+              <input
+                type="text"
+                value={state.subtitle}
+                onChange={(e) => onChange((prev) => ({ ...prev, subtitle: e.target.value }))}
+                placeholder="e.g. Time Remaining"
+                className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------------------------------------------- */}
+      {/* MODE 2: OCCASION & EVENT COUNTDOWN (Date & Starting Time) */}
+      {/* -------------------------------------------------------- */}
+      {activeCategory === "occasion" && (
+        <div className="space-y-4">
+          {/* Quick Preset Cards (Sunday Service, Midweek, Vigil) */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
+              Church Programme Presets:
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+              {EVENT_DATE_PRESETS.map((preset) => {
+                const isCurrent =
+                  state.mode === "event-date" && state.title === preset.title;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => handleSelectEventPreset(preset.id)}
+                    className={`p-3 rounded-xl border text-left transition-all group ${
+                      isCurrent
+                        ? "bg-amber-400 text-black border-amber-400 shadow-lg font-bold"
+                        : "bg-zinc-900/60 border-white/5 text-zinc-300 hover:border-amber-400/40 hover:bg-zinc-800"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold truncate">{preset.name}</span>
+                      <span
+                        className={`text-[9px] uppercase px-1.5 py-0.2 rounded font-mono ${
+                          isCurrent ? "bg-black/20 text-black" : "bg-black/60 text-amber-400"
+                        }`}
+                      >
+                        {preset.category}
+                      </span>
+                    </div>
+                    <p
+                      className={`text-[11px] truncate mt-1 ${
+                        isCurrent ? "text-black/80" : "text-zinc-400"
+                      }`}
+                    >
+                      {preset.subtitle}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Date & Starting Time Custom Form */}
+          <div className="p-4 bg-zinc-900/60 rounded-xl border border-white/10 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Event / Service Title */}
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Service / Occasion Title
+                </label>
+                <input
+                  type="text"
+                  value={state.title}
+                  onChange={(e) => onChange((prev) => ({ ...prev, title: e.target.value }))}
+                  placeholder="e.g. SUNDAY CELEBRATION SERVICE"
                   className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
                 />
               </div>
-            )}
-          </div>
 
-          <div className="flex items-center gap-4 pt-2">
-            <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={state.overtimeEnabled}
-                onChange={(e) =>
-                  onChange((prev) => ({ ...prev, overtimeEnabled: e.target.checked }))
-                }
-                className="rounded bg-black border-white/20 text-amber-500 focus:ring-0"
-              />
-              Track Overtime (+MM:SS in red when 0:00 reached)
-            </label>
+              {/* Subtitle / Note */}
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Subtitle / Note
+                </label>
+                <input
+                  type="text"
+                  value={state.subtitle}
+                  onChange={(e) => onChange((prev) => ({ ...prev, subtitle: e.target.value }))}
+                  placeholder="e.g. Service Starts In..."
+                  className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+            </div>
 
-            <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={state.stageMode}
-                onChange={(e) => onChange((prev) => ({ ...prev, stageMode: e.target.checked }))}
-                className="rounded bg-black border-white/20 text-amber-500 focus:ring-0"
-              />
-              Stage Mode (Giant High-Contrast pulpit digits)
-            </label>
-          </div>
-        </div>
-      )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              {/* Target Date & Starting Time (HTML5 datetime-local) */}
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center justify-between">
+                  <span>Occasion Date &amp; Starting Time</span>
+                  <span className="text-[10px] text-zinc-400">YYYY-MM-DD HH:MM</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={
+                    state.targetDate
+                      ? state.targetDate.slice(0, 16)
+                      : formatToLocalIso(new Date()).slice(0, 16)
+                  }
+                  onChange={(e) => {
+                    const nextVal = e.target.value;
+                    const secs = calculateSecondsUntilDate(nextVal);
+                    onChange((prev) => ({
+                      ...prev,
+                      mode: "event-date",
+                      targetDate: nextVal,
+                      remainingSeconds: secs,
+                    }));
+                  }}
+                  className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
+                />
+              </div>
 
-      {/* Tab: Sacred Themes */}
-      {activeTab === "theme" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-          {(Object.keys(COUNTDOWN_THEMES) as CountdownThemeId[]).map((themeKey) => {
-            const th = COUNTDOWN_THEMES[themeKey];
-            const isSelected = state.theme === themeKey;
-            return (
-              <button
-                key={themeKey}
-                type="button"
-                onClick={() => onChange((prev) => ({ ...prev, theme: themeKey }))}
-                className={`p-3 rounded-xl border text-left transition-all ${
-                  isSelected
-                    ? "border-amber-400 bg-amber-400/10 shadow-[0_0_15px_rgba(217,164,65,0.2)]"
-                    : "border-white/10 bg-zinc-900/60 hover:border-white/20"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-white">{th.name}</span>
-                  <div
-                    className="w-3.5 h-3.5 rounded-full border border-white/20"
-                    style={{ backgroundColor: th.primaryAccent }}
-                  />
+              {/* Quick Service Helper Shortcuts */}
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Quick Set Next Service Date
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextSun = getNextSundayServiceDate();
+                      onChange((prev) => ({
+                        ...prev,
+                        mode: "event-date",
+                        targetDate: nextSun,
+                        title: "SUNDAY CELEBRATION SERVICE",
+                        subtitle: "Service Starts In...",
+                        remainingSeconds: calculateSecondsUntilDate(nextSun),
+                      }));
+                    }}
+                    className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200 border border-white/5 transition-colors"
+                  >
+                    Next Sunday 8:00 AM
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextWed = getNextMidweekServiceDate();
+                      onChange((prev) => ({
+                        ...prev,
+                        mode: "event-date",
+                        targetDate: nextWed,
+                        title: "MIDWEEK COMMUNION SERVICE",
+                        subtitle: "Service Starts In...",
+                        remainingSeconds: calculateSecondsUntilDate(nextWed),
+                      }));
+                    }}
+                    className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200 border border-white/5 transition-colors"
+                  >
+                    Next Wednesday 5:30 PM
+                  </button>
                 </div>
-                <p className="text-[11px] text-zinc-400 line-clamp-2">{th.tagline}</p>
-              </button>
-            );
-          })}
+              </div>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* ======================================================== */}
+      {/* 4. OPTIONAL ADVANCED TOGGLES (Overtime & Stage Mode)       */}
+      {/* ======================================================== */}
+      <div className="flex flex-wrap items-center gap-6 p-3 bg-zinc-900/40 rounded-xl border border-white/5 text-xs text-zinc-300">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={state.overtimeEnabled}
+            onChange={(e) => onChange((prev) => ({ ...prev, overtimeEnabled: e.target.checked }))}
+            className="w-4 h-4 rounded bg-black border-white/20 text-amber-500 focus:ring-0"
+          />
+          <span>Track Overtime (+MM:SS in red when time reaches 0:00)</span>
+        </label>
+
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={state.stageMode}
+            onChange={(e) => onChange((prev) => ({ ...prev, stageMode: e.target.checked }))}
+            className="w-4 h-4 rounded bg-black border-white/20 text-amber-500 focus:ring-0"
+          />
+          <span>Stage Mode (Giant High-Contrast pulpit countdown)</span>
+        </label>
+      </div>
     </div>
   );
 }
