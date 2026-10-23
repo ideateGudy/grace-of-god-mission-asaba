@@ -541,15 +541,17 @@ export function BroadcastStudioLive() {
       }}
     >
       {/* 1. Underlying Base Theme Gradient Backdrop */}
+      {/* Always show theme gradient for scripture/media/camera scenes; only override with red for countdown time-up */}
       {!isTransparentMode && !isChromaGreen && (
         <div
           className="pointer-events-none absolute inset-0 z-0"
           style={{
-            background: isTimeUp
-              ? "radial-gradient(ellipse at 50% 20%, #450A0A 0%, #1C0305 50%, #0A0001 100%)"
-              : isDarkBg
-              ? "#000000"
-              : currentTheme.bgGradient,
+            background:
+              state.activeType === "countdown" && isTimeUp
+                ? "radial-gradient(ellipse at 50% 20%, #450A0A 0%, #1C0305 50%, #0A0001 100%)"
+                : isDarkBg
+                ? "#000000"
+                : currentTheme.bgGradient,
           }}
         />
       )}
@@ -899,7 +901,7 @@ export function BroadcastStudioLive() {
 
         {/* 4. SCENE: LIVE CAMERA FEED / NDI / PHONE CAM */}
         {state.activeType === "camera" && (
-          <div className="relative w-full h-full flex items-center justify-center bg-black">
+          <div className="relative w-full h-full flex items-center justify-center">
             {state.camera.streamType === "webcam" && (
               <video
                 ref={cameraVideoRef}
