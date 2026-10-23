@@ -168,6 +168,8 @@ export const updateCountdownSchema = z.object({
   showLogo: z.boolean().optional(),
   stageMode: z.boolean().optional(),
   completionMessage: z.string().trim().max(300).optional(),
+  bgImageUrl: z.string().trim().optional(),
+  bgImageOpacity: z.number().min(0).max(1).optional(),
   isRunning: z.boolean().optional(),
   remainingSeconds: z.number().int().optional(),
   targetEndTime: z.number().nullable().optional(),
@@ -230,6 +232,8 @@ export const DEFAULT_STUDIO_STATE: BroadcastStudioState = {
   targetDate: "",
   durationSeconds: 1800,
   theme: "royal-gold",
+  bgImageUrl: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1920&q=80",
+  bgImageOpacity: 0.25,
   soundEnabled: true,
   overtimeEnabled: false,
   showScripture: false,
@@ -279,6 +283,8 @@ export interface ChurchCountdownState {
   targetDate: string; // ISO date string e.g. "2026-12-31T23:59:59"
   durationSeconds: number; // For activity timer, initial duration in seconds
   theme: CountdownThemeId;
+  bgImageUrl?: string; // Optional background image URL for sanctuary / ambient backdrop
+  bgImageOpacity?: number; // Background image overlay opacity (0.0 to 1.0, e.g. 0.25)
   soundEnabled: boolean;
   overtimeEnabled: boolean;
   showScripture: boolean;

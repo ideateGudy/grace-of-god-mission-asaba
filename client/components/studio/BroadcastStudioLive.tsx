@@ -135,6 +135,8 @@ export function BroadcastStudioLive() {
             targetDate: remote.targetDate || prev.targetDate,
             durationSeconds: remote.durationSeconds || prev.durationSeconds,
             theme: remote.theme || prev.theme,
+            bgImageUrl: remote.bgImageUrl !== undefined ? remote.bgImageUrl : prev.bgImageUrl,
+            bgImageOpacity: remote.bgImageOpacity !== undefined ? remote.bgImageOpacity : prev.bgImageOpacity,
             soundEnabled: remote.soundEnabled ?? prev.soundEnabled,
             overtimeEnabled: remote.overtimeEnabled ?? prev.overtimeEnabled,
             showScripture: remote.showScripture ?? prev.showScripture,
@@ -404,6 +406,21 @@ export function BroadcastStudioLive() {
       style={rootBgStyle}
     >
 
+      {/* Editable Background Image Layer with Adjustable Opacity */}
+      {state.bgImageUrl && !isTransparentMode && !isChromaGreen && (
+        <div
+          className="pointer-events-none absolute inset-0 -z-20 overflow-hidden"
+          style={{ opacity: state.bgImageOpacity ?? 0.25 }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={state.bgImageUrl}
+            alt="Atmospheric Sanctuary Background"
+            className="w-full h-full object-cover filter brightness-90 contrast-110"
+          />
+        </div>
+      )}
+
       {/* Dynamic Radial Ambient Glow Background (if not transparent / chroma) */}
       {!isTransparentMode && !isChromaGreen && (
         <div
@@ -415,16 +432,16 @@ export function BroadcastStudioLive() {
       {/* ======================================================== */}
       {/* SCENE LAYER: Countdown, Scripture, Media, Camera Feed */}
       {/* ======================================================== */}
-      <div className="relative z-10 w-full h-full flex flex-col justify-center items-center">
+      <div className="relative z-10 w-full h-full flex flex-col justify-between items-center">
         {/* 1. SCENE: COUNTDOWN */}
         {state.activeType === "countdown" && (
-          <div className="w-full h-full flex flex-col justify-between items-center px-6 sm:px-12 md:px-20 lg:px-28 py-8 sm:py-12 md:py-16 text-center animate-in fade-in duration-500">
+          <div className="w-full h-full flex flex-col justify-between items-center px-4 sm:px-8 md:px-12 py-6 sm:py-10 text-center animate-in fade-in duration-500">
             {/* Header: Church Logo & Programme Title */}
-            <div className="flex flex-col items-center gap-3 sm:gap-4 max-w-4xl">
+            <div className="flex flex-col items-center gap-2.5 sm:gap-3 max-w-4xl pt-2 sm:pt-4">
               {state.showLogo && !isTransparentMode && (
                 <div
-                  className="relative w-14 h-14 sm:w-20 sm:h-20 rounded-full overflow-hidden p-1 bg-black/20 shadow-xl backdrop-blur-sm"
-                  style={{ borderColor: isTimeUp ? "rgba(239, 68, 68, 0.6)" : "transparent" }}
+                  className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden p-1 bg-black/40 shadow-2xl backdrop-blur-md border border-white/10"
+                  style={{ borderColor: isTimeUp ? "rgba(239, 68, 68, 0.6)" : undefined }}
                 >
                   <Image
                     src={CHURCH_LOGO_PATH}
@@ -436,9 +453,9 @@ export function BroadcastStudioLive() {
                 </div>
               )}
 
-              <div className="space-y-1 sm:space-y-2">
+              <div className="space-y-1">
                 <h1
-                  className="text-2xl sm:text-4xl md:text-6xl font-black tracking-tight uppercase"
+                  className="text-xl sm:text-3xl md:text-5xl font-black tracking-tight uppercase"
                   style={{
                     color: isTimeUp ? "#EF4444" : currentTheme.digitColor,
                     textShadow: isTimeUp ? "0 4px 24px rgba(239,68,68,0.5)" : `0 4px 30px ${currentTheme.accentGlow}`,
@@ -447,7 +464,7 @@ export function BroadcastStudioLive() {
                   {state.title}
                 </h1>
                 <p
-                  className="text-xs sm:text-base md:text-lg font-semibold tracking-widest uppercase opacity-90"
+                  className="text-xs sm:text-sm md:text-base font-bold tracking-[0.2em] uppercase opacity-90"
                   style={{ color: isTimeUp ? "#F87171" : currentTheme.labelColor }}
                 >
                   {state.subtitle}
@@ -463,7 +480,7 @@ export function BroadcastStudioLive() {
                   TIME UP
                 </span>
 
-                {/* If Overtime is enabled, show the live running overtime clock without boxed strokes */}
+                {/* If Overtime is enabled, show the live running overtime clock */}
                 {state.overtimeEnabled ? (
                   <div className="flex flex-col items-center gap-2">
                     <span className="text-xs sm:text-sm md:text-base font-bold uppercase tracking-[0.25em] text-red-400/90">
@@ -482,7 +499,7 @@ export function BroadcastStudioLive() {
                 )}
               </div>
             ) : isEventTimer && isEventCompleted && state.completionMessage ? (
-              /* Event / Occasion Countdown Reached Zero with Custom Message (Minimalist, borderless) */
+              /* Event / Occasion Countdown Reached Zero with Custom Message */
               <div className="my-auto flex flex-col items-center justify-center gap-4 sm:gap-6 animate-in zoom-in-95 duration-500 max-w-5xl px-4 w-full text-center">
                 <span
                   className="text-4xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight uppercase leading-tight select-none font-sans"
@@ -498,106 +515,145 @@ export function BroadcastStudioLive() {
                 </span>
               </div>
             ) : (
-              /* Giant Modern Minimalist Digits Display (No stroke container, pure theme typography) */
-              <div className="flex flex-col items-center justify-center my-auto w-full max-w-6xl px-4">
-                <div className="flex items-baseline justify-center gap-2 sm:gap-6 md:gap-10 lg:gap-14 w-full">
-                  {/* Days Card (if > 0) */}
+              /* Fliqlo-Inspired Modern Flip Card Timer (Compact, Bold, Split-Flap Seam, Premium Depth) */
+              <div className="flex flex-col items-center justify-center my-auto w-full max-w-5xl px-2">
+                <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-5 lg:gap-6">
+                  {/* Days Flip Card (if > 0) */}
                   {timeBreakdown.days > 0 && (
                     <>
-                      <div className="flex flex-col items-center">
+                      <div className="flex flex-col items-center gap-2 sm:gap-3">
+                        <div className="relative flex flex-col items-center justify-center rounded-2xl md:rounded-3xl bg-[#14151a]/95 border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-md px-3 py-2.5 sm:px-6 sm:py-5 md:px-8 md:py-7 min-w-[72px] sm:min-w-[110px] md:min-w-[145px] lg:min-w-[160px] overflow-hidden group">
+                          {/* Top/Bottom Subtle Gradient Depth */}
+                          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-black/60 pointer-events-none" />
+                          {/* Fliqlo Center Horizontal Split Flap Seam */}
+                          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1.5px] bg-black/80 shadow-[0_1px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-3 bg-black/60 rounded-r-sm pointer-events-none" />
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-3 bg-black/60 rounded-l-sm pointer-events-none" />
+
+                          {/* Digits */}
+                          <span
+                            className="relative z-10 text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-none select-none font-mono"
+                            style={{
+                              color: currentTheme.digitColor,
+                              textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+                            }}
+                          >
+                            {formatTwoDigits(timeBreakdown.days)}
+                          </span>
+                        </div>
                         <span
-                          className="text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] xl:text-[13rem] font-black tracking-tighter leading-none select-none font-mono"
-                          style={{
-                            color: currentTheme.digitColor,
-                            textShadow: `0 8px 40px ${currentTheme.accentGlow}`,
-                          }}
-                        >
-                          {formatTwoDigits(timeBreakdown.days)}
-                        </span>
-                        <span
-                          className="text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-[0.25em] mt-2 sm:mt-4"
+                          className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-[0.25em]"
                           style={{ color: currentTheme.labelColor }}
                         >
                           Days
                         </span>
                       </div>
-                      <span
-                        className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-light opacity-40 select-none self-center -translate-y-4 sm:-translate-y-6"
-                        style={{ color: currentTheme.labelColor }}
-                      >
-                        :
-                      </span>
+
+                      {/* Colon Separator */}
+                      <div className="flex flex-col gap-2.5 sm:gap-3.5 pb-6 sm:pb-8 opacity-60">
+                        <span className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: currentTheme.labelColor }} />
+                        <span className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: currentTheme.labelColor }} />
+                      </div>
                     </>
                   )}
 
-                  {/* Hours Card (always shown unless 0 days and 0 hours on duration timers) */}
+                  {/* Hours Flip Card (always shown unless 0 days and 0 hours on duration timers) */}
                   {(timeBreakdown.days > 0 || timeBreakdown.hours > 0 || state.mode === "event-date") && (
                     <>
-                      <div className="flex flex-col items-center">
+                      <div className="flex flex-col items-center gap-2 sm:gap-3">
+                        <div className="relative flex flex-col items-center justify-center rounded-2xl md:rounded-3xl bg-[#14151a]/95 border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-md px-3 py-2.5 sm:px-6 sm:py-5 md:px-8 md:py-7 min-w-[72px] sm:min-w-[110px] md:min-w-[145px] lg:min-w-[160px] overflow-hidden group">
+                          {/* Top/Bottom Subtle Gradient Depth */}
+                          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-black/60 pointer-events-none" />
+                          {/* Fliqlo Center Horizontal Split Flap Seam */}
+                          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1.5px] bg-black/80 shadow-[0_1px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-3 bg-black/60 rounded-r-sm pointer-events-none" />
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-3 bg-black/60 rounded-l-sm pointer-events-none" />
+
+                          {/* Digits */}
+                          <span
+                            className="relative z-10 text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-none select-none font-mono"
+                            style={{
+                              color: currentTheme.digitColor,
+                              textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+                            }}
+                          >
+                            {formatTwoDigits(timeBreakdown.hours)}
+                          </span>
+                        </div>
                         <span
-                          className="text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] xl:text-[13rem] font-black tracking-tighter leading-none select-none font-mono"
-                          style={{
-                            color: currentTheme.digitColor,
-                            textShadow: `0 8px 40px ${currentTheme.accentGlow}`,
-                          }}
-                        >
-                          {formatTwoDigits(timeBreakdown.hours)}
-                        </span>
-                        <span
-                          className="text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-[0.25em] mt-2 sm:mt-4"
+                          className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-[0.25em]"
                           style={{ color: currentTheme.labelColor }}
                         >
                           Hours
                         </span>
                       </div>
-                      <span
-                        className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-light opacity-40 select-none self-center -translate-y-4 sm:-translate-y-6"
-                        style={{ color: currentTheme.labelColor }}
-                      >
-                        :
-                      </span>
+
+                      {/* Colon Separator */}
+                      <div className="flex flex-col gap-2.5 sm:gap-3.5 pb-6 sm:pb-8 opacity-60">
+                        <span className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: currentTheme.labelColor }} />
+                        <span className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: currentTheme.labelColor }} />
+                      </div>
                     </>
                   )}
 
-                  {/* Minutes Card */}
-                  <div className="flex flex-col items-center">
+                  {/* Minutes Flip Card */}
+                  <div className="flex flex-col items-center gap-2 sm:gap-3">
+                    <div className="relative flex flex-col items-center justify-center rounded-2xl md:rounded-3xl bg-[#14151a]/95 border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-md px-3 py-2.5 sm:px-6 sm:py-5 md:px-8 md:py-7 min-w-[72px] sm:min-w-[110px] md:min-w-[145px] lg:min-w-[160px] overflow-hidden group">
+                      {/* Top/Bottom Subtle Gradient Depth */}
+                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-black/60 pointer-events-none" />
+                      {/* Fliqlo Center Horizontal Split Flap Seam */}
+                      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1.5px] bg-black/80 shadow-[0_1px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-3 bg-black/60 rounded-r-sm pointer-events-none" />
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-3 bg-black/60 rounded-l-sm pointer-events-none" />
+
+                      {/* Digits */}
+                      <span
+                        className="relative z-10 text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-none select-none font-mono"
+                        style={{
+                          color: currentTheme.digitColor,
+                          textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+                        }}
+                      >
+                        {formatTwoDigits(timeBreakdown.minutes)}
+                      </span>
+                    </div>
                     <span
-                      className="text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] xl:text-[13rem] font-black tracking-tighter leading-none select-none font-mono"
-                      style={{
-                        color: currentTheme.digitColor,
-                        textShadow: `0 8px 40px ${currentTheme.accentGlow}`,
-                      }}
-                    >
-                      {formatTwoDigits(timeBreakdown.minutes)}
-                    </span>
-                    <span
-                      className="text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-[0.25em] mt-2 sm:mt-4"
+                      className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-[0.25em]"
                       style={{ color: currentTheme.labelColor }}
                     >
                       Minutes
                     </span>
                   </div>
 
-                  <span
-                    className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-light opacity-40 select-none self-center -translate-y-4 sm:-translate-y-6"
-                    style={{ color: currentTheme.labelColor }}
-                  >
-                    :
-                  </span>
+                  {/* Colon Separator */}
+                  <div className="flex flex-col gap-2.5 sm:gap-3.5 pb-6 sm:pb-8 opacity-60">
+                    <span className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: currentTheme.labelColor }} />
+                    <span className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: currentTheme.labelColor }} />
+                  </div>
 
-                  {/* Seconds Card */}
-                  <div className="flex flex-col items-center">
+                  {/* Seconds Flip Card */}
+                  <div className="flex flex-col items-center gap-2 sm:gap-3">
+                    <div className="relative flex flex-col items-center justify-center rounded-2xl md:rounded-3xl bg-[#14151a]/95 border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-md px-3 py-2.5 sm:px-6 sm:py-5 md:px-8 md:py-7 min-w-[72px] sm:min-w-[110px] md:min-w-[145px] lg:min-w-[160px] overflow-hidden group">
+                      {/* Top/Bottom Subtle Gradient Depth */}
+                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-black/60 pointer-events-none" />
+                      {/* Fliqlo Center Horizontal Split Flap Seam */}
+                      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1.5px] bg-black/80 shadow-[0_1px_0_rgba(255,255,255,0.08)] pointer-events-none" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-3 bg-black/60 rounded-r-sm pointer-events-none" />
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-3 bg-black/60 rounded-l-sm pointer-events-none" />
+
+                      {/* Digits */}
+                      <span
+                        className="relative z-10 text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-none select-none font-mono"
+                        style={{
+                          color: currentTheme.digitColor,
+                          textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+                        }}
+                      >
+                        {formatTwoDigits(timeBreakdown.seconds)}
+                      </span>
+                    </div>
                     <span
-                      className="text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] xl:text-[13rem] font-black tracking-tighter leading-none select-none font-mono"
-                      style={{
-                        color: currentTheme.digitColor,
-                        textShadow: `0 8px 40px ${currentTheme.accentGlow}`,
-                      }}
-                    >
-                      {formatTwoDigits(timeBreakdown.seconds)}
-                    </span>
-                    <span
-                      className="text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-[0.25em] mt-2 sm:mt-4"
+                      className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-[0.25em]"
                       style={{ color: currentTheme.labelColor }}
                     >
                       Seconds
