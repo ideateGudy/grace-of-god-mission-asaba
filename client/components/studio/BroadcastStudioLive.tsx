@@ -270,7 +270,11 @@ export function BroadcastStudioLive() {
             return 0;
           }
           if (calculated > 0 && calculated <= 10 && lastSecondRef.current !== calculated && state.soundEnabled) {
-            audioSynth.playTick();
+            if (calculated <= 5) {
+              audioSynth.playUrgentTick();
+            } else {
+              audioSynth.playTick();
+            }
             lastSecondRef.current = calculated;
           }
           return calculated;
@@ -288,9 +292,13 @@ export function BroadcastStudioLive() {
           chimePlayedRef.current = false;
         }
 
-        // Ticking audio cue under 10 seconds
+        // Ticking audio cue under 10 seconds: urgent alert for 5-1s, acoustic tick for 10-6s
         if (next > 0 && next <= 10 && lastSecondRef.current !== next && state.soundEnabled) {
-          audioSynth.playTick();
+          if (next <= 5) {
+            audioSynth.playUrgentTick();
+          } else {
+            audioSynth.playTick();
+          }
           lastSecondRef.current = next;
         }
 

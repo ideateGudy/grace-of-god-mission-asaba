@@ -27,6 +27,7 @@ import {
   getNextMidweekServiceDate,
 } from "@ggm/types";
 import { toast } from "sonner";
+import { audioSynth } from "@/lib/studio/audio-synth";
 
 interface CountdownInputProps {
   state: BroadcastStudioState;
@@ -393,12 +394,25 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onChange((prev) => ({ ...prev, soundEnabled: !prev.soundEnabled }))}
+            onClick={() => {
+              onChange((prev) => {
+                const nextVal = !prev.soundEnabled;
+                if (nextVal) {
+                  audioSynth.unlock();
+                  audioSynth.playTick();
+                  toast.success("Countdown sound cues ENABLED (ticks & chimes)");
+                } else {
+                  toast.info("Countdown sound cues MUTED");
+                }
+                return { ...prev, soundEnabled: nextVal };
+              });
+            }}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
               state.soundEnabled
                 ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
                 : "bg-zinc-800 text-zinc-400"
             }`}
+            title={state.soundEnabled ? "Mute audio cues" : "Unmute countdown ticks & chimes"}
           >
             {state.soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">Sound</span> {state.soundEnabled ? "ON" : "OFF"}

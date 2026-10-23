@@ -74,6 +74,8 @@ export function BroadcastStudio() {
   const programVideoRef = useRef<HTMLVideoElement | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const activeDeviceIdRef = useRef<string | undefined>(undefined);
+  const studioLastSecondRef = useRef<number | null>(null);
+  const studioChimePlayedRef = useRef<boolean>(false);
 
   // 1. Initial State Restoration
   useEffect(() => {
@@ -169,6 +171,24 @@ export function BroadcastStudio() {
           next = Math.round((prev.targetEndTime - Date.now()) / 1000);
         } else {
           next = prev.remainingSeconds - 1;
+        }
+
+        // Sound cue before it reaches time up (under 10s: ticks; under 5s: urgent beeps; at 0: cathedral chimes)
+        if (prev.soundEnabled) {
+          if (next > 0 && next <= 10 && studioLastSecondRef.current !== next) {
+            studioLastSecondRef.current = next;
+            if (next <= 5) {
+              audioSynth.playUrgentTick();
+            } else {
+              audioSynth.playTick();
+            }
+          }
+          if (next === 0 && !studioChimePlayedRef.current) {
+            audioSynth.playCathedralChimes();
+            studioChimePlayedRef.current = true;
+          } else if (next > 0) {
+            studioChimePlayedRef.current = false;
+          }
         }
 
         if (!prev.overtimeEnabled && next <= 0) {

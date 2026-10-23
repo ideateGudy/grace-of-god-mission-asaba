@@ -6,8 +6,9 @@
 
 class OfflineAudioSynth {
   private ctx: AudioContext | null = null;
+  private isUnlocked: boolean = false;
 
-  private getContext(): AudioContext | null {
+  public getContext(): AudioContext | null {
     if (typeof window === "undefined") return null;
     if (!this.ctx) {
       const AudioContextClass =
@@ -24,54 +25,114 @@ class OfflineAudioSynth {
   }
 
   /**
-   * Subtle glass tick for regular second countdown when under 10 seconds.
+   * Automatically unlock Web Audio API on first user interaction (touch/click/keydown)
+   * to satisfy modern browser Autoplay Policy.
+   */
+  public unlock(): void {
+    if (this.isUnlocked || typeof window === "undefined") return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    if (ctx.state === "suspended") {
+      void ctx.resume().then(() => {
+        this.isUnlocked = true;
+      }).catch(() => {});
+    } else {
+      this.isUnlocked = true;
+    }
+  }
+
+  /**
+   * Crisp, audible acoustic tick for seconds 10 down to 6.
+   * Uses dual harmonics (woodblock / digital broadcast click) with high gain (0.45)
+   * so it is clearly audible on laptops, phones, and sound systems.
    */
   public playTick(): void {
     try {
       const ctx = this.getContext();
       if (!ctx) return;
+      if (ctx.state === "suspended") {
+        void ctx.resume();
+      }
 
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const now = ctx.currentTime;
 
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+      // Primary crisp attack
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(1200, now);
+      osc1.frequency.exponentialRampToValueAtTime(600, now + 0.06);
 
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      gain1.gain.setValueAtTime(0.45, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
 
-      osc.start();
-      osc.stop(ctx.currentTime + 0.09);
+      // Subtle high-pitch harmonic snap
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = "triangle";
+      osc2.frequency.setValueAtTime(2400, now);
+      gain2.gain.setValueAtTime(0.25, now);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+
+      osc1.start(now);
+      osc1.stop(now + 0.08);
+      osc2.start(now);
+      osc2.stop(now + 0.05);
     } catch {
-      // Audio playback silently guarded if browser blocks unmuted audio
+      // Audio playback silently guarded if browser blocks
     }
   }
 
   /**
-   * Urgent dual-chime for the final 5 seconds (5, 4, 3, 2, 1).
+   * Urgent high-visibility warning alert beep for the final 5 seconds (5, 4, 3, 2, 1).
+   * Double-pulse alert tone at 1480Hz & 1760Hz with prominent gain (0.55).
    */
   public playUrgentTick(): void {
     try {
       const ctx = this.getContext();
       if (!ctx) return;
+      if (ctx.state === "suspended") {
+        void ctx.resume();
+      }
 
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const now = ctx.currentTime;
 
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(1046.5, ctx.currentTime); // C6
+      // Pulse 1
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(1480, now);
 
-      gain.gain.setValueAtTime(0.12, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
+      gain1.gain.setValueAtTime(0.55, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
 
-      osc.start();
-      osc.stop(ctx.currentTime + 0.15);
+      osc1.start(now);
+      osc1.stop(now + 0.13);
+
+      // Pulse 2 (Higher harmonic echo after 50ms)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = "triangle";
+      osc2.frequency.setValueAtTime(1760, now + 0.05);
+
+      gain2.gain.setValueAtTime(0.001, now);
+      gain2.gain.setValueAtTime(0.45, now + 0.05);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+
+      osc2.start(now + 0.05);
+      osc2.stop(now + 0.17);
     } catch {
       // Silently guarded
     }
@@ -79,24 +140,27 @@ class OfflineAudioSynth {
 
   /**
    * Majestic Sacred Cathedral Chime / Service Bell Chord at 00:00:00.
-   * Synthesizes a rich harmonic major triad (A Major: 440Hz, 554.37Hz, 659.25Hz, 880Hz).
+   * Synthesizes a rich harmonic major triad (A Major: 440Hz, 554.37Hz, 659.25Hz, 880Hz, 1108.73Hz).
    */
   public playServiceGong(): void {
     try {
       const ctx = this.getContext();
       if (!ctx) return;
+      if (ctx.state === "suspended") {
+        void ctx.resume();
+      }
 
-      const frequencies = [440, 554.37, 659.25, 880];
-      const duration = 3.8; // Long resonant decay
+      const frequencies = [440, 554.37, 659.25, 880, 1108.73];
+      const duration = 4.2; // Long resonant decay
 
       const masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(0.3, ctx.currentTime);
+      masterGain.gain.setValueAtTime(0.55, ctx.currentTime);
       masterGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
 
-      // Low-pass filter for warm bell resonance
+      // Warm low-pass filter
       const filter = ctx.createBiquadFilter();
       filter.type = "lowpass";
-      filter.frequency.setValueAtTime(1400, ctx.currentTime);
+      filter.frequency.setValueAtTime(1800, ctx.currentTime);
 
       masterGain.connect(filter);
       filter.connect(ctx.destination);
@@ -105,8 +169,7 @@ class OfflineAudioSynth {
         const osc = ctx.createOscillator();
         const oscGain = ctx.createGain();
 
-        // Layer pure sine with slight bell triangle overtone
-        osc.type = idx === 0 ? "triangle" : "sine";
+        osc.type = idx === 0 ? "triangle" : idx === 1 ? "sine" : "sine";
         osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
         oscGain.gain.setValueAtTime(1 / frequencies.length, ctx.currentTime);
@@ -131,3 +194,12 @@ class OfflineAudioSynth {
 }
 
 export const audioSynth = new OfflineAudioSynth();
+
+if (typeof window !== "undefined") {
+  const handleInteraction = () => {
+    audioSynth.unlock();
+  };
+  window.addEventListener("click", handleInteraction, { passive: true });
+  window.addEventListener("keydown", handleInteraction, { passive: true });
+  window.addEventListener("touchstart", handleInteraction, { passive: true });
+}
