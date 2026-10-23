@@ -371,6 +371,21 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
             <Palette className="w-3.5 h-3.5" />
             <span>Theme: {COUNTDOWN_THEMES[state.theme]?.name?.split(" ")[0]}</span>
           </button>
+
+          {/* Dedicated Background Overlay Control Button */}
+          <button
+            type="button"
+            onClick={() => setShowThemePicker(true)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+              state.bgImageUrl
+                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+            }`}
+            title="Configure Background Image & Opacity"
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>BG: {state.bgImageUrl ? "Active" : "None"}</span>
+          </button>
         </div>
       </div>
 
@@ -430,105 +445,124 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
             </div>
 
             {/* Background Presets including None / No Image */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  onChange((prev) => ({
-                    ...prev,
-                    bgImageUrl: "",
-                  }))
-                }
-                className={`px-2.5 py-2 rounded-lg text-xs font-bold text-left border transition-all truncate ${
-                  !state.bgImageUrl
-                    ? "bg-amber-400 text-black border-amber-400 shadow-sm"
-                    : "bg-black/50 text-zinc-300 border-white/5 hover:border-white/20"
-                }`}
-              >
-                🚫 None (Color Only)
-              </button>
-              {[
-                {
-                  label: "Cathedral Sanctuary",
-                  url: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1920&q=80",
-                },
-                {
-                  label: "Worship Lights",
-                  url: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1920&q=80",
-                },
-                {
-                  label: "Celestial Clouds",
-                  url: "https://images.unsplash.com/photo-1513002749550-c59d786b8e6c?auto=format&fit=crop&w=1920&q=80",
-                },
-                {
-                  label: "Praise Rays",
-                  url: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1920&q=80",
-                },
-              ].map((bg) => {
-                const isSelected = state.bgImageUrl === bg.url;
-                return (
-                  <button
-                    key={bg.label}
-                    type="button"
-                    onClick={() =>
-                      onChange((prev) => ({
-                        ...prev,
-                        bgImageUrl: bg.url,
-                      }))
-                    }
-                    className={`px-2.5 py-2 rounded-lg text-xs font-bold text-left border transition-all truncate ${
-                      isSelected
-                        ? "bg-amber-400 text-black border-amber-400 shadow-sm"
-                        : "bg-black/50 text-zinc-300 border-white/5 hover:border-white/20"
-                    }`}
-                  >
-                    {bg.label}
-                  </button>
-                );
-              })}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                <span>Select a preset or click &quot;Edit URLs&quot; to change any image:</span>
+                <a
+                  href="https://unsplash.com/s/photos/church-worship"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-400 hover:text-amber-300 underline font-medium flex items-center gap-1"
+                >
+                  Browse Unsplash Church Photos ↗
+                </a>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChange((prev) => ({
+                      ...prev,
+                      bgImageUrl: "",
+                    }))
+                  }
+                  className={`px-2.5 py-2 rounded-lg text-xs font-bold text-left border transition-all truncate ${
+                    !state.bgImageUrl
+                      ? "bg-amber-400 text-black border-amber-400 shadow-sm"
+                      : "bg-black/50 text-zinc-300 border-white/5 hover:border-white/20"
+                  }`}
+                >
+                  🚫 None (Color Only)
+                </button>
+                {[
+                  {
+                    label: "Cathedral Sanctuary",
+                    url: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1920&q=80",
+                  },
+                  {
+                    label: "Worship Lights",
+                    url: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1920&q=80",
+                  },
+                  {
+                    label: "Celestial Clouds",
+                    url: "https://images.unsplash.com/photo-1513002749550-c59d786b8e6c?auto=format&fit=crop&w=1920&q=80",
+                  },
+                  {
+                    label: "Praise Rays",
+                    url: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1920&q=80",
+                  },
+                ].map((bg) => {
+                  const isSelected = state.bgImageUrl === bg.url;
+                  return (
+                    <button
+                      key={bg.label}
+                      type="button"
+                      onClick={() =>
+                        onChange((prev) => ({
+                          ...prev,
+                          bgImageUrl: bg.url,
+                        }))
+                      }
+                      className={`px-2.5 py-2 rounded-lg text-xs font-bold text-left border transition-all truncate ${
+                        isSelected
+                          ? "bg-amber-400 text-black border-amber-400 shadow-sm"
+                          : "bg-black/50 text-zinc-300 border-white/5 hover:border-white/20"
+                      }`}
+                    >
+                      {bg.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Custom URL Input & None Clear Option */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Or paste custom background image URL..."
-                value={state.bgImageUrl || ""}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  onChange((prev) => ({ ...prev, bgImageUrl: val }));
-                }}
-                className="flex-1 px-3 py-1.5 bg-black/60 border border-white/10 rounded-lg text-xs text-white focus:outline-none focus:border-amber-400"
-              />
-              {state.bgImageUrl && (
-                <button
-                  type="button"
-                  onClick={() => onChange((prev) => ({ ...prev, bgImageUrl: "" }))}
-                  className="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg text-xs font-semibold"
-                >
-                  Clear Image
-                </button>
-              )}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-zinc-300">
+                Active Background Image URL (paste any Unsplash or direct image link):
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="https://images.unsplash.com/... or any photo URL"
+                  value={state.bgImageUrl || ""}
+                  onChange={(e) => {
+                    const val = e.target.value.trim();
+                    onChange((prev) => ({ ...prev, bgImageUrl: val }));
+                  }}
+                  className="flex-1 px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                />
+                {state.bgImageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => onChange((prev) => ({ ...prev, bgImageUrl: "" }))}
+                    className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg text-xs font-semibold shrink-0"
+                  >
+                    Clear Image
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Opacity Slider */}
-            <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-white/5">
+            <div className="flex items-center gap-3 bg-black/40 p-2.5 rounded-lg border border-white/5">
               <Sliders className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="text-xs text-zinc-400 shrink-0">Overlay Darkness / Opacity:</span>
+              <span className="text-xs text-zinc-300 shrink-0 font-medium">Overlay Darkness / Opacity:</span>
               <input
                 type="range"
                 min="0"
                 max="1"
                 step="0.05"
-                value={state.bgImageOpacity ?? 0.25}
+                value={state.bgImageOpacity ?? 0.35}
                 onChange={(e) => {
                   const val = parseFloat(e.target.value);
                   onChange((prev) => ({ ...prev, bgImageOpacity: val }));
                 }}
                 className="flex-1 h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-amber-400"
               />
-              <span className="text-xs font-mono font-bold text-amber-400 w-10 text-right">
-                {Math.round((state.bgImageOpacity ?? 0.25) * 100)}%
+              <span className="text-xs font-mono font-bold text-amber-400 w-12 text-right">
+                {Math.round((state.bgImageOpacity ?? 0.35) * 100)}%
               </span>
             </div>
           </div>
