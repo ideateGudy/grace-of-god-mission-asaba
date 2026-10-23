@@ -14,6 +14,7 @@ import {
   Check,
   ImageIcon,
   Sliders,
+  Edit3,
 } from "lucide-react";
 import {
   type BroadcastStudioState,
@@ -64,6 +65,50 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
   const [draftEventDate, setDraftEventDate] = useState<string>(() =>
     state.targetDate || getNextSundayServiceDate()
   );
+
+  // Editable Background Presets State (Persisted in localStorage)
+  const [editingPresets, setEditingPresets] = useState<boolean>(false);
+  const [bgPresets, setBgPresets] = useState<Array<{ id: string; label: string; url: string }>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("ggm_studio_bg_presets_v1");
+        if (stored) return JSON.parse(stored);
+      } catch {}
+    }
+    return [
+      {
+        id: "cathedral",
+        label: "Cathedral Sanctuary",
+        url: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1920&q=80",
+      },
+      {
+        id: "worship",
+        label: "Worship Lights",
+        url: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1920&q=80",
+      },
+      {
+        id: "celestial",
+        label: "Celestial Clouds",
+        url: "https://images.unsplash.com/photo-1513002749550-c59d786b8e6c?auto=format&fit=crop&w=1920&q=80",
+      },
+      {
+        id: "praise",
+        label: "Praise Rays",
+        url: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1920&q=80",
+      },
+    ];
+  });
+
+  const handleUpdatePreset = (id: string, newLabel: string, newUrl: string) => {
+    setBgPresets((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, label: newLabel, url: newUrl } : p));
+      try {
+        localStorage.setItem("ggm_studio_bg_presets_v1", JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+    toast.success("Background preset updated!");
+  };
 
   // Quick duration selection presets for Normal Activity Timer
   const normalDurationPresets = [
@@ -447,7 +492,17 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
             {/* Background Presets including None / No Image */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[11px] text-zinc-400">
-                <span>Select a preset or click &quot;Edit URLs&quot; to change any image:</span>
+                <div className="flex items-center gap-2">
+                  <span>Select a preset or edit image URLs:</span>
+                  <button
+                    type="button"
+                    onClick={() => setEditingPresets(!editingPresets)}
+                    className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 underline"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>{editingPresets ? "Done Editing" : "Edit Preset URLs"}</span>
+                  </button>
+                </div>
                 <a
                   href="https://unsplash.com/s/photos/church-worship"
                   target="_blank"
@@ -458,6 +513,49 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
                 </a>
               </div>
 
+              {/* Editable Preset URLs Form (when toggled) */}
+              {editingPresets && (
+                <div className="p-3 bg-black/60 rounded-xl border border-amber-400/40 space-y-2.5 animate-in fade-in duration-200">
+                  <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider block">
+                    Edit Preset Names &amp; Unsplash Image Links
+                  </span>
+                  <div className="space-y-2">
+                    {bgPresets.map((preset) => (
+                      <div key={preset.id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <input
+                          type="text"
+                          value={preset.label}
+                          onChange={(e) => handleUpdatePreset(preset.id, e.target.value, preset.url)}
+                          placeholder="Preset Name"
+                          className="w-full sm:w-36 px-2.5 py-1.5 bg-zinc-900 border border-white/10 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                        />
+                        <input
+                          type="text"
+                          value={preset.url}
+                          onChange={(e) => handleUpdatePreset(preset.id, preset.label, e.target.value)}
+                          placeholder="https://images.unsplash.com/..."
+                          className="flex-1 px-2.5 py-1.5 bg-zinc-900 border border-white/10 rounded-lg text-xs font-mono text-zinc-300 focus:outline-none focus:border-amber-400"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onChange((prev) => ({
+                              ...prev,
+                              bgImageUrl: preset.url,
+                            }));
+                            toast.success(`Applied ${preset.label} to live output!`);
+                          }}
+                          className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-black font-black text-xs rounded-lg uppercase shrink-0"
+                        >
+                          Use Now
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Preset Buttons Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
                 {/* 1. None (Uses Theme Color Background) */}
                 <button
@@ -497,28 +595,12 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
                   🌑 Dark Background
                 </button>
 
-                {[
-                  {
-                    label: "Cathedral Sanctuary",
-                    url: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1920&q=80",
-                  },
-                  {
-                    label: "Worship Lights",
-                    url: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1920&q=80",
-                  },
-                  {
-                    label: "Celestial Clouds",
-                    url: "https://images.unsplash.com/photo-1513002749550-c59d786b8e6c?auto=format&fit=crop&w=1920&q=80",
-                  },
-                  {
-                    label: "Praise Rays",
-                    url: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1920&q=80",
-                  },
-                ].map((bg) => {
+                {/* Dynamic & Editable Background Presets */}
+                {bgPresets.map((bg) => {
                   const isSelected = state.bgImageUrl === bg.url;
                   return (
                     <button
-                      key={bg.label}
+                      key={bg.id}
                       type="button"
                       onClick={() =>
                         onChange((prev) => ({
@@ -531,6 +613,7 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
                           ? "bg-amber-400 text-black border-amber-400 shadow-sm"
                           : "bg-black/50 text-zinc-300 border-white/5 hover:border-white/20"
                       }`}
+                      title={bg.url}
                     >
                       {bg.label}
                     </button>
