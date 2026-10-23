@@ -1296,6 +1296,7 @@ export function BroadcastStudio() {
               state={state}
               onChange={updateStudioState}
               onTakeLive={handleCut}
+              onOpenThemeModal={() => setIsThemeModalOpen(true)}
             />
           )}
 

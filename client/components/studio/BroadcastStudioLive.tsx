@@ -523,67 +523,63 @@ export function BroadcastStudioLive() {
   const isTimeUp = isNormalTimer && remainingSeconds <= 0;
   const isEventCompleted = isEventTimer && remainingSeconds <= 0;
 
-  // Determine root background based on display mode
-  const rootBgStyle = isTransparentMode
-    ? { background: "transparent" }
-    : isChromaGreen
-    ? { background: "#00FF00" }
-    : isTimeUp
-    ? { background: "radial-gradient(ellipse at 50% 20%, #450A0A 0%, #1C0305 50%, #0A0001 100%)" }
-    : { background: currentTheme.bgDark };
+  // Determine base backdrop style based on user settings:
+  // - transparent: OBS alpha keying
+  // - chroma green: HDMI hardware chroma keying
+  // - dark: Pure solid #000000 black
+  // - none (empty): Full rich theme color liturgical radial gradient
+  // - image: Photo background with atmospheric theme overlay
+  const isDarkBg = state.bgImageUrl === "dark";
+  const hasCustomImage = Boolean(state.bgImageUrl && state.bgImageUrl !== "dark");
 
   return (
     <div
       onDoubleClick={toggleFullscreen}
       className="relative w-full h-screen overflow-hidden select-none"
+      style={{
+        backgroundColor: isTransparentMode ? "transparent" : isChromaGreen ? "#00FF00" : isDarkBg ? "#000000" : currentTheme.bgDark,
+      }}
     >
-      {/* 1. Underlying Base Dark Backdrop */}
-      {!isTransparentMode && !isChromaGreen && (
-        <div
-          className="pointer-events-none absolute inset-0 z-0"
-          style={{
-            backgroundColor: state.bgImageUrl === "dark" ? "#000000" : currentTheme.bgDark,
-          }}
-        />
-      )}
-
-      {/* 2. Optional Editable Background Image Overlay Layer (only when bgImageUrl is an image, not 'dark') */}
-      {state.bgImageUrl && state.bgImageUrl !== "dark" && !isTransparentMode && !isChromaGreen && (
-        <div
-          className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
-          style={{ opacity: state.bgImageOpacity ?? 0.35 }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={state.bgImageUrl}
-            alt=""
-            aria-hidden="true"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
-            className="w-full h-full object-cover object-center filter brightness-110 contrast-110"
-          />
-        </div>
-      )}
-
-      {/* 3. Ambient Vignette / Tint Overlay:
-             - 'dark': Overwrites theme color completely with pure deep black
-             - bgImageUrl: Atmospheric glow with vignette over the photo
-             - none/empty: Rich Theme Color Background gradient
-      */}
+      {/* 1. Underlying Base Theme Gradient Backdrop */}
       {!isTransparentMode && !isChromaGreen && (
         <div
           className="pointer-events-none absolute inset-0 z-0"
           style={{
             background: isTimeUp
-              ? "radial-gradient(ellipse at 50% 20%, rgba(69,10,10,0.85) 0%, rgba(28,3,5,0.92) 50%, rgba(10,0,1,0.97) 100%)"
-              : state.bgImageUrl === "dark"
-              ? "radial-gradient(ellipse at 50% 35%, #08090f 0%, #030407 65%, #000000 100%)"
-              : state.bgImageUrl
-              ? `radial-gradient(ellipse at 50% 30%, ${currentTheme.accentGlow.replace(/[\d.]+\)$/, "0.2)")} 0%, rgba(6,7,20,0.65) 60%, rgba(3,4,12,0.88) 100%)`
+              ? "radial-gradient(ellipse at 50% 20%, #450A0A 0%, #1C0305 50%, #0A0001 100%)"
+              : isDarkBg
+              ? "#000000"
               : currentTheme.bgGradient,
           }}
         />
+      )}
+
+      {/* 2. Optional Editable Background Image Overlay Layer (only when bgImageUrl is a photo URL) */}
+      {hasCustomImage && !isTransparentMode && !isChromaGreen && (
+        <>
+          <div
+            className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+            style={{ opacity: state.bgImageOpacity ?? 0.35 }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={state.bgImageUrl}
+              alt=""
+              aria-hidden="true"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+              className="w-full h-full object-cover object-center filter brightness-110 contrast-110"
+            />
+          </div>
+          {/* Atmospheric theme tint over photo */}
+          <div
+            className="pointer-events-none absolute inset-0 z-0"
+            style={{
+              background: `radial-gradient(ellipse at 50% 30%, ${currentTheme.accentGlow.replace(/[\d.]+\)$/, "0.25)")} 0%, rgba(6,7,20,0.6) 65%, rgba(3,4,12,0.85) 100%)`,
+            }}
+          />
+        </>
       )}
 
       {/* ======================================================== */}

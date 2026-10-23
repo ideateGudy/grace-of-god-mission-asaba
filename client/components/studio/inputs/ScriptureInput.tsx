@@ -11,11 +11,14 @@ import {
   Sparkles,
   Loader2,
   Check,
+  Palette,
+  ImageIcon,
 } from "lucide-react";
 import {
   type BroadcastStudioState,
   type BibleTranslation,
   type StudioScriptureState,
+  type CountdownThemeId,
   COUNTDOWN_THEMES,
 } from "@ggm/types";
 import {
@@ -31,9 +34,10 @@ interface ScriptureInputProps {
   state: BroadcastStudioState;
   onChange: (updater: (prev: BroadcastStudioState) => BroadcastStudioState) => void;
   onTakeLive?: () => void;
+  onOpenThemeModal?: () => void;
 }
 
-export function ScriptureInput({ state, onChange, onTakeLive }: ScriptureInputProps) {
+export function ScriptureInput({ state, onChange, onTakeLive, onOpenThemeModal }: ScriptureInputProps) {
   const [searchInput, setSearchInput] = useState<string>("");
   const [isSearching, startSearching] = useTransition();
   const [lastSource, setLastSource] = useState<string>("");
@@ -283,48 +287,89 @@ export function ScriptureInput({ state, onChange, onTakeLive }: ScriptureInputPr
       </div>
 
       {/* Display Mode: Fullscreen Slide vs Lower Third */}
-      <div className="flex items-center justify-between p-3 bg-zinc-900/60 rounded-xl border border-white/5">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-zinc-900/60 rounded-xl border border-white/5">
         <div>
-          <span className="text-xs font-bold text-white block">Presentation Mode</span>
+          <span className="text-xs font-bold text-white block">Presentation Mode &amp; Background</span>
           <span className="text-[11px] text-zinc-400">
             {currentScripture.displayMode === "fullscreen"
               ? "Full Screen Sacred Typography Slide"
               : "Lower-Third Transparent Overlay for Camera Feed"}
           </span>
         </div>
-        <div className="flex bg-black p-0.5 rounded-lg border border-white/10">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Theme & BG Quick Shortcut */}
           <button
             type="button"
-            onClick={() =>
-              onChange((prev) => ({
-                ...prev,
-                scripture: { ...prev.scripture, displayMode: "fullscreen" },
-              }))
-            }
-            className={`px-3 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${
-              currentScripture.displayMode === "fullscreen"
-                ? "bg-amber-400 text-black shadow"
-                : "text-zinc-400 hover:text-white"
-            }`}
+            onClick={onOpenThemeModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-amber-300 border border-amber-400/30 transition-colors"
+            title="Choose Theme Color or Background Mode"
           >
-            <Maximize2 className="w-3 h-3" /> Full Slide
+            <Palette className="w-3.5 h-3.5 text-amber-400" />
+            <span>Theme: {COUNTDOWN_THEMES[state.theme]?.name?.split(" ")[0]}</span>
+            <span
+              className="w-2 h-2 rounded-full border border-white/20 ml-0.5"
+              style={{ backgroundColor: COUNTDOWN_THEMES[state.theme]?.primaryAccent }}
+            />
           </button>
+
           <button
             type="button"
-            onClick={() =>
-              onChange((prev) => ({
-                ...prev,
-                scripture: { ...prev.scripture, displayMode: "lower-third" },
-              }))
-            }
-            className={`px-3 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${
-              currentScripture.displayMode === "lower-third"
-                ? "bg-amber-400 text-black shadow"
-                : "text-zinc-400 hover:text-white"
+            onClick={onOpenThemeModal}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              state.bgImageUrl === "dark"
+                ? "bg-zinc-800 text-white border border-white/20"
+                : state.bgImageUrl
+                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
             }`}
+            title="Configure Background (Theme Color, Dark, or Image Overlay)"
           >
-            <Tv className="w-3 h-3" /> Lower Third
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>
+              BG:{" "}
+              {state.bgImageUrl === "dark"
+                ? "Dark BG"
+                : state.bgImageUrl
+                ? "Image"
+                : "Theme Color"}
+            </span>
           </button>
+
+          {/* Fullscreen vs Lower-Third Mode Toggle */}
+          <div className="flex bg-black p-0.5 rounded-lg border border-white/10">
+            <button
+              type="button"
+              onClick={() =>
+                onChange((prev) => ({
+                  ...prev,
+                  scripture: { ...prev.scripture, displayMode: "fullscreen" },
+                }))
+              }
+              className={`px-3 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${
+                currentScripture.displayMode === "fullscreen"
+                  ? "bg-amber-400 text-black shadow"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              <Maximize2 className="w-3 h-3" /> Full Slide
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                onChange((prev) => ({
+                  ...prev,
+                  scripture: { ...prev.scripture, displayMode: "lower-third" },
+                }))
+              }
+              className={`px-3 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${
+                currentScripture.displayMode === "lower-third"
+                  ? "bg-amber-400 text-black shadow"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              <Tv className="w-3 h-3" /> Lower Third
+            </button>
+          </div>
         </div>
       </div>
 
