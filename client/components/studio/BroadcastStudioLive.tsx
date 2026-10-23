@@ -367,11 +367,18 @@ export function BroadcastStudioLive() {
     return <div className="w-full h-screen bg-black" />;
   }
 
+  const isNormalTimer = state.mode === "activity" || state.mode === "duration";
+  const isEventTimer = state.mode === "event-date" || state.mode === "target-time";
+  const isTimeUp = isNormalTimer && remainingSeconds <= 0;
+  const isEventCompleted = isEventTimer && remainingSeconds <= 0;
+
   // Determine root background based on display mode
   const rootBgStyle = isTransparentMode
     ? { background: "transparent" }
     : isChromaGreen
     ? { background: "#00FF00" }
+    : isTimeUp
+    ? { background: "radial-gradient(ellipse at 50% 20%, #450A0A 0%, #1C0305 50%, #0A0001 100%)" }
     : { background: currentTheme.bgDark };
 
   return (
@@ -428,8 +435,8 @@ export function BroadcastStudioLive() {
             <div className="flex flex-col items-center gap-3">
               {state.showLogo && !isTransparentMode && (
                 <div
-                  className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 p-1 bg-black/40 shadow-2xl"
-                  style={{ borderColor: currentTheme.borderColor }}
+                  className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 p-1 bg-black/40 shadow-2xl backdrop-blur-md"
+                  style={{ borderColor: isTimeUp ? "rgba(239, 68, 68, 0.8)" : currentTheme.borderColor }}
                 >
                   <Image
                     src={CHURCH_LOGO_PATH}
@@ -444,94 +451,129 @@ export function BroadcastStudioLive() {
               <div className="space-y-1">
                 <h1
                   className="text-xl sm:text-3xl md:text-5xl font-black tracking-wider uppercase drop-shadow-md"
-                  style={{ color: currentTheme.digitColor }}
+                  style={{ color: isTimeUp ? "#EF4444" : currentTheme.digitColor }}
                 >
                   {state.title}
                 </h1>
                 <p
                   className="text-sm sm:text-lg md:text-xl font-bold tracking-widest uppercase"
-                  style={{ color: currentTheme.labelColor }}
+                  style={{ color: isTimeUp ? "#F87171" : currentTheme.labelColor }}
                 >
                   {state.subtitle}
                 </p>
               </div>
             </div>
 
-            {/* Giant Digits Display */}
-            <div className="flex items-baseline justify-center gap-2 sm:gap-6 my-auto">
-              {timeBreakdown.days > 0 && (
-                <div className="flex flex-col items-center">
+            {/* Main Stage Display: Normal Timer (TIME UP) vs Event Timer (Message or 00:00:00) vs Active Counting */}
+            {isNormalTimer && isTimeUp ? (
+              /* Normal Countdown Timer Reached Zero: Giant Flashing TIME UP */
+              <div className="my-auto flex flex-col items-center gap-4 animate-in zoom-in-95 duration-500">
+                <div className="px-8 py-5 sm:px-14 sm:py-8 rounded-3xl bg-red-600/90 text-white border-4 border-red-400 shadow-[0_0_80px_rgba(239,68,68,0.8)] animate-pulse">
+                  <span className="text-5xl sm:text-8xl md:text-9xl font-black tracking-wider uppercase font-mono block">
+                    TIME UP
+                  </span>
+                </div>
+                {state.overtimeEnabled && (
+                  <div className="px-5 py-2 rounded-full bg-black/80 border border-red-500 text-red-300 text-sm sm:text-lg font-mono font-bold tracking-widest shadow-xl">
+                    OVERTIME: +{formatTwoDigits(timeBreakdown.minutes)}:{formatTwoDigits(timeBreakdown.seconds)}
+                  </div>
+                )}
+              </div>
+            ) : isEventTimer && isEventCompleted && state.completionMessage ? (
+              /* Event / Occasion Countdown Reached Zero with Custom Message */
+              <div className="my-auto flex flex-col items-center gap-4 animate-in zoom-in-95 duration-500 max-w-4xl px-4">
+                <div
+                  className="px-8 py-6 sm:px-14 sm:py-10 rounded-3xl shadow-2xl backdrop-blur-xl border-2 text-center"
+                  style={{
+                    backgroundColor: "rgba(0, 0, 0, 0.85)",
+                    borderColor: currentTheme.primaryAccent,
+                    boxShadow: `0 0 60px ${currentTheme.accentGlow}`,
+                  }}
+                >
                   <span
-                    className="text-4xl sm:text-7xl md:text-9xl font-black tracking-tighter drop-shadow-2xl"
+                    className="text-3xl sm:text-6xl md:text-7xl font-black tracking-wider uppercase drop-shadow-xl block font-sans"
+                    style={{ color: currentTheme.primaryAccent }}
+                  >
+                    {state.completionMessage}
+                  </span>
+                  <span className="text-xs sm:text-sm text-zinc-300 font-mono tracking-widest uppercase block mt-3">
+                    00:00:00 · Welcome to Sanctuary
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* Standard Giant Glassmorphism Digits Display */
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 my-auto">
+                {timeBreakdown.days > 0 && (
+                  <div className="flex flex-col items-center px-4 py-3 sm:px-6 sm:py-5 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md shadow-2xl min-w-[90px] sm:min-w-[140px]">
+                    <span
+                      className="text-4xl sm:text-7xl md:text-9xl font-black tracking-tighter drop-shadow-2xl font-mono"
+                      style={{ color: currentTheme.digitColor }}
+                    >
+                      {formatTwoDigits(timeBreakdown.days)}
+                    </span>
+                    <span
+                      className="text-[10px] sm:text-sm font-bold uppercase tracking-widest mt-1"
+                      style={{ color: currentTheme.labelColor }}
+                    >
+                      Days
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex flex-col items-center px-4 py-3 sm:px-6 sm:py-5 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md shadow-2xl min-w-[90px] sm:min-w-[140px]">
+                  <span
+                    className="text-4xl sm:text-7xl md:text-9xl font-black tracking-tighter drop-shadow-2xl font-mono"
                     style={{ color: currentTheme.digitColor }}
                   >
-                    {formatTwoDigits(timeBreakdown.days)}
+                    {formatTwoDigits(timeBreakdown.hours)}
                   </span>
                   <span
                     className="text-[10px] sm:text-sm font-bold uppercase tracking-widest mt-1"
                     style={{ color: currentTheme.labelColor }}
                   >
-                    Days
+                    Hours
                   </span>
                 </div>
-              )}
 
-              {timeBreakdown.days > 0 && (
-                <span className="text-3xl sm:text-6xl md:text-8xl font-thin opacity-40">:</span>
-              )}
+                <span className="text-3xl sm:text-6xl md:text-8xl font-thin opacity-30 select-none">:</span>
 
-              <div className="flex flex-col items-center">
-                <span
-                  className="text-5xl sm:text-8xl md:text-9xl font-black tracking-tighter drop-shadow-2xl font-mono"
-                  style={{ color: currentTheme.digitColor }}
-                >
-                  {formatTwoDigits(timeBreakdown.hours)}
-                </span>
-                <span
-                  className="text-[10px] sm:text-sm font-bold uppercase tracking-widest mt-1"
-                  style={{ color: currentTheme.labelColor }}
-                >
-                  Hours
-                </span>
+                <div className="flex flex-col items-center px-4 py-3 sm:px-6 sm:py-5 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md shadow-2xl min-w-[90px] sm:min-w-[140px]">
+                  <span
+                    className="text-4xl sm:text-7xl md:text-9xl font-black tracking-tighter drop-shadow-2xl font-mono"
+                    style={{ color: currentTheme.digitColor }}
+                  >
+                    {formatTwoDigits(timeBreakdown.minutes)}
+                  </span>
+                  <span
+                    className="text-[10px] sm:text-sm font-bold uppercase tracking-widest mt-1"
+                    style={{ color: currentTheme.labelColor }}
+                  >
+                    Minutes
+                  </span>
+                </div>
+
+                <span className="text-3xl sm:text-6xl md:text-8xl font-thin opacity-30 select-none">:</span>
+
+                <div className="flex flex-col items-center px-4 py-3 sm:px-6 sm:py-5 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md shadow-2xl min-w-[90px] sm:min-w-[140px]">
+                  <span
+                    className="text-4xl sm:text-7xl md:text-9xl font-black tracking-tighter drop-shadow-2xl font-mono"
+                    style={{ color: currentTheme.digitColor }}
+                  >
+                    {formatTwoDigits(timeBreakdown.seconds)}
+                  </span>
+                  <span
+                    className="text-[10px] sm:text-sm font-bold uppercase tracking-widest mt-1"
+                    style={{ color: currentTheme.labelColor }}
+                  >
+                    Seconds
+                  </span>
+                </div>
               </div>
+            )}
 
-              <span className="text-4xl sm:text-7xl md:text-8xl font-thin opacity-40">:</span>
-
-              <div className="flex flex-col items-center">
-                <span
-                  className="text-5xl sm:text-8xl md:text-9xl font-black tracking-tighter drop-shadow-2xl font-mono"
-                  style={{ color: currentTheme.digitColor }}
-                >
-                  {formatTwoDigits(timeBreakdown.minutes)}
-                </span>
-                <span
-                  className="text-[10px] sm:text-sm font-bold uppercase tracking-widest mt-1"
-                  style={{ color: currentTheme.labelColor }}
-                >
-                  Minutes
-                </span>
-              </div>
-
-              <span className="text-4xl sm:text-7xl md:text-8xl font-thin opacity-40">:</span>
-
-              <div className="flex flex-col items-center">
-                <span
-                  className="text-5xl sm:text-8xl md:text-9xl font-black tracking-tighter drop-shadow-2xl font-mono"
-                  style={{ color: currentTheme.digitColor }}
-                >
-                  {formatTwoDigits(timeBreakdown.seconds)}
-                </span>
-                <span
-                  className="text-[10px] sm:text-sm font-bold uppercase tracking-widest mt-1"
-                  style={{ color: currentTheme.labelColor }}
-                >
-                  Seconds
-                </span>
-              </div>
-            </div>
-
-            {/* Overtime Alert Indicator */}
-            {timeBreakdown.isOvertime && (
+            {/* Overtime Alert Indicator for Active Countdown */}
+            {!isTimeUp && timeBreakdown.isOvertime && (
               <div className="px-4 py-1.5 rounded-full bg-red-600/90 text-white text-xs sm:text-sm font-black tracking-widest uppercase animate-pulse shadow-xl">
                 ⚠️ OVERTIME: +{formatTwoDigits(timeBreakdown.minutes)}:
                 {formatTwoDigits(timeBreakdown.seconds)}
@@ -539,7 +581,7 @@ export function BroadcastStudioLive() {
             )}
 
             {/* Bottom Scripture Quote */}
-            {state.showScripture && state.scriptureText && !isTransparentMode && (
+            {state.showScripture && state.scriptureText && !isTransparentMode && !isTimeUp && (
               <div
                 className="max-w-2xl p-4 rounded-xl backdrop-blur-md border border-white/10 bg-black/30 text-center"
                 style={{ borderColor: currentTheme.borderColor }}

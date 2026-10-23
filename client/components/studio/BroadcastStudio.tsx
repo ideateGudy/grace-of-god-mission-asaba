@@ -388,6 +388,7 @@ export function BroadcastStudio() {
             showScripture: next.showScripture,
             showLogo: next.showLogo,
             stageMode: next.stageMode,
+            completionMessage: next.completionMessage,
             isRunning: next.isRunning,
             remainingSeconds: next.remainingSeconds,
             activeType: next.activeType,

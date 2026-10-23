@@ -167,6 +167,7 @@ export const updateCountdownSchema = z.object({
   showScripture: z.boolean().optional(),
   showLogo: z.boolean().optional(),
   stageMode: z.boolean().optional(),
+  completionMessage: z.string().trim().max(300).optional(),
   isRunning: z.boolean().optional(),
   remainingSeconds: z.number().int().optional(),
   targetEndTime: z.number().nullable().optional(),
@@ -283,6 +284,7 @@ export interface ChurchCountdownState {
   showScripture: boolean;
   showLogo: boolean;
   stageMode: boolean; // Hide controls for sanctuary screen
+  completionMessage?: string; // Optional custom message shown when event countdown reaches zero (e.g. "SERVICE IN PROGRESS")
 }
 
 export interface ActivityPreset {

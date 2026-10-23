@@ -58,6 +58,9 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
   const [draftEventSubtitle, setDraftEventSubtitle] = useState<string>(() =>
     isEventMode && state.subtitle ? state.subtitle : "Service Starts In..."
   );
+  const [draftCompletionMessage, setDraftCompletionMessage] = useState<string>(() =>
+    state.completionMessage || "SERVICE IN PROGRESS"
+  );
   const [draftEventDate, setDraftEventDate] = useState<string>(() =>
     state.targetDate || getNextSundayServiceDate()
   );
@@ -92,10 +95,16 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
   };
 
   // Explicit Launch / Set for Occasion / Event Timer (User must click to apply/reset)
-  const handleLaunchEventTimer = (overrideDate?: string, overrideTitle?: string, overrideSub?: string) => {
+  const handleLaunchEventTimer = (
+    overrideDate?: string,
+    overrideTitle?: string,
+    overrideSub?: string,
+    overrideMsg?: string
+  ) => {
     const dateToUse = overrideDate || draftEventDate;
     const titleToUse = overrideTitle || draftEventTitle;
     const subToUse = overrideSub || draftEventSubtitle;
+    const msgToUse = overrideMsg !== undefined ? overrideMsg : draftCompletionMessage;
     const remaining = calculateSecondsUntilDate(dateToUse);
 
     onChange((prev) => ({
@@ -104,6 +113,7 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
       targetDate: dateToUse,
       title: titleToUse,
       subtitle: subToUse,
+      completionMessage: msgToUse,
       remainingSeconds: remaining,
       isRunning: true,
     }));
@@ -520,7 +530,7 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
 
           {/* Date & Starting Time Custom Form */}
           <div className="p-4 bg-zinc-900/60 rounded-xl border border-white/10 space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Event / Service Title */}
               <div>
                 <label className="block text-xs font-bold text-zinc-300 mb-1">
@@ -545,6 +555,20 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
                   value={draftEventSubtitle}
                   onChange={(e) => setDraftEventSubtitle(e.target.value)}
                   placeholder="e.g. Service Starts In..."
+                  className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              {/* Message shown when reaching 0:00:00 */}
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Message at End (when 0:00 reached)
+                </label>
+                <input
+                  type="text"
+                  value={draftCompletionMessage}
+                  onChange={(e) => setDraftCompletionMessage(e.target.value)}
+                  placeholder="e.g. SERVICE IN PROGRESS"
                   className="w-full px-3 py-2 bg-black/60 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-amber-400"
                 />
               </div>

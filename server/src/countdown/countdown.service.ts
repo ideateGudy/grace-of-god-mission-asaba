@@ -141,6 +141,7 @@ export class CountdownService {
       showScripture: dto.showScripture ?? current.showScripture,
       showLogo: dto.showLogo ?? current.showLogo,
       stageMode: dto.stageMode ?? current.stageMode,
+      completionMessage: dto.completionMessage ?? current.completionMessage,
       isRunning,
       remainingSeconds,
       targetEndTime,
