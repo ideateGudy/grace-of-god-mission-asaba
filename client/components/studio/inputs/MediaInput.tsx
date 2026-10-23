@@ -17,6 +17,7 @@ import {
   Edit2,
   X,
   GripVertical,
+  Type,
 } from "lucide-react";
 import {
   type BroadcastStudioState,
@@ -52,6 +53,11 @@ export function MediaInput({ state, onChange }: MediaInputProps) {
   const [newPlaylistName, setNewPlaylistName] = useState<string>("");
   const [editingPlaylistId, setEditingPlaylistId] = useState<string | null>(null);
   const [editingPlaylistName, setEditingPlaylistName] = useState<string>("");
+
+  // Slide inline title editing state
+  const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
+  const [editingSlideTitle, setEditingSlideTitle] = useState<string>("");
+  const [editingSlideCaption, setEditingSlideCaption] = useState<string>("");
 
   // Drag and drop state
   const [draggedMediaId, setDraggedMediaId] = useState<string | null>(null);
@@ -122,26 +128,36 @@ export function MediaInput({ state, onChange }: MediaInputProps) {
     toast.success("Playlist renamed.");
   };
 
-  // Delete playlist
+  // Delete playlist (Cascading delete: removes playlist AND everything inside it)
   const handleDeletePlaylist = (id: string, name: string) => {
-    if (!window.confirm(`Delete playlist "${name}"? Media inside will be moved to General Media.`)) {
+    const count = mediaList.filter((m) => m.playlistId === id).length;
+    const confirmMessage = count > 0
+      ? `Delete playlist "${name}" and delete all ${count} media items inside it?`
+      : `Delete playlist "${name}"?`;
+
+    if (!window.confirm(confirmMessage)) {
       return;
     }
+
     const updated = playlists.filter((p) => p.id !== id);
     savePlaylistsAndUpdate(updated);
 
-    // Unassign media that was in this playlist
+    // Cascading delete: Remove all media items inside this playlist
     onChange((prev) => ({
       ...prev,
-      mediaList: prev.mediaList.map((m) =>
-        m.playlistId === id ? { ...m, playlistId: undefined } : m
-      ),
+      mediaList: prev.mediaList.filter((m) => m.playlistId !== id),
+      previewMediaId: prev.mediaList.find((m) => m.playlistId === id && m.id === prev.previewMediaId)
+        ? undefined
+        : prev.previewMediaId,
+      activeMediaId: prev.mediaList.find((m) => m.playlistId === id && m.id === prev.activeMediaId)
+        ? undefined
+        : prev.activeMediaId,
     }));
 
     if (selectedPlaylistId === id) {
       setSelectedPlaylistId("all");
     }
-    toast.info(`Deleted playlist "${name}".`);
+    toast.info(`Deleted playlist "${name}" and its ${count} media item(s).`);
   };
 
   // Upload file (Cloudinary signed or local data-URL fallback)
@@ -251,6 +267,39 @@ export function MediaInput({ state, onChange }: MediaInputProps) {
     toast.info("Slide removed.");
   };
 
+  // Save edited slide text (title & optional caption)
+  const handleSaveSlideText = (id: string) => {
+    const trimmedTitle = editingSlideTitle.trim();
+    if (!trimmedTitle) {
+      toast.error("Slide text cannot be empty.");
+      return;
+    }
+
+    onChange((prev) => ({
+      ...prev,
+      mediaList: prev.mediaList.map((m) =>
+        m.id === id
+          ? {
+              ...m,
+              title: trimmedTitle,
+              overlayCaption: editingSlideCaption.trim() || undefined,
+            }
+          : m
+      ),
+    }));
+
+    setEditingSlideId(null);
+    setEditingSlideTitle("");
+    setEditingSlideCaption("");
+    toast.success("Slide text updated!");
+  };
+
+  const startEditingSlide = (slide: StudioMediaItem) => {
+    setEditingSlideId(slide.id);
+    setEditingSlideTitle(slide.title);
+    setEditingSlideCaption(slide.overlayCaption || "");
+  };
+
   // Reassign item to a playlist via dropdown
   const handleAssignPlaylist = (slideId: string, newPlId: string) => {
     const destId = newPlId === "unassigned" ? undefined : newPlId;
@@ -351,7 +400,7 @@ export function MediaInput({ state, onChange }: MediaInputProps) {
             </span>
           </h4>
           <p className="text-[11px] text-zinc-400">
-            Click any media to stage in Preview. Organize into playlists (Church Service, Announcements, Birthdays).
+            Click any media to stage in Preview. Organize into playlists or edit slide text and captions.
           </p>
         </div>
 
@@ -557,7 +606,7 @@ export function MediaInput({ state, onChange }: MediaInputProps) {
                           handleDeletePlaylist(pl.id, pl.name);
                         }}
                         className="p-1 text-zinc-400 hover:text-red-400 transition-colors"
-                        title="Delete playlist"
+                        title="Delete playlist and everything inside"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -635,6 +684,7 @@ export function MediaInput({ state, onChange }: MediaInputProps) {
             const isStaged = stagedPreviewId === slide.id;
             const isLive = state.activeType === "media" && state.activeMediaId === slide.id;
             const currentPl = playlists.find((p) => p.id === slide.playlistId);
+            const isEditingThisSlide = editingSlideId === slide.id;
 
             return (
               <div
@@ -679,38 +729,108 @@ export function MediaInput({ state, onChange }: MediaInputProps) {
                     )}
                   </div>
 
-                  {/* Playlist badge overlay */}
-                  <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-black/80 text-amber-300 text-[9px] font-bold backdrop-blur-sm flex items-center gap-1">
-                    <Folder className="w-2.5 h-2.5" />
-                    <span>{currentPl?.name || "General Media"}</span>
+                  {/* Playlist badge & on-image editable title badge overlay */}
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none">
+                    <span className="px-1.5 py-0.5 rounded bg-black/80 text-amber-300 text-[9px] font-bold backdrop-blur-sm flex items-center gap-1">
+                      <Folder className="w-2.5 h-2.5" />
+                      <span>{currentPl?.name || "General Media"}</span>
+                    </span>
+
+                    {slide.overlayCaption && (
+                      <span className="px-1.5 py-0.5 rounded bg-black/80 text-white text-[9px] font-medium backdrop-blur-sm truncate max-w-[50%]">
+                        {slide.overlayCaption}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 {/* Title & Actions Bar */}
                 <div className="p-2.5 bg-zinc-900/90 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-white truncate" title={slide.title}>
-                      {slide.title}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleStageSlide(slide)}
-                        className="p-1 rounded bg-zinc-800 hover:bg-emerald-600 text-zinc-300 hover:text-white transition-colors"
-                        title="Stage in Preview"
-                      >
-                        <Eye className="w-3 h-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteSlide(slide.id)}
-                        className="p-1 rounded bg-zinc-800 hover:bg-red-600 text-zinc-400 hover:text-white transition-colors"
-                        title="Delete slide"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                  {isEditingThisSlide ? (
+                    /* Inline Slide Title / Caption Editor */
+                    <div className="space-y-1.5 p-1 bg-black/50 rounded-lg border border-amber-400/40">
+                      <div>
+                        <label className="text-[10px] text-zinc-400 block mb-0.5">Title / Text:</label>
+                        <input
+                          type="text"
+                          autoFocus
+                          value={editingSlideTitle}
+                          onChange={(e) => setEditingSlideTitle(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSaveSlideText(slide.id)}
+                          className="w-full px-2 py-1 bg-black text-xs text-white rounded border border-white/20 focus:outline-none focus:border-amber-400"
+                          placeholder="Slide Title / Text"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-zinc-400 block mb-0.5">Caption Overlay (Optional):</label>
+                        <input
+                          type="text"
+                          value={editingSlideCaption}
+                          onChange={(e) => setEditingSlideCaption(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSaveSlideText(slide.id)}
+                          className="w-full px-2 py-1 bg-black text-xs text-white rounded border border-white/20 focus:outline-none focus:border-amber-400"
+                          placeholder="e.g. Happy Birthday Sister Ngozi!"
+                        />
+                      </div>
+                      <div className="flex items-center justify-end gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditingSlideId(null)}
+                          className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px]"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveSlideText(slide.id)}
+                          className="px-2.5 py-0.5 rounded bg-amber-400 hover:bg-amber-300 text-black font-bold text-[10px] flex items-center gap-1"
+                        >
+                          <Check className="w-3 h-3" /> Save Text
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    /* Normal Title Display with Edit Text Button */
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-bold text-white block truncate" title={slide.title}>
+                          {slide.title}
+                        </span>
+                        {slide.overlayCaption && (
+                          <span className="text-[10px] text-zinc-400 block truncate" title={slide.overlayCaption}>
+                            {slide.overlayCaption}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => startEditingSlide(slide)}
+                          className="p-1 rounded bg-zinc-800 hover:bg-amber-500 hover:text-black text-zinc-300 transition-colors"
+                          title="Edit slide text & caption"
+                        >
+                          <Type className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStageSlide(slide)}
+                          className="p-1 rounded bg-zinc-800 hover:bg-emerald-600 text-zinc-300 hover:text-white transition-colors"
+                          title="Stage in Preview"
+                        >
+                          <Eye className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSlide(slide.id)}
+                          className="p-1 rounded bg-zinc-800 hover:bg-red-600 text-zinc-400 hover:text-white transition-colors"
+                          title="Delete slide"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Playlist Reassignment Dropdown */}
                   <div className="flex items-center justify-between gap-1 pt-1 border-t border-white/5">

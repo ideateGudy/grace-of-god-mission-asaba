@@ -579,7 +579,7 @@ export function BroadcastStudioLive() {
           </div>
         )}
 
-        {/* 3. SCENE: MEDIA SLIDE / CLOUDINARY FLYER */}
+        {/* 3. SCENE: MEDIA SLIDE / MEDIA DECK FLYER */}
         {state.activeType === "media" && activeMedia && (
           <div className="relative w-full h-full flex items-center justify-center p-4">
             <div className="relative w-full h-full max-w-6xl aspect-video rounded-xl overflow-hidden shadow-2xl">
@@ -590,6 +590,13 @@ export function BroadcastStudioLive() {
                 className="object-contain"
                 priority
               />
+              {activeMedia.overlayCaption && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-2.5 rounded-xl bg-black/80 backdrop-blur-md border border-amber-400/40 text-center shadow-2xl max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <span className="text-sm sm:text-base md:text-lg font-bold text-white drop-shadow-md">
+                    {activeMedia.overlayCaption}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}

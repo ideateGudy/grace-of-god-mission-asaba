@@ -131,6 +131,7 @@ export interface StudioMediaItem {
   title: string;
   category: "flyer" | "sermon" | "offering" | "announcement" | "general";
   playlistId?: string; // Optional playlist/project reference
+  overlayCaption?: string; // Optional on-screen caption/lower third text for this slide
   thumbnailUrl?: string;
   uploadedAt: string;
 }

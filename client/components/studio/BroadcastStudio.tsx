@@ -638,6 +638,13 @@ export function BroadcastStudio() {
                   fill
                   className="object-contain"
                 />
+                {previewMedia.overlayCaption && (
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-lg bg-black/80 backdrop-blur-sm border border-amber-400/40 text-center max-w-[85%]">
+                    <span className="text-[10px] font-bold text-white truncate block">
+                      {previewMedia.overlayCaption}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -816,6 +823,13 @@ export function BroadcastStudio() {
                       fill
                       className="object-contain"
                     />
+                    {activeMedia.overlayCaption && (
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-lg bg-black/80 backdrop-blur-sm border border-amber-400/40 text-center max-w-[85%]">
+                        <span className="text-[10px] font-bold text-white truncate block">
+                          {activeMedia.overlayCaption}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
 
