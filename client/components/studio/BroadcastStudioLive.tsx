@@ -453,30 +453,39 @@ export function BroadcastStudioLive() {
   return (
     <div
       onDoubleClick={toggleFullscreen}
-      className="relative w-full h-screen overflow-hidden select-none"
-      style={rootBgStyle}
+      className="relative w-full h-screen overflow-hidden select-none bg-black"
     >
+      {/* 1. Underlying Base Theme Radial Glow / Chroma / Black */}
+      {!isTransparentMode && !isChromaGreen && (
+        <div
+          className="pointer-events-none absolute inset-0 -z-30"
+          style={{ background: isTimeUp ? "radial-gradient(ellipse at 50% 20%, #450A0A 0%, #1C0305 50%, #0A0001 100%)" : currentTheme.bgDark }}
+        />
+      )}
 
-      {/* Editable Background Image Layer with Adjustable Opacity */}
+      {/* 2. Optional Editable Background Image Overlay Layer */}
       {state.bgImageUrl && !isTransparentMode && !isChromaGreen && (
         <div
           className="pointer-events-none absolute inset-0 -z-20 overflow-hidden"
-          style={{ opacity: state.bgImageOpacity ?? 0.25 }}
+          style={{ opacity: state.bgImageOpacity ?? 0.35 }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={state.bgImageUrl}
             alt="Atmospheric Sanctuary Background"
-            className="w-full h-full object-cover filter brightness-90 contrast-110"
+            className="w-full h-full object-cover filter brightness-95 contrast-105"
           />
         </div>
       )}
 
-      {/* Dynamic Radial Ambient Glow Background (if not transparent / chroma) */}
+      {/* 3. Sacred Ambient Radial Gradient Overlay (enhances depth whether with image or without) */}
       {!isTransparentMode && !isChromaGreen && (
         <div
-          className="pointer-events-none absolute inset-0 -z-10"
-          style={{ background: currentTheme.bgGradient }}
+          className="pointer-events-none absolute inset-0 -z-10 mix-blend-screen"
+          style={{
+            background: currentTheme.bgGradient,
+            opacity: state.bgImageUrl ? 0.75 : 1,
+          }}
         />
       )}
 

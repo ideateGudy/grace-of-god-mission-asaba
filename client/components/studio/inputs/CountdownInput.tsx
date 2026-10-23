@@ -429,8 +429,24 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
               </span>
             </div>
 
-            {/* Background Presets */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {/* Background Presets including None / No Image */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  onChange((prev) => ({
+                    ...prev,
+                    bgImageUrl: "",
+                  }))
+                }
+                className={`px-2.5 py-2 rounded-lg text-xs font-bold text-left border transition-all truncate ${
+                  !state.bgImageUrl
+                    ? "bg-amber-400 text-black border-amber-400 shadow-sm"
+                    : "bg-black/50 text-zinc-300 border-white/5 hover:border-white/20"
+                }`}
+              >
+                🚫 None (Color Only)
+              </button>
               {[
                 {
                   label: "Cathedral Sanctuary",
