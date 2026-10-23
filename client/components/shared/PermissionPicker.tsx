@@ -14,7 +14,7 @@ const CONTENT_PERMISSIONS = [
   { id: "GIVING_MANAGE", label: "Manage Giving & Contributions" },
   { id: "TESTIMONIES_MANAGE", label: "Manage Testimonies" },
   { id: "DEVOTIONS_MANAGE", label: "Manage Daily Devotions" },
-  { id: "LIVESTREAM_MANAGE", label: "Manage Livestream & Countdown" },
+  { id: "LIVESTREAM_MANAGE", label: "Manage Livestream, Broadcast Studio & Countdown" },
 ];
 
 const INBOX_PERMISSIONS = [

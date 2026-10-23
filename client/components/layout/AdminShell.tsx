@@ -38,7 +38,7 @@ import { useSessionStore } from "@/store/useSessionStore";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/studio", label: "Broadcast Studio", icon: Tv },
+  { href: "/studio", label: "Broadcast Studio", icon: Tv, permission: "LIVESTREAM_MANAGE" },
   { href: "/admin/live", label: "Livestream", icon: Radio, permission: "LIVESTREAM_MANAGE" },
   { href: "/admin/sermons", label: "Sermons", icon: Video, permission: "SERMONS_MANAGE" },
   { href: "/admin/devotions", label: "Devotions", icon: BookOpen, permission: "DEVOTIONS_MANAGE" },
