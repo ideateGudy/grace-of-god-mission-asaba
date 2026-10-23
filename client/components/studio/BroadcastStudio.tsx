@@ -510,26 +510,43 @@ export function BroadcastStudio() {
   // 3. Hardware Switcher Transition Actions: CUT, FADE, FTB, CLEAR DSK
   const handleCut = useCallback(() => {
     updateStudioState((prev) => {
-      const nextType = prev.previewType;
-      return {
+      const incomingType = prev.previewType;   // what was in preview → goes to live
+      const outgoingType = prev.activeType;    // what was live → goes back to preview
+      const next = {
         ...prev,
-        activeType: nextType,
+        activeType: incomingType,
+        previewType: outgoingType,             // swap: old live becomes new preview
         activeMediaId: prev.previewMediaId || prev.activeMediaId,
         isBlackout: false,
       };
+      // Mirror the preview bus tab in the control panel
+      setActiveInputTab(outgoingType as StudioInputType);
+      return next;
     });
     toast.success("CUT TO AIR");
   }, [updateStudioState]);
 
   const handleFade = useCallback(() => {
     setIsFading(true);
+    // Capture current buses before the async timeout so the swap is consistent
+    setState((prev) => {
+      const incomingType = prev.previewType;  // preview → live
+      const outgoingType = prev.activeType;   // live → preview (swap)
+      setActiveInputTab(outgoingType as StudioInputType);
+      return prev; // no-op state change here; actual update happens after fade delay
+    });
     setTimeout(() => {
-      updateStudioState((prev) => ({
-        ...prev,
-        activeType: prev.previewType,
-        activeMediaId: prev.previewMediaId || prev.activeMediaId,
-        isBlackout: false,
-      }));
+      updateStudioState((prev) => {
+        const incomingType = prev.previewType;
+        const outgoingType = prev.activeType;
+        return {
+          ...prev,
+          activeType: incomingType,
+          previewType: outgoingType,           // swap: old live becomes new preview
+          activeMediaId: prev.previewMediaId || prev.activeMediaId,
+          isBlackout: false,
+        };
+      });
       setIsFading(false);
       toast.success("FADED TO AIR");
     }, 400);
