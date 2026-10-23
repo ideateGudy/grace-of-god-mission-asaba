@@ -380,6 +380,46 @@ export function BroadcastStudioLive() {
   const timeBreakdown = calculateTimeBreakdown(remainingSeconds);
   const activeMedia = state.mediaList.find((m) => m.id === state.activeMediaId) || state.mediaList[0];
 
+  const showDays = timeBreakdown.days > 0;
+  const showHours = timeBreakdown.days > 0 || timeBreakdown.hours > 0 || state.mode === "event-date";
+  // Total cards displayed on screen: 2 (MM:SS), 3 (HH:MM:SS), or 4 (DD:HH:MM:SS)
+  const activeCardsCount = (showDays ? 1 : 0) + (showHours ? 1 : 0) + 2;
+
+  // Responsive Fliqlo card dimensions based on activeCardsCount
+  // 2 units (MM:SS): Massive, prominent hero tiles
+  // 3 units (HH:MM:SS): Medium-large balanced tiles
+  // 4 units (DD:HH:MM:SS): Standard compact harmonious tiles
+  const cardTileClass =
+    activeCardsCount <= 2
+      ? "rounded-3xl sm:rounded-[2.5rem] px-5 py-4 sm:px-10 sm:py-8 md:px-14 md:py-12 lg:px-16 lg:py-14 min-w-[125px] sm:min-w-[190px] md:min-w-[240px] lg:min-w-[270px] shadow-[0_20px_60px_rgba(0,0,0,0.85)]"
+      : activeCardsCount === 3
+      ? "rounded-2xl sm:rounded-3xl px-4 py-3 sm:px-7 sm:py-6 md:px-10 md:py-8 lg:px-12 lg:py-10 min-w-[90px] sm:min-w-[135px] md:min-w-[170px] lg:min-w-[195px] shadow-[0_16px_50px_rgba(0,0,0,0.8)]"
+      : "rounded-2xl md:rounded-3xl px-3 py-2.5 sm:px-5 sm:py-4 md:px-7 md:py-6 lg:px-8 lg:py-7 min-w-[70px] sm:min-w-[100px] md:min-w-[130px] lg:min-w-[145px] shadow-[0_12px_40px_rgba(0,0,0,0.8)]";
+
+  const cardDigitClass =
+    activeCardsCount <= 2
+      ? "text-7xl sm:text-9xl md:text-[11rem] lg:text-[13rem] xl:text-[15rem]"
+      : activeCardsCount === 3
+      ? "text-5xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10.5rem]"
+      : "text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl";
+
+  const cardLabelClass =
+    activeCardsCount <= 2
+      ? "text-xs sm:text-sm md:text-base font-black tracking-[0.3em]"
+      : "text-[10px] sm:text-xs md:text-sm font-black tracking-[0.25em]";
+
+  const colonDotClass =
+    activeCardsCount <= 2
+      ? "w-2.5 h-2.5 sm:w-4 sm:h-4 md:w-5 md:h-5"
+      : "w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3";
+
+  const cardContainerGap =
+    activeCardsCount <= 2
+      ? "gap-4 sm:gap-6 md:gap-10 lg:gap-12 max-w-6xl"
+      : activeCardsCount === 3
+      ? "gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-5xl"
+      : "gap-2 sm:gap-3 md:gap-4 lg:gap-5 max-w-5xl";
+
   // Emergency Blackout Check
   if (state.isBlackout) {
     return <div className="w-full h-screen bg-black" />;
@@ -512,14 +552,14 @@ export function BroadcastStudioLive() {
                 </span>
               </div>
             ) : (
-              /* Fliqlo-Inspired Modern Flip Card Timer (Compact, Bold, Split-Flap Seam, Premium Depth) */
-              <div className="flex flex-col items-center justify-center my-auto w-full max-w-5xl px-2">
-                <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-5 lg:gap-6">
+              /* Fliqlo-Inspired Dynamic Flip Card Timer (Sizes up dynamically when 2 or 3 cards are shown) */
+              <div className={`flex flex-col items-center justify-center my-auto w-full px-2 ${cardContainerGap}`}>
+                <div className={`flex items-center justify-center ${cardContainerGap}`}>
                   {/* Days Flip Card (if > 0) */}
-                  {timeBreakdown.days > 0 && (
+                  {showDays && (
                     <>
                       <div className="flex flex-col items-center gap-2 sm:gap-3">
-                        <div className="relative flex flex-col items-center justify-center rounded-2xl md:rounded-3xl bg-[#14151a]/95 border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-md px-3 py-2.5 sm:px-6 sm:py-5 md:px-8 md:py-7 min-w-[72px] sm:min-w-[110px] md:min-w-[145px] lg:min-w-[160px] overflow-hidden group">
+                        <div className={`relative flex flex-col items-center justify-center bg-[#14151a]/95 border border-white/10 backdrop-blur-md overflow-hidden group ${cardTileClass}`}>
                           {/* Top/Bottom Subtle Gradient Depth */}
                           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-black/60 pointer-events-none" />
                           {/* Fliqlo Center Horizontal Split Flap Seam */}
@@ -529,7 +569,7 @@ export function BroadcastStudioLive() {
 
                           {/* Digits */}
                           <span
-                            className="relative z-10 text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-none select-none font-mono"
+                            className={`relative z-10 font-black tracking-tight leading-none select-none font-mono ${cardDigitClass}`}
                             style={{
                               color: currentTheme.digitColor,
                               textShadow: "0 2px 10px rgba(0,0,0,0.5)",
@@ -539,7 +579,7 @@ export function BroadcastStudioLive() {
                           </span>
                         </div>
                         <span
-                          className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-[0.25em]"
+                          className={`uppercase ${cardLabelClass}`}
                           style={{ color: currentTheme.labelColor }}
                         >
                           Days
@@ -547,18 +587,18 @@ export function BroadcastStudioLive() {
                       </div>
 
                       {/* Colon Separator */}
-                      <div className="flex flex-col gap-2.5 sm:gap-3.5 pb-6 sm:pb-8 opacity-60">
-                        <span className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: currentTheme.labelColor }} />
-                        <span className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: currentTheme.labelColor }} />
+                      <div className="flex flex-col gap-2.5 sm:gap-4 pb-6 sm:pb-8 opacity-60">
+                        <span className={`rounded-full ${colonDotClass}`} style={{ backgroundColor: currentTheme.labelColor }} />
+                        <span className={`rounded-full ${colonDotClass}`} style={{ backgroundColor: currentTheme.labelColor }} />
                       </div>
                     </>
                   )}
 
                   {/* Hours Flip Card (always shown unless 0 days and 0 hours on duration timers) */}
-                  {(timeBreakdown.days > 0 || timeBreakdown.hours > 0 || state.mode === "event-date") && (
+                  {showHours && (
                     <>
                       <div className="flex flex-col items-center gap-2 sm:gap-3">
-                        <div className="relative flex flex-col items-center justify-center rounded-2xl md:rounded-3xl bg-[#14151a]/95 border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-md px-3 py-2.5 sm:px-6 sm:py-5 md:px-8 md:py-7 min-w-[72px] sm:min-w-[110px] md:min-w-[145px] lg:min-w-[160px] overflow-hidden group">
+                        <div className={`relative flex flex-col items-center justify-center bg-[#14151a]/95 border border-white/10 backdrop-blur-md overflow-hidden group ${cardTileClass}`}>
                           {/* Top/Bottom Subtle Gradient Depth */}
                           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-black/60 pointer-events-none" />
                           {/* Fliqlo Center Horizontal Split Flap Seam */}
@@ -568,7 +608,7 @@ export function BroadcastStudioLive() {
 
                           {/* Digits */}
                           <span
-                            className="relative z-10 text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-none select-none font-mono"
+                            className={`relative z-10 font-black tracking-tight leading-none select-none font-mono ${cardDigitClass}`}
                             style={{
                               color: currentTheme.digitColor,
                               textShadow: "0 2px 10px rgba(0,0,0,0.5)",
@@ -578,7 +618,7 @@ export function BroadcastStudioLive() {
                           </span>
                         </div>
                         <span
-                          className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-[0.25em]"
+                          className={`uppercase ${cardLabelClass}`}
                           style={{ color: currentTheme.labelColor }}
                         >
                           Hours
@@ -586,16 +626,16 @@ export function BroadcastStudioLive() {
                       </div>
 
                       {/* Colon Separator */}
-                      <div className="flex flex-col gap-2.5 sm:gap-3.5 pb-6 sm:pb-8 opacity-60">
-                        <span className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: currentTheme.labelColor }} />
-                        <span className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: currentTheme.labelColor }} />
+                      <div className="flex flex-col gap-2.5 sm:gap-4 pb-6 sm:pb-8 opacity-60">
+                        <span className={`rounded-full ${colonDotClass}`} style={{ backgroundColor: currentTheme.labelColor }} />
+                        <span className={`rounded-full ${colonDotClass}`} style={{ backgroundColor: currentTheme.labelColor }} />
                       </div>
                     </>
                   )}
 
                   {/* Minutes Flip Card */}
                   <div className="flex flex-col items-center gap-2 sm:gap-3">
-                    <div className="relative flex flex-col items-center justify-center rounded-2xl md:rounded-3xl bg-[#14151a]/95 border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-md px-3 py-2.5 sm:px-6 sm:py-5 md:px-8 md:py-7 min-w-[72px] sm:min-w-[110px] md:min-w-[145px] lg:min-w-[160px] overflow-hidden group">
+                    <div className={`relative flex flex-col items-center justify-center bg-[#14151a]/95 border border-white/10 backdrop-blur-md overflow-hidden group ${cardTileClass}`}>
                       {/* Top/Bottom Subtle Gradient Depth */}
                       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-black/60 pointer-events-none" />
                       {/* Fliqlo Center Horizontal Split Flap Seam */}
@@ -605,7 +645,7 @@ export function BroadcastStudioLive() {
 
                       {/* Digits */}
                       <span
-                        className="relative z-10 text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-none select-none font-mono"
+                        className={`relative z-10 font-black tracking-tight leading-none select-none font-mono ${cardDigitClass}`}
                         style={{
                           color: currentTheme.digitColor,
                           textShadow: "0 2px 10px rgba(0,0,0,0.5)",
@@ -615,7 +655,7 @@ export function BroadcastStudioLive() {
                       </span>
                     </div>
                     <span
-                      className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-[0.25em]"
+                      className={`uppercase ${cardLabelClass}`}
                       style={{ color: currentTheme.labelColor }}
                     >
                       Minutes
@@ -623,14 +663,14 @@ export function BroadcastStudioLive() {
                   </div>
 
                   {/* Colon Separator */}
-                  <div className="flex flex-col gap-2.5 sm:gap-3.5 pb-6 sm:pb-8 opacity-60">
-                    <span className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: currentTheme.labelColor }} />
-                    <span className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: currentTheme.labelColor }} />
+                  <div className="flex flex-col gap-2.5 sm:gap-4 pb-6 sm:pb-8 opacity-60">
+                    <span className={`rounded-full ${colonDotClass}`} style={{ backgroundColor: currentTheme.labelColor }} />
+                    <span className={`rounded-full ${colonDotClass}`} style={{ backgroundColor: currentTheme.labelColor }} />
                   </div>
 
                   {/* Seconds Flip Card */}
                   <div className="flex flex-col items-center gap-2 sm:gap-3">
-                    <div className="relative flex flex-col items-center justify-center rounded-2xl md:rounded-3xl bg-[#14151a]/95 border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-md px-3 py-2.5 sm:px-6 sm:py-5 md:px-8 md:py-7 min-w-[72px] sm:min-w-[110px] md:min-w-[145px] lg:min-w-[160px] overflow-hidden group">
+                    <div className={`relative flex flex-col items-center justify-center bg-[#14151a]/95 border border-white/10 backdrop-blur-md overflow-hidden group ${cardTileClass}`}>
                       {/* Top/Bottom Subtle Gradient Depth */}
                       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-black/60 pointer-events-none" />
                       {/* Fliqlo Center Horizontal Split Flap Seam */}
@@ -640,7 +680,7 @@ export function BroadcastStudioLive() {
 
                       {/* Digits */}
                       <span
-                        className="relative z-10 text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-none select-none font-mono"
+                        className={`relative z-10 font-black tracking-tight leading-none select-none font-mono ${cardDigitClass}`}
                         style={{
                           color: currentTheme.digitColor,
                           textShadow: "0 2px 10px rgba(0,0,0,0.5)",
@@ -650,7 +690,7 @@ export function BroadcastStudioLive() {
                       </span>
                     </div>
                     <span
-                      className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-[0.25em]"
+                      className={`uppercase ${cardLabelClass}`}
                       style={{ color: currentTheme.labelColor }}
                     >
                       Seconds
