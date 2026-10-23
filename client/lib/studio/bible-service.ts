@@ -508,13 +508,14 @@ export async function fetchScriptureVerse(
 }
 
 /**
- * Thoroughly sanitizes and cleans raw Bible text from APIs:
- * - Strips Strong's concordance reference tags & numbers e.g. <S>1063</S>, <S>4210</S>
- * - Strips footnote numbers / verse markers e.g. [1], {12}
+ * Thoroughly sanitizes and cleans raw or stored Bible text:
+ * - Strips Strong's concordance tags & inner numbers e.g. <S>1063</S>, <S>4210</S>
+ * - Strips Strong's numbers concatenated directly with letters e.g. "For1063" -> "For", "world2889," -> "world,"
+ * - Strips standalone manuscript/footnote numbers e.g. [1], {12}
  * - Strips all HTML formatting tags like <i>, <b>, <br>
  * - Normalizes quotes and excess whitespace
  */
-function cleanVerseText(raw: string): string {
+export function cleanVerseText(raw: string): string {
   if (!raw) return "";
   return raw
     // 1. Remove Strong's concordance tags and their inner numbers (<S>1063</S> or <S> 4210 </S>)
@@ -523,16 +524,20 @@ function cleanVerseText(raw: string): string {
     .replace(/<\/?S[^>]*>/gi, "")
     // 3. Remove all other HTML tags (<br>, <i>, <b>, <p>, etc.)
     .replace(/<[^>]+>/g, "")
-    // 4. Remove bracketed or braced footnote/reference numbers e.g. [1], [12], {3}
+    // 4. Remove digits attached directly to word characters (e.g. For1063 -> For, loved25 -> loved, world2889, -> world,)
+    .replace(/(?<=[a-zA-Z])\d+/g, "")
+    // 5. Remove standalone digits that might be leftover Strong's numbers or footnote markers
+    .replace(/(?<![a-zA-Z0-9])\d{2,5}(?![a-zA-Z0-9])/g, "")
+    // 6. Remove bracketed or braced footnote/reference numbers e.g. [1], [12], {3}
     .replace(/\[\d+\]/g, "")
     .replace(/\{\d+\}/g, "")
-    // 5. Clean up HTML entities
+    // 7. Clean up HTML entities
     .replace(/&nbsp;/g, " ")
     .replace(/&quot;/g, '"')
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
-    // 6. Collapse multiple whitespaces into a single space
+    // 8. Collapse multiple whitespaces into a single space
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -540,7 +545,7 @@ function cleanVerseText(raw: string): string {
 /**
  * Checks if the API returned a protest/notice text instead of scripture (e.g. Biblica NIV copyright notice)
  */
-function isNoticeOrErrorText(text: string): boolean {
+export function isNoticeOrErrorText(text: string): boolean {
   if (!text) return true;
   return /Biblica, Inc\.|copyright notice|has prohibited me|financial profit|prohibited from using/i.test(text);
 }

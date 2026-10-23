@@ -50,6 +50,7 @@ import { CameraInput } from "@/components/studio/inputs/CameraInput";
 import { toast } from "sonner";
 import { WebRtcReceiver } from "@/lib/studio/studio-webrtc";
 import { api } from "@/lib/api/client";
+import { cleanVerseText } from "@/lib/studio/bible-service";
 
 function formatTwoDigits(n: number): string {
   return Math.max(0, Math.floor(n)).toString().padStart(2, "0");
@@ -703,7 +704,7 @@ export function BroadcastStudio() {
                   {state.scripture.reference} ({state.scripture.translation})
                 </span>
                 <p className="text-xs text-zinc-200 font-serif italic mt-2 line-clamp-3">
-                  &ldquo;{state.scripture.text}&rdquo;
+                  &ldquo;{cleanVerseText(state.scripture.text)}&rdquo;
                 </p>
               </div>
             )}
@@ -909,7 +910,7 @@ export function BroadcastStudio() {
                       {state.scripture.reference} ({state.scripture.translation})
                     </span>
                     <p className="text-xs text-zinc-200 font-serif italic mt-2 line-clamp-3">
-                      &ldquo;{state.scripture.text}&rdquo;
+                      &ldquo;{cleanVerseText(state.scripture.text)}&rdquo;
                     </p>
                   </div>
                 )}

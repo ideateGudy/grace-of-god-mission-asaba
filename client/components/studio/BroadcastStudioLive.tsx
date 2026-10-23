@@ -22,6 +22,7 @@ import { audioSynth } from "@/lib/studio/audio-synth";
 import { CHURCH_LOGO_PATH } from "@/lib/flyer/church-logo";
 import { WebRtcReceiver } from "@/lib/studio/studio-webrtc";
 import { api } from "@/lib/api/client";
+import { cleanVerseText } from "@/lib/studio/bible-service";
 
 function formatTwoDigits(n: number): string {
   return Math.max(0, Math.floor(n)).toString().padStart(2, "0");
@@ -618,7 +619,7 @@ export function BroadcastStudioLive() {
             {state.showScripture && state.scriptureText && !isTransparentMode && !isTimeUp && (
               <div className="max-w-2xl text-center px-4 pt-2">
                 <p className="text-sm sm:text-base text-zinc-300 font-serif italic">
-                  &ldquo;{state.scriptureText}&rdquo;
+                  &ldquo;{cleanVerseText(state.scriptureText)}&rdquo;
                 </p>
                 <span
                   className="text-xs font-bold uppercase tracking-wider block mt-1"
@@ -642,7 +643,7 @@ export function BroadcastStudioLive() {
               </div>
 
               <blockquote className="text-2xl sm:text-4xl md:text-5xl font-serif text-white leading-relaxed tracking-wide drop-shadow-xl">
-                &ldquo;{state.scripture.text}&rdquo;
+                &ldquo;{cleanVerseText(state.scripture.text)}&rdquo;
               </blockquote>
 
               <div className="text-lg sm:text-2xl md:text-3xl font-black text-amber-400 uppercase tracking-widest drop-shadow-md">
@@ -748,7 +749,7 @@ export function BroadcastStudioLive() {
                 </span>
               </div>
               <p className="text-xs sm:text-sm md:text-base text-white font-serif leading-relaxed italic line-clamp-3 sm:line-clamp-none">
-                &ldquo;{state.scripture.text}&rdquo;
+                &ldquo;{cleanVerseText(state.scripture.text)}&rdquo;
               </p>
             </div>
           </div>

@@ -23,6 +23,7 @@ import {
   SANCTUARY_OFFLINE_VAULT,
   parseScriptureQuery,
   fetchScriptureVerse,
+  cleanVerseText,
 } from "@/lib/studio/bible-service";
 
 interface ScriptureInputProps {
@@ -367,7 +368,7 @@ export function ScriptureInput({ state, onChange, onTakeLive }: ScriptureInputPr
           )}
         </div>
         <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-serif italic">
-          &ldquo;{currentScripture.text}&rdquo;
+          &ldquo;{cleanVerseText(currentScripture.text)}&rdquo;
         </p>
       </div>
     </div>
