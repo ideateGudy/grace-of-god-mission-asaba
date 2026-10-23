@@ -467,13 +467,13 @@ export function BroadcastStudioLive() {
       <div className="relative z-10 w-full h-full flex flex-col justify-center items-center">
         {/* 1. SCENE: COUNTDOWN */}
         {state.activeType === "countdown" && (
-          <div className="w-full h-full flex flex-col justify-between items-center p-6 sm:p-12 text-center animate-in fade-in duration-500">
+          <div className="w-full h-full flex flex-col justify-between items-center px-6 sm:px-12 md:px-20 lg:px-28 py-8 sm:py-12 md:py-16 text-center animate-in fade-in duration-500">
             {/* Header: Church Logo & Programme Title */}
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center gap-3 sm:gap-4 max-w-4xl">
               {state.showLogo && !isTransparentMode && (
                 <div
-                  className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 p-1 bg-black/40 shadow-2xl backdrop-blur-md"
-                  style={{ borderColor: isTimeUp ? "rgba(239, 68, 68, 0.8)" : currentTheme.borderColor }}
+                  className="relative w-14 h-14 sm:w-20 sm:h-20 rounded-full overflow-hidden p-1 bg-black/20 shadow-xl backdrop-blur-sm"
+                  style={{ borderColor: isTimeUp ? "rgba(239, 68, 68, 0.6)" : "transparent" }}
                 >
                   <Image
                     src={CHURCH_LOGO_PATH}
@@ -485,15 +485,18 @@ export function BroadcastStudioLive() {
                 </div>
               )}
 
-              <div className="space-y-1">
+              <div className="space-y-1 sm:space-y-2">
                 <h1
-                  className="text-xl sm:text-3xl md:text-5xl font-black tracking-wider uppercase drop-shadow-md"
-                  style={{ color: isTimeUp ? "#EF4444" : currentTheme.digitColor }}
+                  className="text-2xl sm:text-4xl md:text-6xl font-black tracking-tight uppercase"
+                  style={{
+                    color: isTimeUp ? "#EF4444" : currentTheme.digitColor,
+                    textShadow: isTimeUp ? "0 4px 24px rgba(239,68,68,0.5)" : `0 4px 30px ${currentTheme.accentGlow}`,
+                  }}
                 >
                   {state.title}
                 </h1>
                 <p
-                  className="text-sm sm:text-lg md:text-xl font-bold tracking-widest uppercase"
+                  className="text-xs sm:text-base md:text-lg font-semibold tracking-widest uppercase opacity-90"
                   style={{ color: isTimeUp ? "#F87171" : currentTheme.labelColor }}
                 >
                   {state.subtitle}
@@ -501,106 +504,74 @@ export function BroadcastStudioLive() {
               </div>
             </div>
 
-            {/* Main Stage Display: Normal Timer (TIME UP) vs Event Timer (Message or 00:00:00) vs Active Counting */}
+            {/* Main Stage Display: Normal Timer (TIME UP) vs Event Timer (Message) vs Active Counting */}
             {isNormalTimer && isTimeUp ? (
-              /* Normal Countdown Timer Reached Zero: Big TIME UP display with real-time Overtime */
-              <div className="my-auto flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500 w-full max-w-5xl px-4">
-                <div
-                  className="w-full py-10 sm:py-16 md:py-20 px-6 sm:px-12 rounded-3xl border-4 shadow-2xl flex flex-col items-center justify-center transition-all"
-                  style={{
-                    background: "rgba(185, 28, 28, 0.95)",
-                    borderColor: "#FCA5A5",
-                    boxShadow: "0 0 100px rgba(239, 68, 68, 0.7)",
-                  }}
-                >
-                  <span className="text-6xl sm:text-9xl md:text-[11rem] font-black tracking-tight uppercase font-sans drop-shadow-[0_8px_16px_rgba(0,0,0,0.8)] leading-none select-none text-white animate-pulse">
-                    TIME UP
-                  </span>
+              /* Normal Countdown Timer Reached Zero: Clean Minimalist TIME UP display with real-time Overtime */
+              <div className="my-auto flex flex-col items-center justify-center gap-6 sm:gap-8 animate-in zoom-in-95 duration-500 w-full max-w-4xl px-4 text-center">
+                <span className="text-6xl sm:text-9xl md:text-[11rem] lg:text-[13rem] font-black tracking-tight uppercase font-sans leading-none select-none text-red-500 drop-shadow-[0_10px_40px_rgba(239,68,68,0.6)] animate-pulse">
+                  TIME UP
+                </span>
 
-                  {/* If Overtime is enabled, show the live running overtime clock inside the banner */}
-                  {state.overtimeEnabled && (
-                    <div className="mt-6 flex flex-col items-center">
-                      <span className="text-xs sm:text-base font-black uppercase tracking-widest text-red-200">
-                        OVERTIME ELAPSED
-                      </span>
-                      <span className="text-4xl sm:text-7xl md:text-8xl font-black font-mono text-white tracking-wider mt-1 drop-shadow-lg">
-                        +{formatTwoDigits(timeBreakdown.hours > 0 ? timeBreakdown.hours : timeBreakdown.minutes)}:
-                        {formatTwoDigits(timeBreakdown.hours > 0 ? timeBreakdown.minutes : timeBreakdown.seconds)}
-                        {timeBreakdown.hours > 0 && `:${formatTwoDigits(timeBreakdown.seconds)}`}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                {/* If Overtime is enabled, show the live running overtime clock without boxed strokes */}
+                {state.overtimeEnabled ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="text-xs sm:text-sm md:text-base font-bold uppercase tracking-[0.25em] text-red-400/90">
+                      OVERTIME ELAPSED
+                    </span>
+                    <span className="text-4xl sm:text-6xl md:text-7xl font-mono font-black text-red-400 tracking-wider">
+                      +{formatTwoDigits(timeBreakdown.hours > 0 ? timeBreakdown.hours : timeBreakdown.minutes)}:
+                      {formatTwoDigits(timeBreakdown.hours > 0 ? timeBreakdown.minutes : timeBreakdown.seconds)}
+                      {timeBreakdown.hours > 0 && `:${formatTwoDigits(timeBreakdown.seconds)}`}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-xs sm:text-base text-zinc-400 font-medium tracking-widest uppercase">
+                    Session Concluded
+                  </span>
+                )}
               </div>
             ) : isEventTimer && isEventCompleted && state.completionMessage ? (
-              /* Event / Occasion Countdown Reached Zero with Custom Message */
-              <div className="my-auto flex flex-col items-center gap-4 animate-in zoom-in-95 duration-500 max-w-5xl px-4 w-full">
-                <div
-                  className="w-full py-10 sm:py-16 px-6 sm:px-12 rounded-3xl shadow-2xl backdrop-blur-2xl border-4 text-center"
+              /* Event / Occasion Countdown Reached Zero with Custom Message (Minimalist, borderless) */
+              <div className="my-auto flex flex-col items-center justify-center gap-4 sm:gap-6 animate-in zoom-in-95 duration-500 max-w-5xl px-4 w-full text-center">
+                <span
+                  className="text-4xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight uppercase leading-tight select-none font-sans"
                   style={{
-                    backgroundColor: "rgba(0, 0, 0, 0.9)",
-                    borderColor: currentTheme.primaryAccent,
-                    boxShadow: `0 0 80px ${currentTheme.accentGlow}`,
+                    color: currentTheme.primaryAccent,
+                    textShadow: `0 8px 50px ${currentTheme.accentGlow}`,
                   }}
                 >
-                  <span
-                    className="text-4xl sm:text-7xl md:text-8xl font-black tracking-tight uppercase drop-shadow-2xl block font-sans"
-                    style={{ color: currentTheme.primaryAccent }}
-                  >
-                    {state.completionMessage}
-                  </span>
-                  <span className="text-xs sm:text-base text-zinc-300 font-mono tracking-widest uppercase block mt-4">
-                    00:00:00 · Welcome to Sanctuary
-                  </span>
-                </div>
+                  {state.completionMessage}
+                </span>
+                <span className="text-xs sm:text-base text-zinc-400 font-medium tracking-widest uppercase">
+                  Service in Session
+                </span>
               </div>
             ) : (
-              /* Giant High-Visibility Digits Display (CountdownKings "Big Time" Style themed to Studio) */
-              <div className="flex flex-col items-center justify-center my-auto w-full px-2">
-                <div
-                  className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 p-4 sm:p-8 md:p-12 rounded-3xl backdrop-blur-2xl border transition-all duration-500 max-w-7xl w-full"
-                  style={{
-                    backgroundColor: "rgba(0, 0, 0, 0.75)",
-                    borderColor:
-                      remainingSeconds <= 30 && remainingSeconds > 0
-                        ? "#EF4444"
-                        : remainingSeconds <= 120 && remainingSeconds > 0
-                        ? "#F59E0B"
-                        : currentTheme.borderColor,
-                    boxShadow:
-                      remainingSeconds <= 30 && remainingSeconds > 0
-                        ? "0 0 60px rgba(239,68,68,0.4)"
-                        : remainingSeconds <= 120 && remainingSeconds > 0
-                        ? "0 0 50px rgba(245,158,11,0.3)"
-                        : `0 16px 60px ${currentTheme.accentGlow}`,
-                  }}
-                >
+              /* Giant Modern Minimalist Digits Display (No stroke container, pure theme typography) */
+              <div className="flex flex-col items-center justify-center my-auto w-full max-w-6xl px-4">
+                <div className="flex items-baseline justify-center gap-2 sm:gap-6 md:gap-10 lg:gap-14 w-full">
                   {/* Days Card (if > 0) */}
                   {timeBreakdown.days > 0 && (
                     <>
-                      <div className="flex flex-col items-center flex-1 max-w-[220px]">
+                      <div className="flex flex-col items-center">
                         <span
-                          className="text-5xl sm:text-8xl md:text-9xl lg:text-[11rem] font-black tracking-tighter leading-none select-none drop-shadow-2xl font-mono"
+                          className="text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] xl:text-[13rem] font-black tracking-tighter leading-none select-none font-mono"
                           style={{
-                            color:
-                              remainingSeconds <= 30 && remainingSeconds > 0
-                                ? "#EF4444"
-                                : remainingSeconds <= 120 && remainingSeconds > 0
-                                ? "#F59E0B"
-                                : currentTheme.digitColor,
+                            color: currentTheme.digitColor,
+                            textShadow: `0 8px 40px ${currentTheme.accentGlow}`,
                           }}
                         >
                           {formatTwoDigits(timeBreakdown.days)}
                         </span>
                         <span
-                          className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-widest mt-2 sm:mt-3"
+                          className="text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-[0.25em] mt-2 sm:mt-4"
                           style={{ color: currentTheme.labelColor }}
                         >
                           Days
                         </span>
                       </div>
                       <span
-                        className="text-4xl sm:text-7xl md:text-9xl font-bold opacity-30 select-none -translate-y-2 sm:-translate-y-4"
+                        className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-light opacity-40 select-none self-center -translate-y-4 sm:-translate-y-6"
                         style={{ color: currentTheme.labelColor }}
                       >
                         :
@@ -611,29 +582,25 @@ export function BroadcastStudioLive() {
                   {/* Hours Card (always shown unless 0 days and 0 hours on duration timers) */}
                   {(timeBreakdown.days > 0 || timeBreakdown.hours > 0 || state.mode === "event-date") && (
                     <>
-                      <div className="flex flex-col items-center flex-1 max-w-[220px]">
+                      <div className="flex flex-col items-center">
                         <span
-                          className="text-5xl sm:text-8xl md:text-9xl lg:text-[11rem] font-black tracking-tighter leading-none select-none drop-shadow-2xl font-mono"
+                          className="text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] xl:text-[13rem] font-black tracking-tighter leading-none select-none font-mono"
                           style={{
-                            color:
-                              remainingSeconds <= 30 && remainingSeconds > 0
-                                ? "#EF4444"
-                                : remainingSeconds <= 120 && remainingSeconds > 0
-                                ? "#F59E0B"
-                                : currentTheme.digitColor,
+                            color: currentTheme.digitColor,
+                            textShadow: `0 8px 40px ${currentTheme.accentGlow}`,
                           }}
                         >
                           {formatTwoDigits(timeBreakdown.hours)}
                         </span>
                         <span
-                          className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-widest mt-2 sm:mt-3"
+                          className="text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-[0.25em] mt-2 sm:mt-4"
                           style={{ color: currentTheme.labelColor }}
                         >
                           Hours
                         </span>
                       </div>
                       <span
-                        className="text-4xl sm:text-7xl md:text-9xl font-bold opacity-30 select-none -translate-y-2 sm:-translate-y-4"
+                        className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-light opacity-40 select-none self-center -translate-y-4 sm:-translate-y-6"
                         style={{ color: currentTheme.labelColor }}
                       >
                         :
@@ -642,22 +609,18 @@ export function BroadcastStudioLive() {
                   )}
 
                   {/* Minutes Card */}
-                  <div className="flex flex-col items-center flex-1 max-w-[220px]">
+                  <div className="flex flex-col items-center">
                     <span
-                      className="text-5xl sm:text-8xl md:text-9xl lg:text-[11rem] font-black tracking-tighter leading-none select-none drop-shadow-2xl font-mono"
+                      className="text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] xl:text-[13rem] font-black tracking-tighter leading-none select-none font-mono"
                       style={{
-                        color:
-                          remainingSeconds <= 30 && remainingSeconds > 0
-                            ? "#EF4444"
-                            : remainingSeconds <= 120 && remainingSeconds > 0
-                            ? "#F59E0B"
-                            : currentTheme.digitColor,
+                        color: currentTheme.digitColor,
+                        textShadow: `0 8px 40px ${currentTheme.accentGlow}`,
                       }}
                     >
                       {formatTwoDigits(timeBreakdown.minutes)}
                     </span>
                     <span
-                      className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-widest mt-2 sm:mt-3"
+                      className="text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-[0.25em] mt-2 sm:mt-4"
                       style={{ color: currentTheme.labelColor }}
                     >
                       Minutes
@@ -665,29 +628,25 @@ export function BroadcastStudioLive() {
                   </div>
 
                   <span
-                    className="text-4xl sm:text-7xl md:text-9xl font-bold opacity-30 select-none -translate-y-2 sm:-translate-y-4"
+                    className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-light opacity-40 select-none self-center -translate-y-4 sm:-translate-y-6"
                     style={{ color: currentTheme.labelColor }}
                   >
                     :
                   </span>
 
                   {/* Seconds Card */}
-                  <div className="flex flex-col items-center flex-1 max-w-[220px]">
+                  <div className="flex flex-col items-center">
                     <span
-                      className="text-5xl sm:text-8xl md:text-9xl lg:text-[11rem] font-black tracking-tighter leading-none select-none drop-shadow-2xl font-mono"
+                      className="text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] xl:text-[13rem] font-black tracking-tighter leading-none select-none font-mono"
                       style={{
-                        color:
-                          remainingSeconds <= 30 && remainingSeconds > 0
-                            ? "#EF4444"
-                            : remainingSeconds <= 120 && remainingSeconds > 0
-                            ? "#F59E0B"
-                            : currentTheme.digitColor,
+                        color: currentTheme.digitColor,
+                        textShadow: `0 8px 40px ${currentTheme.accentGlow}`,
                       }}
                     >
                       {formatTwoDigits(timeBreakdown.seconds)}
                     </span>
                     <span
-                      className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-widest mt-2 sm:mt-3"
+                      className="text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-[0.25em] mt-2 sm:mt-4"
                       style={{ color: currentTheme.labelColor }}
                     >
                       Seconds
@@ -699,23 +658,20 @@ export function BroadcastStudioLive() {
 
             {/* Overtime Alert Indicator for Active Countdown */}
             {!isTimeUp && timeBreakdown.isOvertime && (
-              <div className="px-4 py-1.5 rounded-full bg-red-600/90 text-white text-xs sm:text-sm font-black tracking-widest uppercase animate-pulse shadow-xl">
+              <div className="px-5 py-2 rounded-full bg-red-600/90 text-white text-xs sm:text-sm font-black tracking-widest uppercase animate-pulse shadow-xl">
                 ⚠️ OVERTIME: +{formatTwoDigits(timeBreakdown.minutes)}:
                 {formatTwoDigits(timeBreakdown.seconds)}
               </div>
             )}
 
-            {/* Bottom Scripture Quote */}
+            {/* Bottom Scripture Quote: Clean Minimalist Style */}
             {state.showScripture && state.scriptureText && !isTransparentMode && !isTimeUp && (
-              <div
-                className="max-w-2xl p-4 rounded-xl backdrop-blur-md border border-white/10 bg-black/30 text-center"
-                style={{ borderColor: currentTheme.borderColor }}
-              >
-                <p className="text-xs sm:text-sm text-zinc-200 font-serif italic">
+              <div className="max-w-2xl text-center px-4 pt-2">
+                <p className="text-sm sm:text-base text-zinc-300 font-serif italic">
                   &ldquo;{state.scriptureText}&rdquo;
                 </p>
                 <span
-                  className="text-[11px] font-black uppercase tracking-wider block mt-1"
+                  className="text-xs font-bold uppercase tracking-wider block mt-1"
                   style={{ color: currentTheme.primaryAccent }}
                 >
                   — {state.scriptureRef}
