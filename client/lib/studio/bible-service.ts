@@ -222,7 +222,7 @@ export const SANCTUARY_OFFLINE_VAULT: Record<string, Partial<Record<BibleTransla
   },
 };
 
-const BIBLE_CACHE_STORAGE_KEY = "ggm_bible_scripture_cache_v1";
+const BIBLE_CACHE_STORAGE_KEY = "ggm_bible_scripture_cache_v2";
 
 /**
  * In-memory map cache for 0ms lookup latency
@@ -373,7 +373,7 @@ export async function fetchScriptureVerse(
     };
   }
 
-  // 2. Tier 1: bolls.life API
+  // 2. Tier 1: bolls.life API (Supports KJV, NKJV, ESV, AMP, MSG, BSB)
   try {
     const bollsTrans = translation === "BSB" ? "BSB" : translation;
     const url = `https://bolls.life/get-text/${bollsTrans}/${foundBook.number}/${chapter}/`;
@@ -388,23 +388,25 @@ export async function fetchScriptureVerse(
       if (Array.isArray(data)) {
         const found = data.find((item: { verse: number; text: string }) => item.verse === verse);
         if (found?.text) {
-          const cleanText = cleanHtmlTags(found.text);
-          persistToStorage(cacheKey, cleanText);
-          return {
-            reference: `${foundBook.name} ${chapter}:${verse}`,
-            book: foundBook.name,
-            chapter,
-            verse,
-            text: cleanText,
-            translation,
-            source: "bolls",
-          };
+          const cleanText = cleanVerseText(found.text);
+          if (cleanText && !isNoticeOrErrorText(cleanText)) {
+            persistToStorage(cacheKey, cleanText);
+            return {
+              reference: `${foundBook.name} ${chapter}:${verse}`,
+              book: foundBook.name,
+              chapter,
+              verse,
+              text: cleanText,
+              translation,
+              source: "bolls",
+            };
+          }
         }
       }
     }
   } catch {}
 
-  // 3. Tier 2: bible-api.com
+  // 3. Tier 2: bible-api.com (Reliable, clean fallback for KJV, WEB, etc.)
   try {
     const bibleApiTrans = translation === "KJV" ? "kjv" : "web";
     const cleanRef = encodeURIComponent(`${foundBook.name} ${chapter}:${verse}`);
@@ -418,22 +420,24 @@ export async function fetchScriptureVerse(
     if (res.ok) {
       const data = await res.json();
       if (data?.text) {
-        const cleanText = data.text.trim();
-        persistToStorage(cacheKey, cleanText);
-        return {
-          reference: `${foundBook.name} ${chapter}:${verse}`,
-          book: foundBook.name,
-          chapter,
-          verse,
-          text: cleanText,
-          translation,
-          source: "bible-api",
-        };
+        const cleanText = cleanVerseText(data.text);
+        if (cleanText && !isNoticeOrErrorText(cleanText)) {
+          persistToStorage(cacheKey, cleanText);
+          return {
+            reference: `${foundBook.name} ${chapter}:${verse}`,
+            book: foundBook.name,
+            chapter,
+            verse,
+            text: cleanText,
+            translation,
+            source: "bible-api",
+          };
+        }
       }
     }
   } catch {}
 
-  // 4. Tier 3: bible.helloao.org
+  // 4. Tier 3: bible.helloao.org (Clean BSB, KJV fallback)
   try {
     const helloaoTrans = translation === "BSB" ? "BSB" : "KJV";
     const url = `https://bible.helloao.org/api/${helloaoTrans}/${foundBook.id}/${chapter}.json`;
@@ -454,14 +458,15 @@ export async function fetchScriptureVerse(
             .join("")
             .trim();
 
-          if (joinedText) {
-            persistToStorage(cacheKey, joinedText);
+          const cleanText = cleanVerseText(joinedText);
+          if (cleanText && !isNoticeOrErrorText(cleanText)) {
+            persistToStorage(cacheKey, cleanText);
             return {
               reference: `${foundBook.name} ${chapter}:${verse}`,
               book: foundBook.name,
               chapter,
               verse,
-              text: joinedText,
+              text: cleanText,
               translation,
               source: "helloao",
             };
@@ -502,6 +507,40 @@ export async function fetchScriptureVerse(
   };
 }
 
-function cleanHtmlTags(html: string): string {
-  return html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+/**
+ * Thoroughly sanitizes and cleans raw Bible text from APIs:
+ * - Strips Strong's concordance reference tags & numbers e.g. <S>1063</S>, <S>4210</S>
+ * - Strips footnote numbers / verse markers e.g. [1], {12}
+ * - Strips all HTML formatting tags like <i>, <b>, <br>
+ * - Normalizes quotes and excess whitespace
+ */
+function cleanVerseText(raw: string): string {
+  if (!raw) return "";
+  return raw
+    // 1. Remove Strong's concordance tags and their inner numbers (<S>1063</S> or <S> 4210 </S>)
+    .replace(/<S>\s*\d+\s*<\/S>/gi, "")
+    // 2. Remove any remaining <S...> tags if malformed
+    .replace(/<\/?S[^>]*>/gi, "")
+    // 3. Remove all other HTML tags (<br>, <i>, <b>, <p>, etc.)
+    .replace(/<[^>]+>/g, "")
+    // 4. Remove bracketed or braced footnote/reference numbers e.g. [1], [12], {3}
+    .replace(/\[\d+\]/g, "")
+    .replace(/\{\d+\}/g, "")
+    // 5. Clean up HTML entities
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    // 6. Collapse multiple whitespaces into a single space
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Checks if the API returned a protest/notice text instead of scripture (e.g. Biblica NIV copyright notice)
+ */
+function isNoticeOrErrorText(text: string): boolean {
+  if (!text) return true;
+  return /Biblica, Inc\.|copyright notice|has prohibited me|financial profit|prohibited from using/i.test(text);
 }
