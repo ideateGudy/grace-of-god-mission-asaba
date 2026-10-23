@@ -422,14 +422,23 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
             type="button"
             onClick={() => setShowThemePicker(true)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-              state.bgImageUrl
+              state.bgImageUrl === "dark"
+                ? "bg-zinc-800 text-white border border-white/20"
+                : state.bgImageUrl
                 ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
             }`}
-            title="Configure Background Image & Opacity"
+            title="Configure Background (Theme Color, Dark, or Image Overlay)"
           >
             <ImageIcon className="w-3.5 h-3.5" />
-            <span>BG: {state.bgImageUrl ? "Active" : "None"}</span>
+            <span>
+              BG:{" "}
+              {state.bgImageUrl === "dark"
+                ? "Dark BG"
+                : state.bgImageUrl
+                ? "Image"
+                : "Theme Color"}
+            </span>
           </button>
         </div>
       </div>
