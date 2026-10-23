@@ -31,7 +31,7 @@ interface CountdownInputProps {
   onTakeLive?: () => void;
 }
 
-export function CountdownInput({ state, onChange }: CountdownInputProps) {
+export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputProps) {
   // Primary viewing tabs: 1. Normal Activity Timer vs 2. Occasion/Event Timer
   // Switching this tab ONLY switches the UI viewing category — it DOES NOT touch or reset state.isRunning or state.remainingSeconds!
   const isEventMode = state.mode === "event-date" || state.mode === "target-time";
@@ -90,8 +90,15 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
       targetEndTime: Date.now() + secs * 1000,
       title: titleToUse,
       subtitle: draftNormalSubtitle,
+      activeType: "countdown", // Always put countdown on air when launched
+      previewType: "countdown",
+      isBlackout: false,
       isRunning: true, // Start immediately on launch
     }));
+
+    if (onTakeLive) {
+      onTakeLive();
+    }
 
     toast.success(`Launched ${minsToUse} Min Activity Timer!`);
   };
@@ -117,8 +124,15 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
       subtitle: subToUse,
       completionMessage: msgToUse,
       remainingSeconds: remaining,
+      activeType: "countdown", // Always put countdown on air when launched
+      previewType: "countdown",
+      isBlackout: false,
       isRunning: true,
     }));
+
+    if (onTakeLive) {
+      onTakeLive();
+    }
 
     toast.success(`Launched Event Countdown for ${titleToUse}!`);
   };
@@ -254,6 +268,8 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
                 }
                 return {
                   ...prev,
+                  activeType: nextRunning ? "countdown" : prev.activeType,
+                  isBlackout: nextRunning ? false : prev.isBlackout,
                   isRunning: nextRunning,
                   targetEndTime: nextTargetEnd,
                 };
@@ -280,6 +296,7 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
                     remainingSeconds: calculateSecondsUntilDate(prev.targetDate),
                     targetEndTime: null,
                     isRunning: false,
+                    activeType: "countdown",
                   };
                 }
                 return {
@@ -287,6 +304,7 @@ export function CountdownInput({ state, onChange }: CountdownInputProps) {
                   remainingSeconds: prev.durationSeconds,
                   targetEndTime: null,
                   isRunning: false,
+                  activeType: "countdown",
                 };
               })
             }
