@@ -531,26 +531,28 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
           {/* Quick Duration Buttons (Clean, Tap-to-Stage) */}
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
-              Choose Activity Duration (Click to prepare, then click Launch Timer):
+              Choose Activity Duration (Click any to launch immediately):
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
               {normalDurationPresets.map((preset) => {
-                const isSelectedDraft = draftMins === preset.mins;
+                const isCurrentActive =
+                  state.mode === "activity" && Math.round(state.durationSeconds / 60) === preset.mins;
                 return (
                   <button
                     key={preset.mins}
                     type="button"
                     onClick={() => {
                       setDraftMins(preset.mins);
+                      handleLaunchNormalTimer(preset.mins);
                     }}
                     className={`p-2.5 rounded-xl border text-center transition-all ${
-                      isSelectedDraft
+                      isCurrentActive
                         ? "bg-amber-400 text-black border-amber-400 font-black shadow-lg"
                         : "bg-zinc-900/60 border-white/5 text-zinc-300 hover:border-white/20 hover:bg-zinc-800"
                     }`}
                   >
                     <div className="text-sm font-bold">{preset.label}</div>
-                    <div className={`text-[9px] truncate mt-0.5 ${isSelectedDraft ? "text-black/80" : "text-zinc-500"}`}>
+                    <div className={`text-[9px] truncate mt-0.5 ${isCurrentActive ? "text-black/80 font-bold" : "text-zinc-500"}`}>
                       {preset.desc.split(" ")[0]}
                     </div>
                   </button>
