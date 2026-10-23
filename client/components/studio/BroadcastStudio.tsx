@@ -459,6 +459,7 @@ export function BroadcastStudio() {
             stageMode: next.stageMode,
             completionMessage: next.completionMessage,
             isRunning: next.isRunning,
+            targetEndTime: next.targetEndTime,
             remainingSeconds: next.remainingSeconds,
             activeType: next.activeType,
             previewType: next.previewType,
