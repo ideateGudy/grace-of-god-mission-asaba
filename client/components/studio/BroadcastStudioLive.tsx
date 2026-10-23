@@ -386,50 +386,48 @@ export function BroadcastStudioLive() {
   const activeCardsCount = (showDays ? 1 : 0) + (showHours ? 1 : 0) + 2;
 
   // Responsive Fliqlo card dimensions based on activeCardsCount
-  // 2 units (MM:SS): Substantial hero scale with clean breathing room top/bottom/sides
-  // 3 units (HH:MM:SS): Medium-large balanced tiles
-  // 4 units (DD:HH:MM:SS): Standard compact harmonious tiles (as in user screenshot)
+  // Mobile-first responsive sizing: fits within narrow phone widths without horizontal overflow while keeping generous margins
   const cardTileClass =
     activeCardsCount <= 2
-      ? "rounded-2xl sm:rounded-3xl md:rounded-[2.25rem] px-6 py-6 sm:px-10 sm:py-10 md:px-14 md:py-12 lg:px-16 lg:py-14 min-w-[130px] sm:min-w-[210px] md:min-w-[280px] lg:min-w-[320px] max-h-[58vh] shadow-[0_20px_60px_rgba(0,0,0,0.9)]"
+      ? "rounded-2xl sm:rounded-3xl md:rounded-[2.25rem] px-3.5 py-4 sm:px-8 sm:py-9 md:px-12 md:py-12 lg:px-16 lg:py-14 min-w-[38vw] max-w-[42vw] sm:min-w-[190px] sm:max-w-none md:min-w-[260px] lg:min-w-[310px] max-h-[50vh] shadow-[0_16px_50px_rgba(0,0,0,0.9)]"
       : activeCardsCount === 3
-      ? "rounded-2xl sm:rounded-3xl px-4 py-3 sm:px-7 sm:py-6 md:px-10 md:py-8 lg:px-12 lg:py-10 min-w-[100px] sm:min-w-[150px] md:min-w-[190px] lg:min-w-[220px] max-h-[52vh] shadow-[0_16px_50px_rgba(0,0,0,0.85)]"
-      : "rounded-2xl md:rounded-3xl px-3 py-2.5 sm:px-5 sm:py-4 md:px-7 md:py-6 lg:px-8 lg:py-7 min-w-[70px] sm:min-w-[100px] md:min-w-[130px] lg:min-w-[145px] max-h-[45vh] shadow-[0_12px_40px_rgba(0,0,0,0.8)]";
+      ? "rounded-xl sm:rounded-2xl md:rounded-3xl px-2.5 py-3 sm:px-6 sm:py-6 md:px-9 md:py-8 lg:px-11 lg:py-10 min-w-[25vw] max-w-[28vw] sm:min-w-[130px] sm:max-w-none md:min-w-[170px] lg:min-w-[210px] max-h-[46vh] shadow-[0_14px_45px_rgba(0,0,0,0.85)]"
+      : "rounded-lg sm:rounded-2xl md:rounded-3xl px-2 py-2 sm:px-4 sm:py-3.5 md:px-6 md:py-5 lg:px-7 lg:py-6 min-w-[19vw] max-w-[22vw] sm:min-w-[90px] sm:max-w-none md:min-w-[120px] lg:min-w-[140px] max-h-[42vh] shadow-[0_12px_40px_rgba(0,0,0,0.8)]";
 
   const cardDigitClass =
     activeCardsCount <= 2
-      ? "text-7xl sm:text-9xl md:text-[11rem] lg:text-[13rem] xl:text-[14.5rem]"
+      ? "text-5xl sm:text-8xl md:text-[10.5rem] lg:text-[12.5rem] xl:text-[14.5rem]"
       : activeCardsCount === 3
-      ? "text-5xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10.5rem]"
-      : "text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl";
+      ? "text-3xl sm:text-6xl md:text-7xl lg:text-9xl xl:text-[10rem]"
+      : "text-2xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl";
 
   const cardLabelClass =
     activeCardsCount <= 2
-      ? "text-xs sm:text-sm md:text-base font-black tracking-[0.3em] mt-3 sm:mt-5"
+      ? "text-[10px] sm:text-xs md:text-sm lg:text-base font-black tracking-[0.25em] sm:tracking-[0.3em] mt-2 sm:mt-4"
       : activeCardsCount === 3
-      ? "text-[11px] sm:text-xs md:text-sm font-black tracking-[0.25em] mt-2 sm:mt-3"
-      : "text-[10px] sm:text-xs md:text-sm font-black tracking-[0.25em] mt-1 sm:mt-2";
+      ? "text-[9px] sm:text-[11px] md:text-xs lg:text-sm font-black tracking-[0.2em] sm:tracking-[0.25em] mt-1.5 sm:mt-2.5"
+      : "text-[8px] sm:text-[10px] md:text-xs font-black tracking-[0.15em] sm:tracking-[0.2em] mt-1 sm:mt-2";
 
   const colonDotClass =
     activeCardsCount <= 2
-      ? "w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5"
+      ? "w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4 lg:w-5 lg:h-5"
       : activeCardsCount === 3
-      ? "w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4"
-      : "w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3";
+      ? "w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 lg:w-4 lg:h-4"
+      : "w-1 h-1 sm:w-1.5 sm:h-1.5 md:w-2 md:h-2 lg:w-3 lg:h-3";
 
   const colonContainerClass =
     activeCardsCount <= 2
-      ? "flex flex-col gap-3 sm:gap-5 md:gap-7 pb-8 sm:pb-12 md:pb-14 opacity-60"
+      ? "flex flex-col gap-2 sm:gap-4 md:gap-6 pb-5 sm:pb-9 md:pb-12 opacity-60 shrink-0"
       : activeCardsCount === 3
-      ? "flex flex-col gap-2.5 sm:gap-4 md:gap-5 pb-6 sm:pb-9 opacity-60"
-      : "flex flex-col gap-2.5 sm:gap-4 pb-6 sm:pb-8 opacity-60";
+      ? "flex flex-col gap-1.5 sm:gap-3 md:gap-4 pb-4 sm:pb-7 md:pb-9 opacity-60 shrink-0"
+      : "flex flex-col gap-1 sm:gap-2.5 md:gap-3 pb-3 sm:pb-6 opacity-60 shrink-0";
 
   const cardContainerGap =
     activeCardsCount <= 2
-      ? "gap-5 sm:gap-8 md:gap-12 lg:gap-14 max-w-6xl"
+      ? "gap-2 sm:gap-6 md:gap-10 lg:gap-14 max-w-6xl"
       : activeCardsCount === 3
-      ? "gap-3 sm:gap-5 md:gap-7 lg:gap-9 max-w-5xl"
-      : "gap-2 sm:gap-3 md:gap-4 lg:gap-5 max-w-5xl";
+      ? "gap-1.5 sm:gap-4 md:gap-7 lg:gap-9 max-w-5xl"
+      : "gap-1 sm:gap-2.5 md:gap-4 lg:gap-5 max-w-5xl";
 
   // Emergency Blackout Check
   if (state.isBlackout) {
@@ -497,9 +495,9 @@ export function BroadcastStudioLive() {
       <div className="relative z-10 w-full h-full flex flex-col justify-between items-center">
         {/* 1. SCENE: COUNTDOWN */}
         {state.activeType === "countdown" && (
-          <div className="w-full h-full flex flex-col justify-between items-center px-4 sm:px-8 md:px-12 py-6 sm:py-10 text-center animate-in fade-in duration-500">
+          <div className="w-full h-full flex flex-col justify-between items-center px-3 sm:px-8 md:px-12 py-4 sm:py-8 md:py-10 text-center animate-in fade-in duration-500 overflow-hidden">
             {/* Header: Church Logo & Programme Title */}
-            <div className="flex flex-col items-center gap-2.5 sm:gap-3 max-w-4xl pt-2 sm:pt-4">
+            <div className="flex flex-col items-center gap-1.5 sm:gap-2.5 max-w-4xl pt-1 sm:pt-4">
               {state.showLogo && !isTransparentMode && (
                 <div
                   className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden p-1 bg-black/40 shadow-2xl backdrop-blur-md border border-white/10"
