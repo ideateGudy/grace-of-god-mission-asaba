@@ -93,6 +93,48 @@ export function BroadcastStudio() {
 
     setIsMounted(true);
 
+    // Fetch latest remote state from server to ensure control room is in lockstep with server
+    api.countdown
+      .get()
+      .then((res) => {
+        if (res?.data) {
+          const remote = res.data;
+          setState((prev) => ({
+            ...prev,
+            title: remote.title || prev.title,
+            subtitle: remote.subtitle || prev.subtitle,
+            scriptureRef: remote.scriptureRef || prev.scriptureRef,
+            scriptureText: remote.scriptureText || prev.scriptureText,
+            mode: remote.mode || prev.mode,
+            targetTimeString: remote.targetTimeString || prev.targetTimeString,
+            targetDate: remote.targetDate || prev.targetDate,
+            durationSeconds: remote.durationSeconds || prev.durationSeconds,
+            theme: remote.theme || prev.theme,
+            soundEnabled: remote.soundEnabled ?? prev.soundEnabled,
+            overtimeEnabled: remote.overtimeEnabled ?? prev.overtimeEnabled,
+            showScripture: remote.showScripture ?? prev.showScripture,
+            showLogo: remote.showLogo ?? prev.showLogo,
+            stageMode: remote.stageMode ?? prev.stageMode,
+            completionMessage: remote.completionMessage ?? prev.completionMessage,
+            activeType: remote.activeType || prev.activeType,
+            previewType: remote.previewType || prev.previewType,
+            scripture: remote.scripture || prev.scripture,
+            mediaList: remote.mediaList && remote.mediaList.length > 0 ? remote.mediaList : prev.mediaList,
+            activeMediaId: remote.activeMediaId || prev.activeMediaId,
+            overlay: remote.overlay || prev.overlay,
+            camera: remote.camera || prev.camera,
+            isBlackout: remote.isBlackout ?? prev.isBlackout,
+            targetEndTime: remote.targetEndTime ?? prev.targetEndTime,
+            remainingSeconds: remote.remainingSeconds ?? prev.remainingSeconds,
+            isRunning: remote.isRunning ?? prev.isRunning,
+          }));
+          if (remote.previewType) {
+            setActiveInputTab(remote.previewType);
+          }
+        }
+      })
+      .catch(() => {});
+
     return () => {
       channelRef.current?.close();
       window.removeEventListener("online", handleOnline);
