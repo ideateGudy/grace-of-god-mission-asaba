@@ -35,11 +35,9 @@ interface CountdownInputProps {
 
 export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputProps) {
   // Primary viewing tabs: 1. Normal Activity Timer vs 2. Occasion/Event Timer
-  // Switching this tab ONLY switches the UI viewing category — it DOES NOT touch or reset state.isRunning or state.remainingSeconds!
+  // Defaults to "normal" (Normal Countdown Timer) by default
   const isEventMode = state.mode === "event-date" || state.mode === "target-time";
-  const [activeCategory, setActiveCategory] = useState<"normal" | "occasion">(() =>
-    isEventMode ? "occasion" : "normal"
-  );
+  const [activeCategory, setActiveCategory] = useState<"normal" | "occasion">("normal");
   const [showThemePicker, setShowThemePicker] = useState<boolean>(false);
 
   // Staged / Draft settings for Mode 1: Normal Duration
