@@ -532,12 +532,15 @@ export function BroadcastStudioLive() {
       {/* 1. Underlying Base Dark Backdrop */}
       {!isTransparentMode && !isChromaGreen && (
         <div
-          className="pointer-events-none absolute inset-0 z-0 bg-[#05060c]"
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{
+            backgroundColor: state.bgImageUrl === "dark" ? "#000000" : currentTheme.bgDark,
+          }}
         />
       )}
 
-      {/* 2. Optional Editable Background Image Overlay Layer */}
-      {state.bgImageUrl && !isTransparentMode && !isChromaGreen && (
+      {/* 2. Optional Editable Background Image Overlay Layer (only when bgImageUrl is an image, not 'dark') */}
+      {state.bgImageUrl && state.bgImageUrl !== "dark" && !isTransparentMode && !isChromaGreen && (
         <div
           className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
           style={{ opacity: state.bgImageOpacity ?? 0.35 }}
@@ -551,16 +554,22 @@ export function BroadcastStudioLive() {
         </div>
       )}
 
-      {/* 3. Ambient Vignette / Tint Overlay (Dark background when no image selected) */}
+      {/* 3. Ambient Vignette / Tint Overlay:
+             - 'dark': Overwrites theme color completely with pure deep black
+             - bgImageUrl: Atmospheric glow with vignette over the photo
+             - none/empty: Rich Theme Color Background gradient
+      */}
       {!isTransparentMode && !isChromaGreen && (
         <div
           className="pointer-events-none absolute inset-0 z-0"
           style={{
             background: isTimeUp
               ? "radial-gradient(ellipse at 50% 20%, rgba(69,10,10,0.85) 0%, rgba(28,3,5,0.92) 50%, rgba(10,0,1,0.97) 100%)"
+              : state.bgImageUrl === "dark"
+              ? "radial-gradient(ellipse at 50% 35%, #08090f 0%, #030407 65%, #000000 100%)"
               : state.bgImageUrl
               ? `radial-gradient(ellipse at 50% 30%, ${currentTheme.accentGlow.replace(/[\d.]+\)$/, "0.2)")} 0%, rgba(6,7,20,0.65) 60%, rgba(3,4,12,0.88) 100%)`
-              : "radial-gradient(ellipse at 50% 35%, #0d0f1a 0%, #06070d 65%, #020306 100%)",
+              : currentTheme.bgGradient,
           }}
         />
       )}

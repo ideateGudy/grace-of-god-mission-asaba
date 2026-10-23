@@ -458,7 +458,8 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
                 </a>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                {/* 1. None (Uses Theme Color Background) */}
                 <button
                   type="button"
                   onClick={() =>
@@ -467,14 +468,35 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
                       bgImageUrl: "",
                     }))
                   }
-                  className={`px-2.5 py-2 rounded-lg text-xs font-bold text-left border transition-all truncate ${
-                    !state.bgImageUrl
+                  className={`px-2 py-2 rounded-lg text-xs font-bold text-left border transition-all truncate ${
+                    state.bgImageUrl === "" || !state.bgImageUrl
                       ? "bg-amber-400 text-black border-amber-400 shadow-sm"
                       : "bg-black/50 text-zinc-300 border-white/5 hover:border-white/20"
                   }`}
+                  title="Uses the selected Theme Color Gradient background"
                 >
-                  🚫 None (Pure Dark BG)
+                  🎨 None (Theme Color)
                 </button>
+
+                {/* 2. Dark Background (Overwrites Theme Color) */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChange((prev) => ({
+                      ...prev,
+                      bgImageUrl: "dark",
+                    }))
+                  }
+                  className={`px-2 py-2 rounded-lg text-xs font-bold text-left border transition-all truncate ${
+                    state.bgImageUrl === "dark"
+                      ? "bg-amber-400 text-black border-amber-400 shadow-sm"
+                      : "bg-black/50 text-zinc-300 border-white/5 hover:border-white/20"
+                  }`}
+                  title="Pure deep solid dark background (overwrites theme color)"
+                >
+                  🌑 Dark Background
+                </button>
+
                 {[
                   {
                     label: "Cathedral Sanctuary",
@@ -504,7 +526,7 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
                           bgImageUrl: bg.url,
                         }))
                       }
-                      className={`px-2.5 py-2 rounded-lg text-xs font-bold text-left border transition-all truncate ${
+                      className={`px-2 py-2 rounded-lg text-xs font-bold text-left border transition-all truncate ${
                         isSelected
                           ? "bg-amber-400 text-black border-amber-400 shadow-sm"
                           : "bg-black/50 text-zinc-300 border-white/5 hover:border-white/20"
@@ -526,7 +548,7 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
                 <input
                   type="text"
                   placeholder="https://images.unsplash.com/... or any photo URL"
-                  value={state.bgImageUrl || ""}
+                  value={state.bgImageUrl === "dark" ? "" : state.bgImageUrl || ""}
                   onChange={(e) => {
                     const val = e.target.value.trim();
                     onChange((prev) => ({ ...prev, bgImageUrl: val }));

@@ -915,25 +915,32 @@ export function BroadcastStudio() {
               </div>
             ) : (
               <>
-                {/* Background Image in Live Program Monitor */}
-                {state.bgImageUrl && (
-                  <div
-                    className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
-                    style={{ opacity: state.bgImageOpacity ?? 0.35 }}
-                  >
-                    <img
-                      src={state.bgImageUrl}
-                      alt="Program Background"
-                      className="w-full h-full object-cover object-center filter brightness-110"
+                {/* Background in Live Program Monitor: Dark overwrite, image overlay, or theme color gradient */}
+                {state.bgImageUrl === "dark" ? (
+                  <div className="pointer-events-none absolute inset-0 z-0 bg-[#000000]" />
+                ) : state.bgImageUrl ? (
+                  <>
+                    <div
+                      className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+                      style={{ opacity: state.bgImageOpacity ?? 0.35 }}
+                    >
+                      <img
+                        src={state.bgImageUrl}
+                        alt="Program Background"
+                        className="w-full h-full object-cover object-center filter brightness-110"
+                      />
+                    </div>
+                    <div
+                      className="pointer-events-none absolute inset-0 z-0"
+                      style={{
+                        background: `radial-gradient(ellipse at 50% 30%, transparent 0%, rgba(6,7,20,0.6) 70%, rgba(3,4,12,0.85) 100%)`,
+                      }}
                     />
-                  </div>
-                )}
-                {state.bgImageUrl && (
+                  </>
+                ) : (
                   <div
                     className="pointer-events-none absolute inset-0 z-0"
-                    style={{
-                      background: `radial-gradient(ellipse at 50% 30%, transparent 0%, rgba(6,7,20,0.6) 70%, rgba(3,4,12,0.85) 100%)`,
-                    }}
+                    style={{ background: currentTheme.bgGradient }}
                   />
                 )}
 
