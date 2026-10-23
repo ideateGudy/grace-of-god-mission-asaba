@@ -220,7 +220,7 @@ export function LowerThirdInput({ state, onChange, onTakeLive }: LowerThirdInput
         <label className="block text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
           Lower-Third Graphic Preview
         </label>
-        <div className="relative rounded-xl overflow-hidden border border-white/10 bg-[#060714] p-4 flex flex-col justify-end min-h-[100px]">
+        <div className="relative rounded-xl overflow-hidden border border-white/10 bg-[#060714] p-3 sm:p-4 flex flex-col justify-end min-h-[90px]">
           <div
             className="p-3 rounded-lg border-l-4 border-amber-400 shadow-xl"
             style={{
@@ -228,15 +228,15 @@ export function LowerThirdInput({ state, onChange, onTakeLive }: LowerThirdInput
                 "linear-gradient(90deg, rgba(16,19,41,0.95) 0%, rgba(11,14,32,0.85) 75%, transparent 100%)",
             }}
           >
-            <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
-              {overlay.title || "TITLE HERE"}
+            <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5 truncate">
+              <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+              <span className="truncate">{overlay.title || "TITLE HERE"}</span>
             </h4>
-            <p className="text-[11px] text-amber-300 font-medium mt-0.5">
+            <p className="text-[11px] text-amber-300 font-medium mt-0.5 truncate">
               {overlay.subtitle || "Subtitle / Details here"}
             </p>
             {overlay.extra && (
-              <p className="text-[10px] text-zinc-400 mt-1 font-mono">{overlay.extra}</p>
+              <p className="text-[10px] text-zinc-400 mt-1 font-mono truncate">{overlay.extra}</p>
             )}
           </div>
         </div>

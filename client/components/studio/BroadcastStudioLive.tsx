@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { Maximize2, Minimize2 } from "lucide-react";
 import { SafeMediaImage } from "@/components/studio/SafeMediaImage";
 import {
   type BroadcastStudioState,
@@ -38,14 +37,11 @@ export function BroadcastStudioLive() {
   const [state, setState] = useState<BroadcastStudioState>(DEFAULT_STUDIO_STATE);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(1800);
   const [isRunning, setIsRunning] = useState<boolean>(true);
-  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  const [showControls, setShowControls] = useState<boolean>(false);
   const [phoneFrame, setPhoneFrame] = useState<string | null>(null);
 
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
   const lastSecondRef = useRef<number>(-1);
   const chimePlayedRef = useRef<boolean>(false);
-  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentTheme = COUNTDOWN_THEMES[state.theme] || COUNTDOWN_THEMES["royal-gold"];
 
@@ -357,21 +353,11 @@ export function BroadcastStudioLive() {
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
-      setIsFullscreen(true);
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen().catch(() => {});
-        setIsFullscreen(false);
       }
     }
-  }, []);
-
-  const handleMouseMove = useCallback(() => {
-    setShowControls(true);
-    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    hideTimerRef.current = setTimeout(() => {
-      setShowControls(false);
-    }, 3000);
   }, []);
 
   useEffect(() => {
@@ -382,17 +368,9 @@ export function BroadcastStudioLive() {
       }
     };
 
-    const handleFsChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-
     window.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("fullscreenchange", handleFsChange);
-
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("fullscreenchange", handleFsChange);
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     };
   }, [toggleFullscreen]);
 
@@ -421,37 +399,9 @@ export function BroadcastStudioLive() {
   return (
     <div
       onDoubleClick={toggleFullscreen}
-      onMouseMove={handleMouseMove}
-      className="relative w-full h-screen overflow-hidden select-none flex flex-col justify-between"
+      className="relative w-full h-screen overflow-hidden select-none"
       style={rootBgStyle}
     >
-      {/* Floating Auto-Hiding Fullscreen Toggle Button (Excluded in transparent OBS mode) */}
-      {!isTransparentMode && !isChromaGreen && (
-        <div
-          className={`fixed top-4 right-4 z-50 transition-opacity duration-300 ${
-            showControls ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          }`}
-        >
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            className="px-3.5 py-2 rounded-xl bg-black/70 hover:bg-black/90 text-white border border-amber-400/40 backdrop-blur-md text-xs font-bold flex items-center gap-2 shadow-2xl transition-all"
-            title={isFullscreen ? "Exit Fullscreen (F)" : "Enter Fullscreen (F or Double-Click)"}
-          >
-            {isFullscreen ? (
-              <>
-                <Minimize2 className="w-4 h-4 text-amber-400" />
-                <span>Exit Fullscreen</span>
-              </>
-            ) : (
-              <>
-                <Maximize2 className="w-4 h-4 text-amber-400" />
-                <span>Fullscreen</span>
-              </>
-            )}
-          </button>
-        </div>
-      )}
 
       {/* Dynamic Radial Ambient Glow Background (if not transparent / chroma) */}
       {!isTransparentMode && !isChromaGreen && (
@@ -780,23 +730,24 @@ export function BroadcastStudioLive() {
 
       {/* ======================================================== */}
       {/* DSK OVERLAYS LAYER: Speaker, Giving, Ticker, Scripture Lower Third */}
+      {/* Positioned cleanly above bottom screen boundary so it never cuts off */}
       {/* ======================================================== */}
-      <div className="relative z-30 w-full p-4 sm:p-8 pointer-events-none">
+      <div className="absolute bottom-3 sm:bottom-6 md:bottom-8 left-0 right-0 z-30 w-full px-3 sm:px-6 md:px-10 pointer-events-none">
         {/* Scripture Lower-Third (when scripture is in lower-third mode) */}
         {state.scripture.displayMode === "lower-third" && (
-          <div className="max-w-4xl mx-auto mb-3 animate-in slide-in-from-bottom duration-500">
+          <div className="max-w-4xl mx-auto mb-2 animate-in slide-in-from-bottom duration-500">
             <div
-              className="p-4 rounded-xl border-l-4 border-amber-400 shadow-2xl backdrop-blur-md"
+              className="p-3 sm:p-4 rounded-xl border-l-4 border-amber-400 shadow-2xl backdrop-blur-md"
               style={{
                 background: "linear-gradient(90deg, rgba(6,7,20,0.95) 0%, rgba(16,19,41,0.92) 100%)",
               }}
             >
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-xs sm:text-sm font-black text-amber-400 uppercase tracking-widest">
+                <span className="text-[11px] sm:text-xs md:text-sm font-black text-amber-400 uppercase tracking-widest">
                   📖 {state.scripture.reference} ({state.scripture.translation})
                 </span>
               </div>
-              <p className="text-xs sm:text-base text-white font-serif leading-relaxed italic">
+              <p className="text-xs sm:text-sm md:text-base text-white font-serif leading-relaxed italic line-clamp-3 sm:line-clamp-none">
                 &ldquo;{state.scripture.text}&rdquo;
               </p>
             </div>
@@ -809,12 +760,12 @@ export function BroadcastStudioLive() {
             {state.overlay.type === "ticker" ? (
               /* Scrolling Announcement Ticker */
               <div
-                className="overflow-hidden py-2 px-4 rounded-xl shadow-2xl border border-amber-400/40 flex items-center gap-4"
+                className="overflow-hidden py-2 px-3 sm:px-4 rounded-xl shadow-2xl border border-amber-400/40 flex items-center gap-2 sm:gap-4"
                 style={{
                   background: "linear-gradient(90deg, #D9A441 0%, #B8860B 100%)",
                 }}
               >
-                <span className="px-2.5 py-0.5 rounded bg-black text-amber-300 text-xs font-black uppercase tracking-wider flex-shrink-0">
+                <span className="px-2 py-0.5 rounded bg-black text-amber-300 text-[10px] sm:text-xs font-black uppercase tracking-wider flex-shrink-0">
                   {state.overlay.title || "ANNOUNCEMENTS"}
                 </span>
                 <div className="whitespace-nowrap overflow-hidden text-xs sm:text-sm font-black text-black tracking-wide animate-marquee">
@@ -824,29 +775,29 @@ export function BroadcastStudioLive() {
             ) : (
               /* Speaker or Giving Lower-Third Banner */
               <div
-                className="p-4 rounded-2xl border-l-8 border-amber-400 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-4"
+                className="p-3 sm:p-4 md:p-5 rounded-2xl border-l-4 sm:border-l-8 border-amber-400 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 sm:gap-4"
                 style={{
                   background:
                     "linear-gradient(90deg, rgba(6,7,20,0.96) 0%, rgba(16,19,41,0.90) 80%, rgba(6,7,20,0.8) 100%)",
                 }}
               >
-                <div className="space-y-1">
-                  <h3 className="text-sm sm:text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                    {state.overlay.title}
+                <div className="space-y-0.5 sm:space-y-1 min-w-0">
+                  <h3 className="text-xs sm:text-base md:text-xl font-black text-white uppercase tracking-wider flex items-center gap-2 truncate">
+                    <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-amber-400 flex-shrink-0" />
+                    <span className="truncate">{state.overlay.title}</span>
                   </h3>
-                  <p className="text-xs sm:text-sm font-bold text-amber-300">
+                  <p className="text-[11px] sm:text-xs md:text-sm font-bold text-amber-300 truncate">
                     {state.overlay.subtitle}
                   </p>
                   {state.overlay.extra && (
-                    <p className="text-[11px] sm:text-xs text-zinc-300 font-mono tracking-tight">
+                    <p className="text-[10px] sm:text-xs text-zinc-300 font-mono tracking-tight truncate">
                       {state.overlay.extra}
                     </p>
                   )}
                 </div>
 
                 {state.showLogo && !isTransparentMode && (
-                  <div className="relative w-12 h-12 rounded-full overflow-hidden border border-amber-400/50 bg-black/60 p-0.5 flex-shrink-0 shadow-lg hidden sm:block">
+                  <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border border-amber-400/50 bg-black/60 p-0.5 flex-shrink-0 shadow-lg hidden sm:block">
                     <Image
                       src={CHURCH_LOGO_PATH}
                       alt="GGM Logo"
