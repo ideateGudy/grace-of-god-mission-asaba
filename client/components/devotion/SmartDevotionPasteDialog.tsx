@@ -132,7 +132,7 @@ export function SmartDevotionPasteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-7 sm:py-7 rounded-2xl">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-4xl my-6 sm:my-8 max-h-[calc(100dvh-3rem)] sm:max-h-[calc(100dvh-4rem)] overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-7 sm:py-7 rounded-2xl">
         <DialogHeader className="border-b border-border/60 pb-4 pr-6">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-start gap-2.5 min-w-0">
