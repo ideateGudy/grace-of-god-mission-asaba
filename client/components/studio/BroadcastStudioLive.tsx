@@ -455,7 +455,7 @@ export function BroadcastStudioLive() {
     };
   }, [state.activeType, state.camera?.enabled, state.camera?.streamType, state.camera?.roomCode, state.isBlackout]);
 
-  // Fullscreen Feature for Live Output (OBS Sanctuary Screen / TV Projector)
+  // Fullscreen Feature for Live Output (Sanctuary Screen / TV Projector)
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
@@ -551,7 +551,7 @@ export function BroadcastStudioLive() {
   const isEventCompleted = isEventTimer && remainingSeconds <= 0;
 
   // Determine base backdrop style based on user settings:
-  // - transparent: OBS alpha keying
+  // - transparent: Alpha keying
   // - chroma green: HDMI hardware chroma keying
   // - dark: Pure solid #000000 black
   // - none (empty): Full rich theme color liturgical radial gradient

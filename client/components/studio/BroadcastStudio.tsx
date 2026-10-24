@@ -237,7 +237,7 @@ export function BroadcastStudio() {
     return () => clearInterval(timer);
   }, [isMounted]);
 
-  // Camera Stream Lifecycle Manager (OBS / vMix Style Preview & Program Feeds)
+  // Camera Stream Lifecycle Manager (Broadcast Studio Preview & Program Feeds)
   useEffect(() => {
     if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia) return;
 
@@ -626,14 +626,14 @@ export function BroadcastStudio() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleCut, handleFade, handleToggleBlackout, handleClearDsk, updateStudioState]);
 
-  // 5. OBS Browser Source Link Copy
-  const copyObsUrl = (transparent: boolean = true) => {
+  // 5. Overlay Browser Source Link Copy
+  const copyOverlayUrl = (transparent: boolean = true) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "https://ggmasaba.vercel.app";
     const url = transparent ? `${origin}/studio/live?transparent=true` : `${origin}/studio/live`;
     navigator.clipboard.writeText(url);
     toast.success(
       transparent
-        ? "Copied OBS Browser Source URL (Transparent Keying)!"
+        ? "Copied Overlay Browser Source URL (Transparent Keying)!"
         : "Copied Sanctuary Live URL!"
     );
   };
@@ -673,11 +673,11 @@ export function BroadcastStudio() {
             <h1 className="text-xs sm:text-sm font-black tracking-wider uppercase flex items-center gap-2">
               <span>GGM BROADCAST STUDIO</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 font-mono">
-                vMix & OBS Mode
+                Broadcast Mode
               </span>
             </h1>
             <p className="text-[10px] text-zinc-400 hidden sm:block">
-              Sanctuary Switcher · Sanctuary LED Wall · OBS Alpha Keyer
+              Sanctuary Switcher · Sanctuary LED Wall · Alpha Keyer
             </p>
           </div>
         </div>
@@ -707,7 +707,7 @@ export function BroadcastStudio() {
           </div>
         </div>
 
-        {/* Quick Actions (Theme & BG Manager, OBS copy, Pop-out, Chime Soundboard) */}
+        {/* Quick Actions (Theme & BG Manager, Overlay copy, Pop-out, Chime Soundboard) */}
         <div className="flex items-center gap-1.5">
           {/* Prominent Theme & Background Styling Button */}
           <button
@@ -726,12 +726,12 @@ export function BroadcastStudio() {
 
           <button
             type="button"
-            onClick={() => copyObsUrl(true)}
+            onClick={() => copyOverlayUrl(true)}
             className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center gap-1.5 transition-colors"
-            title="Copy URL for OBS Studio Browser Source with transparent keying"
+            title="Copy URL for Browser Source overlay with transparent keying"
           >
             <Share2 className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">OBS Keying URL</span>
+            <span className="hidden sm:inline">Overlay Keying URL</span>
           </button>
 
           <button
@@ -1228,7 +1228,7 @@ export function BroadcastStudio() {
       </section>
 
       {/* ======================================================== */}
-      {/* 3. INPUT CHANNEL DOCK (OBS / vMix Bottom Bay) */}
+      {/* 3. INPUT CHANNEL DOCK (Bottom Switcher Bay) */}
       {/* ======================================================== */}
       <main className="flex-1 p-3 sm:p-6 space-y-4 max-w-7xl mx-auto w-full">
         {/* Channel Strip Navigation Tabs */}

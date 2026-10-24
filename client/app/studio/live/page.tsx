@@ -3,9 +3,9 @@ import { BroadcastStudioLive } from "@/components/studio/BroadcastStudioLive";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Live Sanctuary & OBS Presentation Feed | Grace of God Mission Asaba",
+  title: "Live Sanctuary Presentation Feed | Grace of God Mission Asaba",
   description:
-    "Full-screen live sanctuary output and OBS alpha transparent browser source for Grace of God Mission Asaba services. Displays active program scene, scriptures, countdowns, and lower-third overlays.",
+    "Full-screen live sanctuary output and alpha transparent browser source for Grace of God Mission Asaba services. Displays active program scene, scriptures, countdowns, and lower-third overlays.",
   robots: {
     index: false,
     follow: false,
