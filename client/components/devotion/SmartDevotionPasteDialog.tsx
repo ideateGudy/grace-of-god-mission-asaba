@@ -132,8 +132,8 @@ export function SmartDevotionPasteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-4xl max-h-[92vh] overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 rounded-2xl">
-        <DialogHeader className="border-b border-border/60 pb-3 pr-6">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-7 sm:py-7 rounded-2xl">
+        <DialogHeader className="border-b border-border/60 pb-4 pr-6">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-start gap-2.5 min-w-0">
               <div className="rounded-xl bg-gold/15 p-2 text-gold border border-gold/30 shrink-0 mt-0.5">
@@ -165,7 +165,7 @@ export function SmartDevotionPasteDialog({
           </div>
         </DialogHeader>
 
-        <div className="grid gap-5 lg:grid-cols-12 pt-2 min-w-0 w-full overflow-hidden">
+        <div className="grid gap-6 lg:grid-cols-12 pt-4 min-w-0 w-full overflow-hidden">
           {/* Left Column: Raw Text Input */}
           <div className="lg:col-span-5 space-y-3 flex flex-col min-w-0 w-full">
             <div className="flex items-center justify-between gap-1 flex-wrap">
@@ -407,7 +407,7 @@ export function SmartDevotionPasteDialog({
             </div>
 
             {/* Footer Buttons */}
-            <div className="pt-3 border-t border-border/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 mt-auto min-w-0">
+            <div className="pt-4 border-t border-border/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mt-2 min-w-0">
               <div className="text-[11px] sm:text-xs text-muted-foreground min-w-0">
                 {!rawText.trim() ? (
                   <span>Paste text above or click <strong>Load Example</strong>.</span>
