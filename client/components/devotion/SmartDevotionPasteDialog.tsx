@@ -132,21 +132,21 @@ export function SmartDevotionPasteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto sm:p-6 p-4">
-        <DialogHeader className="border-b border-border/60 pb-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="rounded-xl bg-gold/15 p-2 text-gold border border-gold/30">
-                <Sparkles className="w-5 h-5" />
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-4xl max-h-[92vh] overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 rounded-2xl">
+        <DialogHeader className="border-b border-border/60 pb-3 pr-6">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <div className="rounded-xl bg-gold/15 p-2 text-gold border border-gold/30 shrink-0 mt-0.5">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <DialogTitle className="font-display text-xl font-bold text-foreground flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="font-display text-base sm:text-xl font-bold text-foreground flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <span>Smart Devotion Paste & Auto-Detect</span>
-                  <Badge variant="outline" className="text-gold border-gold/30 bg-gold/10 text-[10px]">
+                  <Badge variant="outline" className="text-gold border-gold/30 bg-gold/10 text-[9px] sm:text-[10px]">
                     Auto-Parsing
                   </Badge>
                 </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                <DialogDescription className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug break-words">
                   Paste raw devotion text directly from WhatsApp, Word, or bulletin drafts. Dates, scriptures, reflections, prayers, and action points are automatically recognized.
                 </DialogDescription>
               </div>
@@ -165,15 +165,15 @@ export function SmartDevotionPasteDialog({
           </div>
         </DialogHeader>
 
-        <div className="grid gap-6 lg:grid-cols-12 pt-2">
+        <div className="grid gap-5 lg:grid-cols-12 pt-2 min-w-0 w-full overflow-hidden">
           {/* Left Column: Raw Text Input */}
-          <div className="lg:col-span-5 space-y-3 flex flex-col">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+          <div className="lg:col-span-5 space-y-3 flex flex-col min-w-0 w-full">
+            <div className="flex items-center justify-between gap-1 flex-wrap">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5 shrink-0">
                 <FileText className="w-3.5 h-3.5 text-primary" />
                 <span>Raw Announcement Text</span>
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <Button
                   type="button"
                   variant="ghost"
@@ -202,21 +202,21 @@ export function SmartDevotionPasteDialog({
               placeholder="Paste your daily devotion text here... (e.g. DAILY GRACE, FRIDAY, OCTOBER 16, 2026. LET GOD TRANSFORM YOUR LIFE...)"
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}
-              className="min-h-[340px] text-xs font-mono leading-relaxed bg-muted/20 resize-y flex-1"
+              className="min-h-[220px] sm:min-h-[340px] text-xs font-mono leading-relaxed bg-muted/20 resize-y flex-1 w-full"
             />
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground break-words">
               Handles varied header spellings, markdown quotes (<code>_&quot;...&quot;_</code>), Bible verse positions, and bulleted reading plans.
             </p>
           </div>
 
           {/* Right Column: Live Detection Cards */}
-          <div className="lg:col-span-7 space-y-3 flex flex-col">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+          <div className="lg:col-span-7 space-y-3 flex flex-col min-w-0 w-full">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5 shrink-0">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                 <span>Detected Devotion Structure</span>
               </span>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-[11px] text-muted-foreground truncate">
                 {parsed.isValid ? (
                   <span className="text-emerald-500 font-bold flex items-center gap-1">
                     <Check className="w-3.5 h-3.5" /> All required fields ready
@@ -231,10 +231,10 @@ export function SmartDevotionPasteDialog({
               </span>
             </div>
 
-            <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+            <div className="space-y-2.5 max-h-[380px] overflow-y-auto overflow-x-hidden pr-1 min-w-0">
               {/* Date & Series Card */}
-              <div className="rounded-xl border border-border/70 bg-card p-3 space-y-2 text-xs shadow-2xs">
-                <div className="flex items-center justify-between">
+              <div className="rounded-xl border border-border/70 bg-card p-3 space-y-2 text-xs shadow-2xs min-w-0">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-primary" />
                     <span className="font-bold">Scheduled Date & Series</span>
@@ -249,8 +249,8 @@ export function SmartDevotionPasteDialog({
                     </Badge>
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <span className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold">
+                <div className="flex flex-wrap items-center gap-2 pt-1 min-w-0">
+                  <span className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold break-all">
                     {parsed.date || "Not detected (will default to today)"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg bg-gold/15 text-gold font-bold uppercase">
@@ -261,7 +261,7 @@ export function SmartDevotionPasteDialog({
                 {conflictingDevotion && (
                   <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-2 text-[11px] text-destructive flex items-start gap-2 mt-1">
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <div>
+                    <div className="break-words min-w-0">
                       <span className="font-bold">Date Conflict:</span> A devotion is already scheduled for <strong>{parsed.date}</strong>: &quot;{conflictingDevotion.title}&quot;. Applying this will overwrite or require picking another date.
                     </div>
                   </div>
@@ -269,8 +269,8 @@ export function SmartDevotionPasteDialog({
               </div>
 
               {/* Title & Scripture Reading (TEXT) */}
-              <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1.5 text-xs shadow-2xs">
-                <div className="flex items-center justify-between">
+              <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1.5 text-xs shadow-2xs min-w-0">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
                   <span className="font-bold text-foreground">Devotion Title</span>
                   {parsed.detectionStatus.title ? (
                     <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30 text-[10px]">
@@ -282,21 +282,21 @@ export function SmartDevotionPasteDialog({
                     </Badge>
                   )}
                 </div>
-                <p className="font-semibold text-foreground text-sm">
+                <p className="font-semibold text-foreground text-sm break-words">
                   {parsed.title || <span className="text-muted-foreground italic font-normal">Title not detected</span>}
                 </p>
 
                 {parsed.textRef && (
-                  <div className="pt-1 flex items-center gap-1.5 text-[11px] font-bold text-gold">
-                    <BookOpen className="w-3.5 h-3.5" />
+                  <div className="pt-1 flex items-center gap-1.5 text-[11px] font-bold text-gold break-words">
+                    <BookOpen className="w-3.5 h-3.5 shrink-0" />
                     <span>TEXT: {parsed.textRef}</span>
                   </div>
                 )}
               </div>
 
               {/* Verse of the Day Card */}
-              <div className="rounded-xl border border-border/70 bg-card p-3 space-y-2 text-xs shadow-2xs">
-                <div className="flex items-center justify-between">
+              <div className="rounded-xl border border-border/70 bg-card p-3 space-y-2 text-xs shadow-2xs min-w-0">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
                   <div className="flex items-center gap-1.5">
                     <Quote className="w-4 h-4 text-gold" />
                     <span className="font-bold">Verse of the Day</span>
@@ -312,19 +312,19 @@ export function SmartDevotionPasteDialog({
                   )}
                 </div>
 
-                <div>
-                  <span className="font-bold text-primary block">
+                <div className="min-w-0">
+                  <span className="font-bold text-primary block break-words">
                     {parsed.scriptureRef || <span className="text-muted-foreground italic font-normal">Reference missing</span>}
                   </span>
-                  <p className="italic text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">
+                  <p className="italic text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed break-words">
                     {parsed.scriptureText ? `"${parsed.scriptureText}"` : <span className="italic font-normal">Verse text missing</span>}
                   </p>
                 </div>
               </div>
 
               {/* Devotional Content Reflection */}
-              <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1.5 text-xs shadow-2xs">
-                <div className="flex items-center justify-between">
+              <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1.5 text-xs shadow-2xs min-w-0">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
                   <span className="font-bold text-foreground">Reflection Content</span>
                   <div className="flex items-center gap-1.5">
                     {parsed.paragraphCount > 0 && (
@@ -343,17 +343,17 @@ export function SmartDevotionPasteDialog({
                     )}
                   </div>
                 </div>
-                <p className="text-muted-foreground line-clamp-3 leading-relaxed">
+                <p className="text-muted-foreground line-clamp-3 leading-relaxed break-words">
                   {parsed.content || <span className="italic">Reflection content not detected</span>}
                 </p>
               </div>
 
               {/* Optional Sections Grid */}
-              <div className="grid gap-2 sm:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-3 min-w-0">
                 {/* Prayer */}
-                <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 text-[11px] space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-foreground flex items-center gap-1">
+                <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 text-[11px] space-y-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-bold text-foreground flex items-center gap-1 shrink-0">
                       <HeartHandshake className="w-3 h-3 text-gold" />
                       <span>Prayer</span>
                     </span>
@@ -363,15 +363,15 @@ export function SmartDevotionPasteDialog({
                       <span className="text-[9px] text-muted-foreground">Optional</span>
                     )}
                   </div>
-                  <p className="text-muted-foreground line-clamp-2 italic">
+                  <p className="text-muted-foreground line-clamp-2 italic break-words">
                     {parsed.prayer || "None detected"}
                   </p>
                 </div>
 
                 {/* 365 Days */}
-                <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 text-[11px] space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-foreground flex items-center gap-1">
+                <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 text-[11px] space-y-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-bold text-foreground flex items-center gap-1 shrink-0">
                       <BookOpen className="w-3 h-3 text-primary" />
                       <span>365 Reading</span>
                     </span>
@@ -381,15 +381,15 @@ export function SmartDevotionPasteDialog({
                       <span className="text-[9px] text-muted-foreground">Optional</span>
                     )}
                   </div>
-                  <p className="text-muted-foreground line-clamp-2">
+                  <p className="text-muted-foreground line-clamp-2 break-words">
                     {parsed.bibleIn365Days?.replace(/\n/g, " · ") || "None detected"}
                   </p>
                 </div>
 
                 {/* Action Point */}
-                <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 text-[11px] space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-foreground flex items-center gap-1">
+                <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 text-[11px] space-y-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-bold text-foreground flex items-center gap-1 shrink-0">
                       <Compass className="w-3 h-3 text-emerald-500" />
                       <span>Action Point</span>
                     </span>
@@ -399,7 +399,7 @@ export function SmartDevotionPasteDialog({
                       <span className="text-[9px] text-muted-foreground">Optional</span>
                     )}
                   </div>
-                  <p className="text-muted-foreground line-clamp-2">
+                  <p className="text-muted-foreground line-clamp-2 break-words">
                     {parsed.actionPoint || "None detected"}
                   </p>
                 </div>
@@ -407,8 +407,8 @@ export function SmartDevotionPasteDialog({
             </div>
 
             {/* Footer Buttons */}
-            <div className="pt-3 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3 mt-auto">
-              <div className="text-xs text-muted-foreground">
+            <div className="pt-3 border-t border-border/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 mt-auto min-w-0">
+              <div className="text-[11px] sm:text-xs text-muted-foreground min-w-0">
                 {!rawText.trim() ? (
                   <span>Paste text above or click <strong>Load Example</strong>.</span>
                 ) : parsed.isValid ? (
@@ -416,19 +416,19 @@ export function SmartDevotionPasteDialog({
                     Ready to populate devotion form.
                   </span>
                 ) : (
-                  <span className="text-destructive font-medium">
+                  <span className="text-destructive font-medium break-words">
                     Missing: {parsed.missingRequired.join(", ")}
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => onOpenChange(false)}
-                  className="rounded-xl text-xs"
+                  className="rounded-xl text-xs flex-1 sm:flex-initial"
                 >
                   Cancel
                 </Button>
@@ -437,9 +437,9 @@ export function SmartDevotionPasteDialog({
                   type="button"
                   onClick={handleApply}
                   disabled={!parsed.title && !parsed.scriptureText && !parsed.content}
-                  className="rounded-xl text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                  className="rounded-xl text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex-1 sm:flex-initial"
                 >
-                  <span>Apply to Devotion Form</span>
+                  <span>Apply to Form</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
 
@@ -448,7 +448,7 @@ export function SmartDevotionPasteDialog({
                     type="button"
                     onClick={handleDirectSave}
                     disabled={!parsed.isValid || directSaving || !!conflictingDevotion}
-                    className="rounded-xl text-xs gap-1.5 bg-gold hover:bg-gold/90 text-black font-bold"
+                    className="rounded-xl text-xs gap-1.5 bg-gold hover:bg-gold/90 text-black font-bold flex-1 sm:flex-initial"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>{directSaving ? "Saving..." : "Save Directly"}</span>
