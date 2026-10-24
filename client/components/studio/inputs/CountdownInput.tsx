@@ -22,6 +22,7 @@ import {
   COUNTDOWN_THEMES,
   EVENT_DATE_PRESETS,
   calculateSecondsUntilDate,
+  calculateTimeBreakdown,
   formatToLocalIso,
   getNextSundayServiceDate,
   getNextMidweekServiceDate,
@@ -388,6 +389,27 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
               +5m
             </button>
           </div>
+
+          {/* Current Running Countdown Readout (with Days if > 0) */}
+          {(() => {
+            const tb = calculateTimeBreakdown(state.remainingSeconds);
+            const pad = (n: number) => n.toString().padStart(2, "0");
+            return (
+              <div className="px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 font-mono text-xs font-bold flex items-center gap-1.5">
+                <span className="text-[10px] uppercase font-sans text-zinc-400">Time:</span>
+                <span className={tb.isOvertime ? "text-red-400" : "text-amber-400"}>
+                  {tb.isOvertime && "+"}
+                  {tb.days > 0 && `${tb.days}d `}
+                  {pad(tb.hours)}:{pad(tb.minutes)}:{pad(tb.seconds)}
+                </span>
+                {tb.isOvertime && (
+                  <span className="text-[9px] px-1 py-0.2 rounded bg-red-500/20 text-red-300 font-sans uppercase">
+                    Overtime
+                  </span>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Audio / Theme Shortcuts */}

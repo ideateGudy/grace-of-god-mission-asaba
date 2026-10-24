@@ -157,18 +157,25 @@ export function BroadcastStudio() {
       setState((prev) => {
         if (prev.mode === "event-date" && prev.targetDate) {
           const nextSecs = calculateSecondsUntilDate(prev.targetDate);
-          return { ...prev, remainingSeconds: nextSecs };
+          if (nextSecs !== prev.remainingSeconds) {
+            return { ...prev, remainingSeconds: nextSecs };
+          }
+          return prev;
         } else if (prev.mode === "target-time" && prev.targetTimeString) {
           const nextSecs = calculateSecondsUntilTarget(prev.targetTimeString);
-          return { ...prev, remainingSeconds: nextSecs };
+          if (nextSecs !== prev.remainingSeconds) {
+            return { ...prev, remainingSeconds: nextSecs };
+          }
+          return prev;
         }
 
         if (!prev.isRunning) return prev;
 
-        // Use epoch-based targetEndTime if available for 100% rock-solid drift-free precision
+        // Use epoch-based targetEndTime if available for zero-drift
         let next: number;
         if (prev.targetEndTime) {
-          next = Math.round((prev.targetEndTime - Date.now()) / 1000);
+          const calculated = Math.round((prev.targetEndTime - Date.now()) / 1000);
+          next = !prev.overtimeEnabled && calculated <= 0 ? 0 : calculated;
         } else {
           next = prev.remainingSeconds - 1;
         }
@@ -213,6 +220,14 @@ export function BroadcastStudio() {
               .catch(() => {});
           }
           return zeroedState;
+        }
+
+        // Periodic sync to avoid thrashing localStorage / broadcast on every millisecond
+        if (next !== prev.remainingSeconds && next % 5 === 0) {
+          broadcastStudioState(channelRef.current, {
+            type: "SYNC_STUDIO",
+            state: { ...prev, remainingSeconds: next },
+          });
         }
 
         return { ...prev, remainingSeconds: next };
@@ -819,10 +834,17 @@ export function BroadcastStudio() {
                     {state.isRunning ? "Ticking" : "Paused"}
                   </span>
                 </div>
-                <div className={`text-3xl sm:text-5xl font-black font-mono tracking-wider drop-shadow ${timeBreakdown.isOvertime ? "text-red-400" : "text-white"}`}>
+                <div className={`text-2xl sm:text-4xl lg:text-5xl font-black font-mono tracking-wider drop-shadow flex items-center justify-center gap-1 sm:gap-2 flex-wrap ${timeBreakdown.isOvertime ? "text-red-400" : "text-white"}`}>
                   {timeBreakdown.isOvertime && "+"}
-                  {formatTwoDigits(timeBreakdown.hours)}:{formatTwoDigits(timeBreakdown.minutes)}:
-                  {formatTwoDigits(timeBreakdown.seconds)}
+                  {timeBreakdown.days > 0 && (
+                    <span className="flex items-center">
+                      <span>{formatTwoDigits(timeBreakdown.days)}</span>
+                      <span className="text-[10px] sm:text-xs font-sans text-amber-400 font-bold ml-0.5 mr-1.5 uppercase">d</span>
+                    </span>
+                  )}
+                  <span>{formatTwoDigits(timeBreakdown.hours)}</span>:
+                  <span>{formatTwoDigits(timeBreakdown.minutes)}</span>:
+                  <span>{formatTwoDigits(timeBreakdown.seconds)}</span>
                 </div>
                 {timeBreakdown.isOvertime && (
                   <span className="text-[10px] font-black text-red-400 uppercase tracking-widest animate-pulse block">
@@ -1065,10 +1087,17 @@ export function BroadcastStudio() {
                         {state.isRunning ? "Live Countdown" : "Paused"}
                       </span>
                     </div>
-                    <div className={`text-3xl sm:text-5xl font-black font-mono tracking-wider drop-shadow ${timeBreakdown.isOvertime ? "text-red-400" : "text-white"}`}>
+                    <div className={`text-2xl sm:text-4xl lg:text-5xl font-black font-mono tracking-wider drop-shadow flex items-center justify-center gap-1 sm:gap-2 flex-wrap ${timeBreakdown.isOvertime ? "text-red-400" : "text-white"}`}>
                       {timeBreakdown.isOvertime && "+"}
-                      {formatTwoDigits(timeBreakdown.hours)}:{formatTwoDigits(timeBreakdown.minutes)}:
-                      {formatTwoDigits(timeBreakdown.seconds)}
+                      {timeBreakdown.days > 0 && (
+                        <span className="flex items-center">
+                          <span>{formatTwoDigits(timeBreakdown.days)}</span>
+                          <span className="text-[10px] sm:text-xs font-sans text-amber-400 font-bold ml-0.5 mr-1.5 uppercase">d</span>
+                        </span>
+                      )}
+                      <span>{formatTwoDigits(timeBreakdown.hours)}</span>:
+                      <span>{formatTwoDigits(timeBreakdown.minutes)}</span>:
+                      <span>{formatTwoDigits(timeBreakdown.seconds)}</span>
                     </div>
                     {timeBreakdown.isOvertime && (
                       <span className="text-[10px] font-black text-red-400 uppercase tracking-widest animate-pulse block">

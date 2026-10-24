@@ -224,16 +224,18 @@ export function BroadcastStudioLive() {
 
           setIsRunning(remote.isRunning);
 
-          // Update remainingSeconds from remote only if drift is significant (> 1s) to prevent visual jitter/glitch
+          // Update remainingSeconds from remote only if drift is significant (> 2s) to prevent visual jitter/glitch
           if (remote.mode === "event-date" && remote.targetDate) {
-            setRemainingSeconds(calculateSecondsUntilDate(remote.targetDate));
+            const nextSecs = calculateSecondsUntilDate(remote.targetDate);
+            setRemainingSeconds((curr) => (curr !== nextSecs ? nextSecs : curr));
           } else if (remote.mode === "target-time" && remote.targetTimeString) {
-            setRemainingSeconds(calculateSecondsUntilTarget(remote.targetTimeString));
+            const nextSecs = calculateSecondsUntilTarget(remote.targetTimeString);
+            setRemainingSeconds((curr) => (curr !== nextSecs ? nextSecs : curr));
           } else if (remote.remainingSeconds !== undefined) {
             if (remote.targetEndTime && remote.isRunning) {
               const calculated = Math.round((remote.targetEndTime - Date.now()) / 1000);
               const targetSecs = !remote.overtimeEnabled && calculated <= 0 ? 0 : calculated;
-              setRemainingSeconds((curr) => (Math.abs(curr - targetSecs) > 1 ? targetSecs : curr));
+              setRemainingSeconds((curr) => (Math.abs(curr - targetSecs) > 2 ? targetSecs : curr));
             } else if (!remote.isRunning) {
               setRemainingSeconds(remote.remainingSeconds);
             }
