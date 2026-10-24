@@ -297,78 +297,81 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
       {/* ======================================================== */}
       {/* 2. LIVE RUNTIME PLAYBACK & QUICK ADJUST BAR              */}
       {/* ======================================================== */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-zinc-900/90 rounded-xl border border-white/10">
-        <div className="flex items-center gap-2">
-          {/* Start / Pause */}
-          <button
-            type="button"
-            onClick={() =>
-              onChange((prev) => {
-                const nextRunning = !prev.isRunning;
-                let nextTargetEnd = prev.targetEndTime;
-                if (nextRunning) {
-                  // Resuming: recalculate targetEndTime from current remaining seconds (supports overtime when negative)
-                  const secs = prev.overtimeEnabled ? prev.remainingSeconds : Math.max(0, prev.remainingSeconds);
-                  nextTargetEnd = Date.now() + secs * 1000;
-                } else {
-                  // Pausing: clear targetEndTime
-                  nextTargetEnd = null;
-                }
-                return {
-                  ...prev,
-                  activeType: nextRunning ? "countdown" : prev.activeType,
-                  isBlackout: nextRunning ? false : prev.isBlackout,
-                  isRunning: nextRunning,
-                  targetEndTime: nextTargetEnd,
-                };
-              })
-            }
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-bold text-xs shadow-md transition-all ${
-              state.isRunning
-                ? "bg-amber-500 text-black hover:bg-amber-400"
-                : "bg-emerald-600 text-white hover:bg-emerald-500"
-            }`}
-          >
-            {state.isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-            <span>{state.isRunning ? "Pause" : "Start"}</span>
-          </button>
-
-          {/* Reset */}
-          <button
-            type="button"
-            onClick={() =>
-              onChange((prev) => {
-                if (prev.mode === "event-date" && prev.targetDate) {
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 bg-zinc-900/90 rounded-xl border border-white/10 w-full overflow-hidden">
+        {/* Left / Top Controls Group: Start/Pause, Reset, Adjusters, Time Display */}
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          {/* Start / Pause & Reset */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() =>
+                onChange((prev) => {
+                  const nextRunning = !prev.isRunning;
+                  let nextTargetEnd = prev.targetEndTime;
+                  if (nextRunning) {
+                    // Resuming: recalculate targetEndTime from current remaining seconds (supports overtime when negative)
+                    const secs = prev.overtimeEnabled ? prev.remainingSeconds : Math.max(0, prev.remainingSeconds);
+                    nextTargetEnd = Date.now() + secs * 1000;
+                  } else {
+                    // Pausing: clear targetEndTime
+                    nextTargetEnd = null;
+                  }
                   return {
                     ...prev,
-                    remainingSeconds: calculateSecondsUntilDate(prev.targetDate),
+                    activeType: nextRunning ? "countdown" : prev.activeType,
+                    isBlackout: nextRunning ? false : prev.isBlackout,
+                    isRunning: nextRunning,
+                    targetEndTime: nextTargetEnd,
+                  };
+                })
+              }
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs shadow-md transition-all ${
+                state.isRunning
+                  ? "bg-amber-500 text-black hover:bg-amber-400"
+                  : "bg-emerald-600 text-white hover:bg-emerald-500"
+              }`}
+            >
+              {state.isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              <span>{state.isRunning ? "Pause" : "Start"}</span>
+            </button>
+
+            {/* Reset */}
+            <button
+              type="button"
+              onClick={() =>
+                onChange((prev) => {
+                  if (prev.mode === "event-date" && prev.targetDate) {
+                    return {
+                      ...prev,
+                      remainingSeconds: calculateSecondsUntilDate(prev.targetDate),
+                      targetEndTime: null,
+                      isRunning: false,
+                      activeType: "countdown",
+                    };
+                  }
+                  return {
+                    ...prev,
+                    remainingSeconds: prev.durationSeconds,
                     targetEndTime: null,
                     isRunning: false,
                     activeType: "countdown",
                   };
-                }
-                return {
-                  ...prev,
-                  remainingSeconds: prev.durationSeconds,
-                  targetEndTime: null,
-                  isRunning: false,
-                  activeType: "countdown",
-                };
-              })
-            }
-            className="flex items-center gap-1 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-semibold transition-colors"
-            title="Reset timer to start"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset</span>
-          </button>
+                })
+              }
+              className="flex items-center gap-1 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-semibold transition-colors"
+              title="Reset timer to start"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset</span>
+            </button>
+          </div>
 
           {/* Quick Step Buttons (+/- 1m, 5m) */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={() => adjustSeconds(-60)}
-              className="px-2.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-colors"
+              className="px-2 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-colors"
               title="Minus 1 minute"
             >
               -1m
@@ -376,7 +379,7 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
             <button
               type="button"
               onClick={() => adjustSeconds(60)}
-              className="px-2.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-colors"
+              className="px-2 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-colors"
               title="Plus 1 minute"
             >
               +1m
@@ -384,7 +387,7 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
             <button
               type="button"
               onClick={() => adjustSeconds(300)}
-              className="px-2.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-colors"
+              className="px-2 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-colors"
               title="Plus 5 minutes"
             >
               +5m
@@ -396,7 +399,7 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
             const tb = calculateTimeBreakdown(state.remainingSeconds);
             const pad = (n: number) => n.toString().padStart(2, "0");
             return (
-              <div className="px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 font-mono text-xs font-bold flex items-center gap-1.5">
+              <div className="px-2.5 py-1.5 rounded-lg bg-black/60 border border-white/10 font-mono text-xs font-bold flex items-center gap-1.5 shrink-0 max-w-full">
                 <span className="text-[10px] uppercase font-sans text-zinc-400">Time:</span>
                 <span className={tb.isOvertime ? "text-red-400" : "text-amber-400"}>
                   {tb.isOvertime && "+"}
@@ -413,8 +416,8 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
           })()}
         </div>
 
-        {/* Audio / Theme Shortcuts */}
-        <div className="flex items-center gap-2">
+        {/* Right / Secondary Group: Audio / Theme Shortcuts */}
+        <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto pt-2 md:pt-0 border-t border-white/5 md:border-t-0">
           <button
             type="button"
             onClick={() => {
@@ -430,7 +433,7 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
                 return { ...prev, soundEnabled: nextVal };
               });
             }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-colors ${
               state.soundEnabled
                 ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
                 : "bg-zinc-800 text-zinc-400"
@@ -438,13 +441,13 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
             title={state.soundEnabled ? "Mute audio cues" : "Unmute countdown ticks & chimes"}
           >
             {state.soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">Sound</span> {state.soundEnabled ? "ON" : "OFF"}
+            <span className="inline">Sound {state.soundEnabled ? "ON" : "OFF"}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowThemePicker(!showThemePicker)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-colors ${
               showThemePicker
                 ? "bg-amber-400 text-black font-bold"
                 : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
@@ -458,7 +461,7 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
           <button
             type="button"
             onClick={() => setShowThemePicker(true)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-colors ${
               state.bgImageUrl === "dark"
                 ? "bg-zinc-800 text-white border border-white/20"
                 : state.bgImageUrl
@@ -471,10 +474,10 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
             <span>
               BG:{" "}
               {state.bgImageUrl === "dark"
-                ? "Dark BG"
+                ? "Dark"
                 : state.bgImageUrl
                 ? "Image"
-                : "Theme Color"}
+                : "Theme"}
             </span>
           </button>
         </div>
