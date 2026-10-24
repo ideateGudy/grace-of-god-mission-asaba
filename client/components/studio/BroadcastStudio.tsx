@@ -222,8 +222,8 @@ export function BroadcastStudio() {
           return zeroedState;
         }
 
-        // Periodic sync to avoid thrashing localStorage / broadcast on every millisecond
-        if (next !== prev.remainingSeconds && next % 5 === 0) {
+        // Periodic sync for untracked timers to keep tabs aligned without thrashing localStorage/broadcast
+        if (!prev.targetEndTime && next !== prev.remainingSeconds && next % 5 === 0) {
           broadcastStudioState(channelRef.current, {
             type: "SYNC_STUDIO",
             state: { ...prev, remainingSeconds: next },

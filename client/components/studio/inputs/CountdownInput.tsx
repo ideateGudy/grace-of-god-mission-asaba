@@ -167,6 +167,7 @@ export function CountdownInput({ state, onChange, onTakeLive }: CountdownInputPr
       ...prev,
       mode: "event-date",
       targetDate: dateToUse,
+      targetEndTime: Date.parse(dateToUse) || null,
       title: titleToUse,
       subtitle: subToUse,
       completionMessage: msgToUse,

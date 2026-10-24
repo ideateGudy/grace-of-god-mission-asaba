@@ -67,6 +67,11 @@ export function BroadcastStudioLive() {
 
   const currentTheme = COUNTDOWN_THEMES[state.theme] || COUNTDOWN_THEMES["royal-gold"];
 
+  const stateRef = useRef<BroadcastStudioState>(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   // 1. Initial State Restoration & Immediate Remote Fetch on Mount
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -80,6 +85,9 @@ export function BroadcastStudioLive() {
       setRemainingSeconds(calculateSecondsUntilDate(restored.targetDate));
     } else if (restored.mode === "target-time" && restored.targetTimeString) {
       setRemainingSeconds(calculateSecondsUntilTarget(restored.targetTimeString));
+    } else if (restored.targetEndTime && restored.isRunning) {
+      const calculated = Math.round((restored.targetEndTime - Date.now()) / 1000);
+      setRemainingSeconds(!restored.overtimeEnabled && calculated <= 0 ? 0 : calculated);
     } else {
       setRemainingSeconds(restored.remainingSeconds);
     }
@@ -124,6 +132,9 @@ export function BroadcastStudioLive() {
           setRemainingSeconds(calculateSecondsUntilDate(remote.targetDate));
         } else if (remote.mode === "target-time" && remote.targetTimeString) {
           setRemainingSeconds(calculateSecondsUntilTarget(remote.targetTimeString));
+        } else if (remote.targetEndTime && remote.isRunning) {
+          const calculated = Math.round((remote.targetEndTime - Date.now()) / 1000);
+          setRemainingSeconds(!remote.overtimeEnabled && calculated <= 0 ? 0 : calculated);
         } else if (remote.remainingSeconds !== undefined) {
           setRemainingSeconds(remote.remainingSeconds);
         }
@@ -143,20 +154,29 @@ export function BroadcastStudioLive() {
       channel.onmessage = (event: MessageEvent<StudioSyncPayload>) => {
         if (event.data && event.data.type) {
           const payload = event.data;
-          if (payload.sound && state.soundEnabled) {
+          const currentState = stateRef.current;
+          if (payload.sound && currentState.soundEnabled) {
             if (payload.sound === "chime") audioSynth.playCathedralChimes();
             else if (payload.sound === "bell") audioSynth.playOvertimeAlert();
           }
 
           if (payload.state) {
-            setState(payload.state);
-            setIsRunning(payload.state.isRunning);
-            if (payload.state.mode === "event-date" && payload.state.targetDate) {
-              setRemainingSeconds(calculateSecondsUntilDate(payload.state.targetDate));
-            } else if (payload.state.mode === "target-time" && payload.state.targetTimeString) {
-              setRemainingSeconds(calculateSecondsUntilTarget(payload.state.targetTimeString));
+            const next = payload.state;
+            setState(next);
+            setIsRunning(next.isRunning);
+
+            if (next.mode === "event-date" && next.targetDate) {
+              setRemainingSeconds(calculateSecondsUntilDate(next.targetDate));
+            } else if (next.mode === "target-time" && next.targetTimeString) {
+              setRemainingSeconds(calculateSecondsUntilTarget(next.targetTimeString));
+            } else if (next.targetEndTime && next.isRunning) {
+              // Calculate against targetEndTime. Only force update if drift exceeds 2 seconds
+              // to prevent mid-tick visual stuttering between windows.
+              const calculated = Math.round((next.targetEndTime - Date.now()) / 1000);
+              const targetSecs = !next.overtimeEnabled && calculated <= 0 ? 0 : calculated;
+              setRemainingSeconds((curr) => (Math.abs(curr - targetSecs) > 2 ? targetSecs : curr));
             } else {
-              setRemainingSeconds(payload.state.remainingSeconds);
+              setRemainingSeconds(next.remainingSeconds);
             }
           }
         }
@@ -169,6 +189,9 @@ export function BroadcastStudioLive() {
           const parsed = JSON.parse(e.newValue);
           setState(parsed);
           setIsRunning(parsed.isRunning);
+          if (!parsed.isRunning) {
+            setRemainingSeconds(parsed.remainingSeconds);
+          }
         } catch {}
       }
     };
@@ -179,7 +202,7 @@ export function BroadcastStudioLive() {
       channel?.close();
       window.removeEventListener("storage", handleStorageChange);
     };
-  }, [state.soundEnabled]);
+  }, []);
 
   // 3. Remote Server Polling (for multi-device sync, e.g. Phone controlling PC)
   useEffect(() => {
@@ -227,10 +250,10 @@ export function BroadcastStudioLive() {
           // Update remainingSeconds from remote only if drift is significant (> 2s) to prevent visual jitter/glitch
           if (remote.mode === "event-date" && remote.targetDate) {
             const nextSecs = calculateSecondsUntilDate(remote.targetDate);
-            setRemainingSeconds((curr) => (curr !== nextSecs ? nextSecs : curr));
+            setRemainingSeconds((curr) => (Math.abs(curr - nextSecs) > 2 ? nextSecs : curr));
           } else if (remote.mode === "target-time" && remote.targetTimeString) {
             const nextSecs = calculateSecondsUntilTarget(remote.targetTimeString);
-            setRemainingSeconds((curr) => (curr !== nextSecs ? nextSecs : curr));
+            setRemainingSeconds((curr) => (Math.abs(curr - nextSecs) > 2 ? nextSecs : curr));
           } else if (remote.remainingSeconds !== undefined) {
             if (remote.targetEndTime && remote.isRunning) {
               const calculated = Math.round((remote.targetEndTime - Date.now()) / 1000);
@@ -248,30 +271,32 @@ export function BroadcastStudioLive() {
     return () => clearInterval(interval);
   }, [isMounted]);
 
-  // 4. Runtime 1-Second Timer Tick (High accuracy, rock-solid, no glitching)
+  // 4. Runtime 1-Second Timer Tick (Rock-solid, zero drift, unbroken interval)
   useEffect(() => {
     if (!isMounted) return;
 
     const timer = setInterval(() => {
+      const s = stateRef.current;
+
       setRemainingSeconds((prev) => {
-        if (state.mode === "event-date" && state.targetDate) {
-          return calculateSecondsUntilDate(state.targetDate);
-        } else if (state.mode === "target-time" && state.targetTimeString) {
-          return calculateSecondsUntilTarget(state.targetTimeString);
+        if (s.mode === "event-date" && s.targetDate) {
+          return calculateSecondsUntilDate(s.targetDate);
+        } else if (s.mode === "target-time" && s.targetTimeString) {
+          return calculateSecondsUntilTarget(s.targetTimeString);
         }
 
         // If targetEndTime is defined and timer is running, calculate directly against current epoch for zero-drift
-        if (state.isRunning && state.targetEndTime) {
-          const calculated = Math.round((state.targetEndTime - Date.now()) / 1000);
-          if (!state.overtimeEnabled && calculated <= 0) {
-            if (prev > 0 && chimePlayedRef.current === false && state.soundEnabled) {
+        if (s.isRunning && s.targetEndTime) {
+          const calculated = Math.round((s.targetEndTime - Date.now()) / 1000);
+          if (!s.overtimeEnabled && calculated <= 0) {
+            if (prev > 0 && chimePlayedRef.current === false && s.soundEnabled) {
               audioSynth.playCathedralChimes();
               chimePlayedRef.current = true;
             }
             setIsRunning(false);
             return 0;
           }
-          if (calculated > 0 && calculated <= 10 && lastSecondRef.current !== calculated && state.soundEnabled) {
+          if (calculated > 0 && calculated <= 10 && lastSecondRef.current !== calculated && s.soundEnabled) {
             if (calculated <= 5) {
               audioSynth.playUrgentTick();
             } else {
@@ -282,12 +307,12 @@ export function BroadcastStudioLive() {
           return calculated;
         }
 
-        if (!isRunning) return prev;
+        if (!s.isRunning) return prev;
 
         const next = prev - 1;
 
         // Chime audio cue when reaching zero
-        if (next === 0 && !chimePlayedRef.current && state.soundEnabled) {
+        if (next === 0 && !chimePlayedRef.current && s.soundEnabled) {
           audioSynth.playCathedralChimes();
           chimePlayedRef.current = true;
         } else if (next > 0) {
@@ -295,7 +320,7 @@ export function BroadcastStudioLive() {
         }
 
         // Ticking audio cue under 10 seconds: urgent alert for 5-1s, acoustic tick for 10-6s
-        if (next > 0 && next <= 10 && lastSecondRef.current !== next && state.soundEnabled) {
+        if (next > 0 && next <= 10 && lastSecondRef.current !== next && s.soundEnabled) {
           if (next <= 5) {
             audioSynth.playUrgentTick();
           } else {
@@ -304,7 +329,7 @@ export function BroadcastStudioLive() {
           lastSecondRef.current = next;
         }
 
-        if (!state.overtimeEnabled && next <= 0) {
+        if (!s.overtimeEnabled && next <= 0) {
           setIsRunning(false);
           return 0;
         }
@@ -314,7 +339,7 @@ export function BroadcastStudioLive() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isMounted, isRunning, state.isRunning, state.targetEndTime, state.mode, state.targetDate, state.targetTimeString, state.overtimeEnabled, state.soundEnabled]);
+  }, [isMounted]);
 
   // 5. Connect Camera Stream if camera is active
   useEffect(() => {
