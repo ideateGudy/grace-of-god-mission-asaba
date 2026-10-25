@@ -9,7 +9,8 @@ Next.js 16 frontend for Grace of God Mission Asaba, built with Turbopack, App Ro
 - **Public Website**:
   - High-impact dawn palette design system with dark/light theme support.
   - **Live Broadcast & Stream Hub (`/live`)**: Responsive 16:9 YouTube and Facebook video player, bulletin notes, countdown, and site-wide pulsating **"Live Now"** indicator in header.
-  - **Daily Devotion & Verse of the Day (`/devotion`)**: Today's devotional reading, Scripture anchor, pastoral reflection, closing prayer, archive, and homepage highlight card (normalized to West Africa Time `Africa/Lagos`).
+  - **Broadcast Studio Switcher & Sanctuary Display (`/studio` & `/studio/live`)**: Web-based vision-mixer control room with Preview/Program switching, instant CUT/FADE transitions, 5 input decks (Countdown Timer with Days/Hours/Mins/Secs, Multi-Translation Scripture Engine, Media Deck, Lower Thirds, and WebRTC Camera Feeds), and full-screen live sanctuary/alpha-keying display. Gated by `LIVESTREAM_MANAGE` permission.
+  - **Daily Devotion & Verse of the Day (`/devotion`, `/devotion/[id]`)**: Today's devotional reading, Scripture anchor, pastoral reflection, closing prayer, individual devotion view (`/devotion/[id]`), canonical URL sharing (`https://ggmasaba.vercel.app/devotion`), past archive, and homepage highlight card (normalized to West Africa Time `Africa/Lagos`).
   - **Moderated Community Prayer Wall (`/prayer/wall`)**: Public petitions with debounced, local-storage cached **"I Prayed"** counter and privacy-safe API data stripping.
   - **Praise Reports & Testimonies (`/testimonies`)**: Community praise reports with modal submission dialog (`TestimonyDialog.tsx`).
   - **Interactive Sermons Library (`/sermons`, `/sermons/[slug]`)**: Media catalog with search, series filter, and video streaming.
@@ -21,7 +22,8 @@ Next.js 16 frontend for Grace of God Mission Asaba, built with Turbopack, App Ro
 - **Admin Portal (`/admin`)**:
   - Next.js 16 Network Boundary Proxy ([`proxy.ts`](./proxy.ts)) protecting admin routes.
   - **Livestream Manager (`/admin/live`)**: Single-toggle "We Are Live" instant switch, stream URL, and sermon notes.
-  - **Devotions Manager (`/admin/devotions`)**: Author and schedule daily devotions by calendar date.
+  - **Broadcast Studio Access (`/studio`)**: Vision-mixer console access for media operators with `LIVESTREAM_MANAGE` permission or `SUPER_ADMIN`.
+  - **Devotions Manager (`/admin/devotions`)**: Author and schedule daily devotions by calendar date with an intelligent **Smart Paste & Auto-Detect** modal for instant parsing of raw WhatsApp or document drafts.
   - **Testimonies Moderation (`/admin/testimonies`)**: Review queue with one-click approval, rejection, and homepage feature controls.
   - **Prayer Wall Moderation (`/admin/messages`)**: Inbox workflow with wall approval/rejection toggle.
   - **Contributions Ledger (`/admin/contributions`)**: Financial journal with manual "Verify with Paystack" button for recovering dropped webhooks, and CSV export.

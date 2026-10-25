@@ -68,11 +68,22 @@ grace-of-god-mission-asaba/
 - **Praise Reports & Testimonies (`/testimonies`)**:
   - Filterable community testimony gallery with featured cards and author anonymity support.
   - Accessible submission modal (`TestimonyDialog.tsx`) with honeypot bot trap for members to share what God has done.
-- **Daily Devotion & Verse of the Day (`/devotion`)**:
+- **Daily Devotion & Verse of the Day (`/devotion` & `/devotion/[id]`)**:
   - Today's devotional reading with Scripture anchor, pastoral reflection, closing prayer/faith confession, and past devotion archive.
+  - Dedicated individual devotion reading view (`/devotion/[id]`) with clean pastoral typography and social sharing.
   - Dynamic daily devotion highlight card on the homepage (`/`).
-  - One-click Web Share and clipboard copy for WhatsApp, Facebook, and messaging.
+  - One-click Web Share and clipboard copy with verified canonical domain (`https://ggmasaba.vercel.app/devotion`).
   - Normalized to West Africa Time (`Africa/Lagos`, UTC+1) so devotions strictly align with local congregation calendar days.
+- **Broadcast Studio & Live Sanctuary Display (`/studio` & `/studio/live`)**:
+  - **Broadcast Switcher Room (`/studio`)**: Vision-mixer-inspired live production console featuring Staged Preview and On-Air Program buses, instantaneous CUT & FADE transitions, and emergency Blackout.
+  - **Input Deck Channels**:
+    - **1. Countdown Timer**: High-precision sanctuary activity timers and event countdowns with Days, Hours, Minutes, and Seconds (DD:HH:MM:SS), zero-drift epoch synchronization (`targetEndTime`), overtime alerts, and soundboard chimes/warning ticks.
+    - **2. Scripture Engine**: Instant Bible verse search and display across KJV, NIV, AMP, NKJV, and Nigerian Pidgin Bible translations.
+    - **3. Media Deck**: Slide and liturgical graphic presentations with instant take-to-air.
+    - **4. Lower Thirds**: Dynamic speaker names, ministry topics, and liturgical tickers.
+    - **5. Camera Feeds**: Integrated webcam, NDI/virtual camera, and smartphone wireless camera feeds via zero-latency WebRTC and high-frequency fallback streams.
+  - **Live Sanctuary Output (`/studio/live`)**: Full-screen projector and LED display feed with liturgical theme presets, transparent alpha-keying for downstream overlays, and hardware chroma-green keying.
+  - **Multi-Device & Cross-Tab Synchronization**: Zero-latency local cross-window updates via `BroadcastChannel` and resilient multi-device sync via server-sent events (SSE) and HTTP polling.
 - **Prayer Requests (`/prayer`)**: Confidential prayer petition submission with optional public wall sharing and honeypot spam protection.
 - **Contact & Inquiries (`/contact`)**: Interactive inquiry form with honeypot trap, WhatsApp direct chat link, click-to-call phone dialing, and sanctuary address.
 - **Privacy Notice (`/privacy`)**: Transparent privacy policy compliant with the Nigeria Data Protection Act (NDPA 2023).
@@ -90,7 +101,8 @@ grace-of-god-mission-asaba/
 - **Overview Dashboard (`/admin`)**: Real-time KPI statistics for published sermons, upcoming events, active announcements, gallery photos, unread messages, and quick action shortcuts.
 - **Content Management Modules**:
   - **Livestream Manager (`/admin/live`)**: Single-toggle **"We Are Live"** instant switch, stream URL configuration, service titles, and bulletin sermon notes (`LIVESTREAM_MANAGE`).
-  - **Devotions Manager (`/admin/devotions`)**: Schedule and publish daily devotions by calendar date with Scripture references and pastoral reflections (`DEVOTIONS_MANAGE`).
+  - **Broadcast Studio Switcher (`/studio`)**: Gated broadcast switcher console accessible to media personnel with `LIVESTREAM_MANAGE` permission or `SUPER_ADMIN`.
+  - **Devotions Manager (`/admin/devotions`)**: Schedule and publish daily devotions by calendar date with Scripture references and pastoral reflections (`DEVOTIONS_MANAGE`). Includes an intelligent **Smart Paste & Auto-Detect** modal that automatically parses raw text from WhatsApp, Word, or bulletin drafts into structured fields (series, title, scriptures, reflection, prayer, Bible in 365 days, and action points) with one-click direct save.
   - **Testimonies Moderation (`/admin/testimonies`)**: Review queue (`PENDING`, `APPROVED`, `REJECTED`) with one-click approval, rejection, and homepage feature toggles (`TESTIMONIES_MANAGE`).
   - **Sermons Management (`/admin/sermons`)**: Create, edit, and publish sermons with video URLs, audio links, preacher tags, and scriptures.
   - **Events Management (`/admin/events`)**: Schedule upcoming events, set locations, and publish calendar items with `.ics` exports.
