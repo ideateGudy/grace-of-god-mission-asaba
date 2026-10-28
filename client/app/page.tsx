@@ -447,37 +447,51 @@ export default async function HomePage() {
                 <Link
                   key={sermon.id}
                   href={`/sermons/${encodeURIComponent(sermon.slug)}`}
-                  className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-primary/40"
+                  className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-primary/40"
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2.5 py-1 font-semibold text-primary">
-                        {sermon.series || "Sunday Message"}
-                      </span>
-                      {sermon.preachedAt && (
-                        <span>
-                          {new Intl.DateTimeFormat("en-NG", {
-                            dateStyle: "medium",
-                            timeZone: "Africa/Lagos",
-                          }).format(new Date(sermon.preachedAt))}
+                  <div>
+                    {sermon.thumbnailUrl ? (
+                      <div className="relative aspect-video w-full overflow-hidden bg-muted">
+                        <Image
+                          src={sermon.thumbnailUrl}
+                          alt={sermon.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                    ) : null}
+
+                    <div className="p-6 space-y-3">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2.5 py-1 font-semibold text-primary">
+                          {sermon.series || "Sunday Message"}
                         </span>
+                        {sermon.preachedAt && (
+                          <span>
+                            {new Intl.DateTimeFormat("en-NG", {
+                              dateStyle: "medium",
+                              timeZone: "Africa/Lagos",
+                            }).format(new Date(sermon.preachedAt))}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-display text-xl font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                        {sermon.title}
+                      </h3>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Speaker: <strong className="text-foreground">{sermon.preacher}</strong>
+                        {sermon.scripture ? ` · ${sermon.scripture}` : ""}
+                      </p>
+                      {sermon.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                          {sermon.description}
+                        </p>
                       )}
                     </div>
-                    <h3 className="font-display text-xl font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                      {sermon.title}
-                    </h3>
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Speaker: <strong className="text-foreground">{sermon.preacher}</strong>
-                      {sermon.scripture ? ` · ${sermon.scripture}` : ""}
-                    </p>
-                    {sermon.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                        {sermon.description}
-                      </p>
-                    )}
                   </div>
 
-                  <div className="mt-6 flex items-center justify-between border-t border-border/60 pt-4 text-xs font-semibold text-primary">
+                  <div className="mx-6 mb-6 flex items-center justify-between border-t border-border/60 pt-4 text-xs font-semibold text-primary">
                     <span className="inline-flex items-center gap-1.5">
                       <PlayCircle className="h-4 w-4 text-primary" />
                       <span>Listen to Sermon</span>
