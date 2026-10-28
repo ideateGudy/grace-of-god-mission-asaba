@@ -5,6 +5,7 @@ import { PlayCircle } from "lucide-react";
 import { api } from "@/lib/api/client";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { VideoFacade } from "@/components/hero/VideoFacade";
+import { SermonAudioPlayer } from "@/components/shared/SermonAudioPlayer";
 import { ScrollProgress } from "@/components/motion/ScrollProgress";
 import { ShareButton } from "@/components/shared/ShareButton";
 
@@ -127,13 +128,7 @@ export default async function SermonDetailPage({
           )}
 
           {sermon.audioUrl && (
-            <div className="mt-6 rounded-xl border border-border bg-card p-5">
-              <h2 className="mb-3 font-semibold text-foreground">Listen to audio</h2>
-              <audio controls preload="none" className="w-full">
-                <source src={sermon.audioUrl} />
-                Your browser does not support audio playback.
-              </audio>
-            </div>
+            <SermonAudioPlayer audioUrl={sermon.audioUrl} title={sermon.title} />
           )}
 
           {sermon.description && (

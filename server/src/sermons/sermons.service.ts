@@ -65,7 +65,8 @@ export class SermonsService {
   }
 
   async create(actor: AuthenticatedActor, dto: CreateSermonDto): Promise<Sermon> {
-    let slug: string = dto.slug || generateSlug(dto.title);
+    const rawSlug = dto.slug?.trim();
+    let slug: string = rawSlug ? rawSlug : generateSlug(dto.title);
     
     // Ensure unique slug
     const existing = await this.prisma.sermon.findUnique({ where: { slug } });
@@ -106,12 +107,16 @@ export class SermonsService {
     if (data.audioUrl !== undefined) data.audioUrl = normalizeUrl(data.audioUrl);
     if (data.thumbnailUrl !== undefined) data.thumbnailUrl = normalizeUrl(data.thumbnailUrl);
 
-    if (data.slug && data.slug !== existing.slug) {
-      const slugExists = await this.prisma.sermon.findUnique({ where: { slug: data.slug } });
-      if (slugExists) data.slug = `${data.slug}-${Date.now().toString().slice(-4)}`;
+    if (data.slug) {
+      if (data.slug !== existing.slug) {
+        const slugExists = await this.prisma.sermon.findUnique({ where: { slug: data.slug } });
+        if (slugExists) data.slug = `${data.slug}-${Date.now().toString().slice(-4)}`;
+      }
+    } else {
+      delete (data as any).slug;
     }
 
-    const sermon = await this.prisma.sermon.update({ where: { id }, data });
+    const sermon = await this.prisma.sermon.update({ where: { id }, data: data as Prisma.SermonUpdateInput });
 
     if (data.published !== undefined && data.published !== existing.published) {
       await this.audit.log({

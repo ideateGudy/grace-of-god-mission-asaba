@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createSermonSchema = z.object({
-  slug: z.string().trim().min(1).max(180).optional(),
+  slug: z.string().trim().min(1).max(180).nullable().optional(),
   title: z.string().trim().min(1).max(160),
   preacher: z.string().trim().min(1).max(120),
   preachedAt: z.string().datetime(),
@@ -21,7 +21,7 @@ export type SermonDto = z.infer<typeof createSermonSchema> & {
 };
 
 export const createEventSchema = z.object({
-  slug: z.string().trim().min(1).max(180).optional(),
+  slug: z.string().trim().min(1).max(180).nullable().optional(),
   title: z.string().trim().min(1).max(160),
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime().nullable().optional(),

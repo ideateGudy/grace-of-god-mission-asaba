@@ -101,12 +101,16 @@ export class EventsService {
     if (data.mapUrl !== undefined) data.mapUrl = normalizeUrl(data.mapUrl);
     if (data.imageUrl !== undefined) data.imageUrl = normalizeUrl(data.imageUrl);
 
-    if (data.slug && data.slug !== existing.slug) {
-      const slugExists = await this.prisma.event.findUnique({ where: { slug: data.slug } });
-      if (slugExists) data.slug = `${data.slug}-${Date.now().toString().slice(-4)}`;
+    if (data.slug) {
+      if (data.slug !== existing.slug) {
+        const slugExists = await this.prisma.event.findUnique({ where: { slug: data.slug } });
+        if (slugExists) data.slug = `${data.slug}-${Date.now().toString().slice(-4)}`;
+      }
+    } else {
+      delete (data as any).slug;
     }
 
-    const event = await this.prisma.event.update({ where: { id }, data });
+    const event = await this.prisma.event.update({ where: { id }, data: data as Prisma.EventUpdateInput });
 
     if (data.published !== undefined && data.published !== existing.published) {
       await this.audit.log({

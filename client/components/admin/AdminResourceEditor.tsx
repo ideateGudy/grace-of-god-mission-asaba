@@ -37,12 +37,13 @@ export function AdminResourceEditor({ resource, id }: { resource: string; id: st
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSaving(true);
-    const payload = Object.fromEntries(config.fields.map((field) => [field.key, values[field.key]]));
+    const payload: Record<string, unknown> = {};
     for (const field of config.fields) {
+      const val = values[field.key];
       if (field.type === "datetime-local") {
-        payload[field.key] = fromLagosDateTimeInput(String(payload[field.key] ?? ""));
+        payload[field.key] = val ? fromLagosDateTimeInput(String(val)) : null;
       } else if (field.type === "url" || field.key === "audioUrl" || field.key === "videoUrl") {
-        const raw = typeof payload[field.key] === "string" ? (payload[field.key] as string).trim() : "";
+        const raw = typeof val === "string" ? val.trim() : "";
         if (!raw) {
           payload[field.key] = null;
         } else {
@@ -54,12 +55,17 @@ export function AdminResourceEditor({ resource, id }: { resource: string; id: st
           payload[field.key] = formatted;
         }
       } else if (field.type === "number") {
-        const val = payload[field.key];
         payload[field.key] = val === "" || val == null ? (field.key === "sortOrder" ? 0 : null) : Number(val);
-      } else if (field.type !== "checkbox" && payload[field.key] === "") {
-        payload[field.key] = null;
-      } else if (resource === "gallery" && field.key === "sortOrder") {
-        payload[field.key] = Number(payload[field.key] || 0);
+      } else if (field.type === "checkbox") {
+        payload[field.key] = Boolean(val);
+      } else {
+        const strVal = typeof val === "string" ? val.trim() : val;
+        if (field.key === "slug") {
+          // If slug is left blank or empty string, omit it completely so backend generates it from title
+          if (strVal) payload[field.key] = strVal;
+        } else {
+          payload[field.key] = strVal === "" ? null : strVal;
+        }
       }
     }
     try {
