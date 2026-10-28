@@ -29,7 +29,20 @@ export function AdminResourceEditor({ resource, id }: { resource: string; id: st
   useEffect(() => {
     if (!config || isNew) return;
     let cancelled = false;
-    api.admin.get<RecordValue>(resource, id).then(({ data }) => { if (!cancelled) setValues({ ...emptyRecord(config.fields), ...data }); }).catch((error) => toast.error(error instanceof ApiError ? error.message : "Unable to load this record.")).finally(() => { if (!cancelled) setLoading(false); });
+    api.admin.get<RecordValue>(resource, id).then(({ data }) => {
+      if (!cancelled && data) {
+        const formatted: RecordValue = { ...emptyRecord(config.fields) };
+        for (const field of config.fields) {
+          const val = data[field.key];
+          if (field.type === "datetime-local") {
+            formatted[field.key] = toInputValue(val, "datetime-local");
+          } else {
+            formatted[field.key] = val ?? (field.type === "checkbox" ? false : "");
+          }
+        }
+        setValues(formatted);
+      }
+    }).catch((error) => toast.error(error instanceof ApiError ? error.message : "Unable to load this record.")).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [config, id, isNew, resource]);
   if (!config) return <PageHeader title="Editor unavailable" description="This content type is not configured." />;

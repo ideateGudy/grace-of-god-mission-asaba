@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { PlayCircle } from "lucide-react";
 import { api } from "@/lib/api/client";
@@ -121,11 +122,22 @@ export default async function SermonDetailPage({
             <ShareButton title={sermon.title} />
           </div>
 
-          {sermon.videoUrl && (
-            <div className="mb-8 overflow-hidden rounded-xl">
+          {sermon.videoUrl ? (
+            <div className="mb-8 overflow-hidden rounded-xl shadow-md">
               <VideoFacade url={sermon.videoUrl} title={sermon.title} />
             </div>
-          )}
+          ) : sermon.thumbnailUrl ? (
+            <div className="relative mb-8 aspect-video w-full overflow-hidden rounded-2xl border border-border shadow-md">
+              <Image
+                src={sermon.thumbnailUrl}
+                alt={sermon.title}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 896px"
+                className="object-cover"
+              />
+            </div>
+          ) : null}
 
           {sermon.audioUrl && (
             <SermonAudioPlayer audioUrl={sermon.audioUrl} title={sermon.title} />
