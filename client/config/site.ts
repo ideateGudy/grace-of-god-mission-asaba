@@ -48,9 +48,9 @@ export const defaultSiteConfig = {
   leadership: [] as LeaderProfileDto[],
 
   // About
-  foundedYear: "1994",
+  foundedYear: "1974",
   story:
-    "Grace of God Mission Asaba is a vibrant fellowship of believers situated in the capital city of Delta State. Committed to preaching Christ in all His fullness, the church has stood as a beacon of truth, hope, and prayer for families, youth, and workers across Asaba and the surrounding communities.",
+    "Grace of God Mission International was birthed in 1974 through the great evangelical revival in southeastern Nigeria, under the visionary leadership of Bishop Dr. Paul C. Nwachukwu, and was later incorporated on October 14, 1980. From these deep spiritual roots, Grace of God Mission Asaba stands as a thriving sanctuary in the Delta State capital—preaching Christ in all His fullness and equipping generations to walk in divine grace and victory.",
   beliefs: [] as string[],
 };
 

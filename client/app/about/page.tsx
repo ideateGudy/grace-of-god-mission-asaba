@@ -82,23 +82,28 @@ export default async function AboutUsPage() {
             <div className="flex-1 space-y-4">
               <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gold">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>Our Heritage in Asaba</span>
+                <span>Our Heritage & Origins</span>
               </div>
               <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground">
                 Our Story & Legacy
               </h2>
               <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
                 {siteConfig.story.startsWith("[")
-                  ? "Grace of God Mission Asaba is a vibrant fellowship of believers situated in the capital city of Delta State. Committed to preaching Christ in all His fullness, the church has stood as a beacon of truth, hope, and prayer for families, youth, and workers in the region."
+                  ? "Grace of God Mission International was founded in 1974 through the great evangelical revival in southeastern Nigeria, under the leadership of Bishop Dr. Paul C. Nwachukwu, and incorporated on October 14, 1980. From these deep roots, Grace of God Mission Asaba continues to bring salvation, hope, and prayer to Delta State."
                   : siteConfig.story}
               </p>
-              {!siteConfig.foundedYear.startsWith("[") && (
-                <div className="pt-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1 text-xs font-semibold text-primary">
-                    <span>Established in {siteConfig.foundedYear}</span>
-                  </span>
-                </div>
-              )}
+              
+              <div className="flex flex-wrap gap-2 pt-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/10 border border-gold/30 px-3.5 py-1 text-xs font-semibold text-gold">
+                  <span>Founded 1974 · Incorporated 1980</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1 text-xs font-semibold text-primary">
+                  <span>Founder: Bishop Dr. Paul C. Nwachukwu</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3.5 py-1 text-xs font-semibold text-muted-foreground">
+                  <span>Origin: Southeastern Nigeria</span>
+                </span>
+              </div>
             </div>
           </div>
         </GlassCard>
