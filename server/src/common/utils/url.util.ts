@@ -1,9 +1,16 @@
 export function normalizeUrl(url?: string | null): string | null {
   if (!url) return null;
-  const trimmed = url.trim();
+  let trimmed = url.trim();
   if (!/^https?:\/\//i.test(trimmed)) {
-    return `https://${trimmed}`;
+    trimmed = `https://${trimmed}`;
   }
+
+  // Convert Google Drive sharing/viewing links to direct streaming/downloadable format
+  const driveMatch = trimmed.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^&]+&)*id=)([a-zA-Z0-9_-]+)/);
+  if (driveMatch && driveMatch[1]) {
+    return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+  }
+
   return trimmed;
 }
 

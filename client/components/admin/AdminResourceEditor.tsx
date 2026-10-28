@@ -39,14 +39,28 @@ export function AdminResourceEditor({ resource, id }: { resource: string; id: st
     setSaving(true);
     const payload = Object.fromEntries(config.fields.map((field) => [field.key, values[field.key]]));
     for (const field of config.fields) {
-      if (field.type === "datetime-local") payload[field.key] = fromLagosDateTimeInput(String(payload[field.key] ?? ""));
-      else if (field.type === "url" && payload[field.key] === "") payload[field.key] = null;
-      else if (field.type === "number") {
+      if (field.type === "datetime-local") {
+        payload[field.key] = fromLagosDateTimeInput(String(payload[field.key] ?? ""));
+      } else if (field.type === "url" || field.key === "audioUrl" || field.key === "videoUrl") {
+        const raw = typeof payload[field.key] === "string" ? (payload[field.key] as string).trim() : "";
+        if (!raw) {
+          payload[field.key] = null;
+        } else {
+          let formatted = raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`;
+          const driveMatch = formatted.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^&]+&)*id=)([a-zA-Z0-9_-]+)/);
+          if (driveMatch && driveMatch[1]) {
+            formatted = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+          }
+          payload[field.key] = formatted;
+        }
+      } else if (field.type === "number") {
         const val = payload[field.key];
         payload[field.key] = val === "" || val == null ? (field.key === "sortOrder" ? 0 : null) : Number(val);
+      } else if (field.type !== "checkbox" && payload[field.key] === "") {
+        payload[field.key] = null;
+      } else if (resource === "gallery" && field.key === "sortOrder") {
+        payload[field.key] = Number(payload[field.key] || 0);
       }
-      else if (field.type !== "checkbox" && payload[field.key] === "") payload[field.key] = null;
-      else if (resource === "gallery" && field.key === "sortOrder") payload[field.key] = Number(payload[field.key] || 0);
     }
     try {
       if (isNew) await api.admin.create(resource, payload);

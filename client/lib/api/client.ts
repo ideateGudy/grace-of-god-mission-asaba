@@ -16,9 +16,11 @@ const IS_SERVER = typeof window === "undefined";
 const MOCK_API = process.env.USE_MOCK_API === "true";
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  public errors?: Array<{ path: string; message: string }>;
+  constructor(public status: number, message: string, errors?: Array<{ path: string; message: string }>) {
     super(message);
     this.name = "ApiError";
+    this.errors = errors;
   }
 }
 
@@ -151,11 +153,17 @@ async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: str
 
   if (!res.ok) {
     let msg = res.statusText;
+    let errors: Array<{ path: string; message: string }> | undefined;
     try {
       const errBody = await res.json();
-      msg = errBody.message || msg;
+      if (Array.isArray(errBody.errors) && errBody.errors.length > 0) {
+        errors = errBody.errors;
+        msg = errBody.errors.map((e: { path: string; message: string }) => `${e.path || 'field'}: ${e.message}`).join(', ');
+      } else if (errBody.message) {
+        msg = errBody.message;
+      }
     } catch {}
-    throw new ApiError(res.status, msg);
+    throw new ApiError(res.status, msg, errors);
   }
 
   if (res.status === 204) return {} as T;
