@@ -98,59 +98,60 @@ async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: str
     return { data: [], meta: { page: 1, limit: 12, total: 0 } } as T;
   }
 
-  const { tags, revalidate = 60, timeoutMs = 4000, ...rest } = options || {};
+  const { tags, revalidate = 60, timeoutMs = 15000, ...rest } = options || {};
   
   const getSignal = () => {
     if (rest.signal) return rest.signal;
-    if (IS_SERVER && typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+    if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
       return AbortSignal.timeout(timeoutMs);
     }
     return undefined;
   };
 
-  let res: Response;
-  try {
-    if (IS_SERVER) {
-      res = await fetch(url, {
-        ...rest,
-        signal: getSignal(),
-        headers: {
-          "Content-Type": "application/json",
-          ...rest.headers,
-        },
-        ...(rest.cache !== "no-store" ? { next: { tags, revalidate } } : {})
-      });
-    } else {
-      res = await authFetch(url, {
-        ...rest,
-        signal: getSignal(),
-      });
-    }
-  } catch {
-    if (!rest.method && rest.cache !== "no-store") {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      try {
-        if (IS_SERVER) {
-          res = await fetch(url, {
-            ...rest,
-            signal: getSignal(),
-            headers: { "Content-Type": "application/json", ...rest.headers },
-            next: { tags, revalidate }
-          });
-        } else {
-          res = await authFetch(url, {
-            ...rest,
-            signal: getSignal(),
-          });
+  const executeFetch = () =>
+    IS_SERVER
+      ? fetch(url, {
+          ...rest,
+          signal: getSignal(),
+          headers: {
+            "Content-Type": "application/json",
+            ...rest.headers,
+          },
+          ...(rest.cache !== "no-store" ? { next: { tags, revalidate } } : {}),
+        })
+      : authFetch(url, {
+          ...rest,
+          signal: getSignal(),
+        });
+
+  let res: Response | null = null;
+  // If Render backend is cold-starting, retry up to 3 times with progressive delays
+  const maxAttempts = !rest.method || rest.method === "GET" ? 3 : 1;
+  const backoffs = [1000, 2500, 4000];
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      res = await executeFetch();
+      // If server returned a 502/503/504 gateway error (Render spinning up), retry
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        if (attempt < maxAttempts - 1) {
+          await new Promise((r) => setTimeout(r, backoffs[attempt] || 2000));
+          continue;
         }
-      } catch {
-        throw new ApiError(503, "The church website is waking up. Please try again shortly.");
       }
-    } else {
-      throw new ApiError(503, "The church website is temporarily unavailable.");
+      break;
+    } catch {
+      if (attempt < maxAttempts - 1) {
+        await new Promise((r) => setTimeout(r, backoffs[attempt] || 2000));
+        continue;
+      }
+      throw new ApiError(503, "The church website is waking up. Please try again in a few moments.");
     }
   }
 
+  if (!res) {
+    throw new ApiError(503, "The church website is temporarily unavailable.");
+  }
   if (!res.ok) {
     let msg = res.statusText;
     let errors: Array<{ path: string; message: string }> | undefined;
