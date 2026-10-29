@@ -3,6 +3,8 @@ import { Pin, Sparkles, BellRing, CalendarDays } from "lucide-react";
 import { api } from "@/lib/api/client";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ServerWakingFallback } from "@/components/shared/ServerWakingFallback";
 
 export const revalidate = 60;
 
@@ -25,11 +27,15 @@ type Announcement = {
 
 export default async function AnnouncementsPage() {
   let announcements: Announcement[] = [];
+  let isWakingUp = false;
+
   try {
     const res = await api.public.announcements();
     announcements = (res.data as unknown as Announcement[]) ?? [];
-  } catch {
-    /* Keep the page available during API cold starts */
+  } catch (err: any) {
+    if (err?.status === 503 || err?.message?.includes("waking up") || err?.code === "ECONNREFUSED") {
+      isWakingUp = true;
+    }
   }
 
   const now = new Date();
@@ -95,6 +101,21 @@ export default async function AnnouncementsPage() {
               </GlassCard>
             ))}
           </div>
+        ) : isWakingUp ? (
+          <ServerWakingFallback
+            title="Loading Church Announcements..."
+            description="Our sanctuary server is waking up to fetch recent updates and ministry notices. Please wait a moment while it connects."
+            resourceName="announcements"
+          >
+            <div className="space-y-4">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <GlassCard key={i} surface="glass" padding="lg" className="space-y-4">
+                  <Skeleton className="h-6 w-1/2 rounded-md" />
+                  <Skeleton className="h-16 w-full rounded-md" />
+                </GlassCard>
+              ))}
+            </div>
+          </ServerWakingFallback>
         ) : (
           <GlassCard surface="glass" padding="lg" className="text-center py-16">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">

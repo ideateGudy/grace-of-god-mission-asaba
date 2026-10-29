@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { TestimonyDialog } from "@/components/testimonies/TestimonyDialog";
+import { ServerWakingFallback } from "@/components/shared/ServerWakingFallback";
+import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/client";
 import type { PublicTestimonyDto } from "@ggm/types";
 import { Sparkles, Quote, MessageCircleHeart } from "lucide-react";
@@ -17,13 +19,18 @@ export const metadata: Metadata = {
 
 export default async function TestimoniesPage() {
   let testimonies: PublicTestimonyDto[] = [];
+  let isWakingUp = false;
 
   try {
     const res = await api.testimonies.list("?limit=30");
     if (res?.data) {
       testimonies = res.data;
     }
-  } catch {}
+  } catch (err: any) {
+    if (err?.status === 503 || err?.message?.includes("waking up") || err?.code === "ECONNREFUSED") {
+      isWakingUp = true;
+    }
+  }
 
   const featured = testimonies.filter((t) => t.featured);
   const regular = testimonies.filter((t) => !t.featured);
@@ -108,18 +115,36 @@ export default async function TestimoniesPage() {
           </div>
 
           {testimonies.length === 0 ? (
-            <GlassCard surface="solid" padding="lg" className="text-center py-16 border border-dashed border-border shadow-xs">
-              <Sparkles className="mx-auto h-12 w-12 text-primary/50 mb-3" />
-              <h3 className="font-display text-xl font-bold text-foreground">
-                Be the First to Testify
-              </h3>
-              <p className="mt-2 text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-                No public testimonies are currently displayed. Click below to share your praise report with our congregation.
-              </p>
-              <div className="mt-6">
-                <TestimonyDialog />
-              </div>
-            </GlassCard>
+            isWakingUp ? (
+              <ServerWakingFallback
+                title="Loading Praise Reports & Testimonies..."
+                description="Our sanctuary server is waking up to retrieve congregation praise reports. Please hold on a moment as it loads."
+                resourceName="testimonies"
+              >
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <GlassCard key={i} surface="glass" padding="md" className="space-y-3">
+                      <Skeleton className="h-5 w-3/4 rounded-md" />
+                      <Skeleton className="h-16 w-full rounded-md" />
+                      <Skeleton className="h-4 w-1/3 rounded-md" />
+                    </GlassCard>
+                  ))}
+                </div>
+              </ServerWakingFallback>
+            ) : (
+              <GlassCard surface="solid" padding="lg" className="text-center py-16 border border-dashed border-border shadow-xs">
+                <Sparkles className="mx-auto h-12 w-12 text-primary/50 mb-3" />
+                <h3 className="font-display text-xl font-bold text-foreground">
+                  Be the First to Testify
+                </h3>
+                <p className="mt-2 text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  No public testimonies are currently displayed. Click below to share your praise report with our congregation.
+                </p>
+                <div className="mt-6">
+                  <TestimonyDialog />
+                </div>
+              </GlassCard>
+            )
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {(featured.length > 0 ? regular : testimonies).map((t) => {

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { Button } from "@/components/ui/button";
+import { ServerWakingFallback } from "@/components/shared/ServerWakingFallback";
 import { api } from "@/lib/api/client";
 import type { PrayerWallItemDto } from "@ggm/types";
 import {
@@ -20,6 +21,7 @@ import {
 export default function PrayerWallPage() {
   const [items, setItems] = useState<PrayerWallItemDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isWakingUp, setIsWakingUp] = useState(false);
   const [prayedIds, setPrayedIds] = useState<Record<string, boolean>>({});
   const [prayingId, setPrayingId] = useState<string | null>(null);
 
@@ -37,7 +39,13 @@ export default function PrayerWallPage() {
       .then(({ data }) => {
         if (data) setItems(data);
       })
-      .catch(() => toast.error("Could not load prayer wall entries."))
+      .catch((err) => {
+        if (err?.status === 503 || err?.message?.includes("waking up")) {
+          setIsWakingUp(true);
+        } else {
+          toast.error("Could not load prayer wall entries.");
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -106,6 +114,12 @@ export default function PrayerWallPage() {
             <Loader2 className="h-8 w-8 animate-spin mb-3 text-primary" />
             <p className="text-sm">Loading intercessory prayer wall...</p>
           </div>
+        ) : isWakingUp ? (
+          <ServerWakingFallback
+            title="Connecting to Community Prayer Wall..."
+            description="Our sanctuary server is waking up to retrieve intercessory prayer requests. Please wait a moment while it establishes connection."
+            resourceName="prayer wall"
+          />
         ) : items.length === 0 ? (
           <GlassCard surface="strong" padding="lg" className="text-center py-16 border border-dashed border-border shadow-sm">
             <HeartHandshake className="mx-auto h-12 w-12 text-primary/60 mb-3" />

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ServerWakingFallback } from "@/components/shared/ServerWakingFallback";
 import { api } from "@/lib/api/client";
 import type { DevotionDto } from "@ggm/types";
 import { DevotionActions } from "@/components/devotion/DevotionActions";
@@ -50,6 +52,7 @@ export const metadata: Metadata = {
 export default async function DevotionPage() {
   let todayDevotion: DevotionDto | null = null;
   let archive: DevotionDto[] = [];
+  let isWakingUp = false;
 
   try {
     const [todayRes, listRes] = await Promise.all([
@@ -59,7 +62,11 @@ export default async function DevotionPage() {
 
     todayDevotion = todayRes?.data ?? null;
     archive = (listRes?.data ?? []).filter((d) => d.id !== todayDevotion?.id);
-  } catch {}
+  } catch (err: any) {
+    if (err?.status === 503 || err?.message?.includes("waking up") || err?.code === "ECONNREFUSED") {
+      isWakingUp = true;
+    }
+  }
 
   const formattedDate = todayDevotion
     ? new Date(`${todayDevotion.date}T00:00:00Z`).toLocaleDateString("en-GB", {
@@ -216,6 +223,23 @@ export default async function DevotionPage() {
               </div>
             </GlassCard>
           </div>
+        ) : isWakingUp ? (
+          <ServerWakingFallback
+            title="Loading Daily Devotion & Word..."
+            description="Our sanctuary server is waking up to fetch today's devotional word and scripture. Please hold on a moment as it connects."
+            resourceName="devotion"
+          >
+            {/* Visual Skeleton while waking up */}
+            <GlassCard surface="strong" padding="lg" className="border border-border/70 space-y-6">
+              <Skeleton className="h-8 w-2/3 rounded-lg" />
+              <Skeleton className="h-24 w-full rounded-xl" />
+              <div className="space-y-3 pt-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-4 w-4/6" />
+              </div>
+            </GlassCard>
+          </ServerWakingFallback>
         ) : (
           <GlassCard surface="strong" padding="lg" className="text-center py-16 border border-dashed border-border shadow-sm">
             <BookOpen className="mx-auto h-12 w-12 text-primary/60 mb-3" />

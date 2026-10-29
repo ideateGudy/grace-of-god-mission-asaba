@@ -5,6 +5,8 @@ import { PlayCircle, Search, BookOpen, Clock, ArrowRight, Sparkles, Headphones }
 import { api } from "@/lib/api/client";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ServerWakingFallback } from "@/components/shared/ServerWakingFallback";
 
 export const revalidate = 60;
 
@@ -40,11 +42,15 @@ export default async function SermonsPage({
   if (series) query.set("series", series);
 
   let sermons: Sermon[] = [];
+  let isWakingUp = false;
+
   try {
     const res = await api.public.sermons(`?${query}`);
     sermons = (res.data as unknown as Sermon[]) ?? [];
-  } catch {
-    /* Keep content pages available during API cold starts */
+  } catch (err: any) {
+    if (err?.status === 503 || err?.message?.includes("waking up") || err?.code === "ECONNREFUSED") {
+      isWakingUp = true;
+    }
   }
 
   return (
@@ -172,6 +178,25 @@ export default async function SermonsPage({
               </Link>
             ))}
           </div>
+        ) : isWakingUp ? (
+          <ServerWakingFallback
+            title="Connecting to Sermon Library..."
+            description="Our sanctuary server is waking up to fetch audio sermons and teachings. Please hold on a moment as it connects."
+            resourceName="sermons"
+          >
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <GlassCard key={i} surface="glass" padding="none" className="overflow-hidden border border-border">
+                  <Skeleton className="aspect-video w-full" />
+                  <div className="p-6 space-y-3">
+                    <Skeleton className="h-6 w-3/4 rounded-lg" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-10 w-full rounded-md" />
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          </ServerWakingFallback>
         ) : (
           <GlassCard surface="glass" padding="lg" className="text-center py-16">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">

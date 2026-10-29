@@ -3,6 +3,8 @@ import { api } from "@/lib/api/client";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GalleryGrid, type GalleryItem } from "@/components/shared/GalleryGrid";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ServerWakingFallback } from "@/components/shared/ServerWakingFallback";
 import { Image as ImageIcon } from "lucide-react";
 
 export const revalidate = 60;
@@ -16,11 +18,15 @@ export const metadata: Metadata = {
 
 export default async function GalleryPage() {
   let images: GalleryItem[] = [];
+  let isWakingUp = false;
+
   try {
     const res = await api.public.gallery("?page=1&limit=60");
     images = (res.data as unknown as GalleryItem[]) ?? [];
-  } catch {
-    /* Keep the route available during API cold starts */
+  } catch (err: any) {
+    if (err?.status === 503 || err?.message?.includes("waking up") || err?.code === "ECONNREFUSED") {
+      isWakingUp = true;
+    }
   }
 
   return (
@@ -31,6 +37,18 @@ export default async function GalleryPage() {
     >
       {images.length ? (
         <GalleryGrid images={images} />
+      ) : isWakingUp ? (
+        <ServerWakingFallback
+          title="Connecting to Sanctuary Media Archive..."
+          description="Our sanctuary server is waking up to load photos from services and gatherings. Please hold on a moment as it connects."
+          resourceName="gallery"
+        >
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-video w-full rounded-2xl" />
+            ))}
+          </div>
+        </ServerWakingFallback>
       ) : (
         <GlassCard surface="glass" padding="lg" className="text-center py-16 max-w-2xl mx-auto">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">

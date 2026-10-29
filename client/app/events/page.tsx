@@ -4,6 +4,8 @@ import { CalendarDays, MapPin, Clock, ArrowRight, Sparkles } from "lucide-react"
 import { api } from "@/lib/api/client";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ServerWakingFallback } from "@/components/shared/ServerWakingFallback";
 import { getLiveSiteSettings, resolveSiteConfig } from "@/config/site";
 
 export const revalidate = 60;
@@ -36,13 +38,17 @@ export default async function EventsPage({
   ]);
   const siteConfig = resolveSiteConfig(liveSettings);
   let events: EventItem[] = [];
+  let isWakingUp = false;
+
   try {
     const res = await api.public.events(
       `?scope=${scope === "past" ? "past" : "upcoming"}&page=1&limit=50`
     );
     events = (res.data as unknown as EventItem[]) ?? [];
-  } catch {
-    /* Keep the route available during API cold starts */
+  } catch (err: any) {
+    if (err?.status === 503 || err?.message?.includes("waking up") || err?.code === "ECONNREFUSED") {
+      isWakingUp = true;
+    }
   }
 
   return (
@@ -144,6 +150,25 @@ export default async function EventsPage({
               );
             })}
           </div>
+        ) : isWakingUp ? (
+          <ServerWakingFallback
+            title="Connecting to Church Events Calendar..."
+            description="Our sanctuary server is waking up to load scheduled church services and upcoming conferences. Please wait a moment while it establishes connection."
+            resourceName="events"
+          >
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <GlassCard key={i} surface="glass" padding="md" className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <Skeleton className="h-12 w-14 rounded-2xl" />
+                    <Skeleton className="h-6 w-28 rounded-full" />
+                  </div>
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-12 w-full" />
+                </GlassCard>
+              ))}
+            </div>
+          </ServerWakingFallback>
         ) : (
           <GlassCard surface="glass" padding="lg" className="text-center py-16">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">

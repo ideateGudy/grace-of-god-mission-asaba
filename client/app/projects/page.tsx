@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ServerWakingFallback } from "@/components/shared/ServerWakingFallback";
 import { Sparkles, Target, Users, Calendar, ArrowRight, HeartHandshake } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -16,22 +18,25 @@ export const metadata: Metadata = {
   alternates: { canonical: "/projects" },
 };
 
-async function getProjects(): Promise<ProjectPublicSummary[]> {
+async function getProjects(): Promise<{ projects: ProjectPublicSummary[]; isWakingUp: boolean }> {
   try {
     const base = process.env.API_INTERNAL_URL || "http://127.0.0.1:5000";
     const res = await fetch(`${base}/api/v1/projects?limit=50`, {
       next: { revalidate: 60, tags: ["projects"] },
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      const isWakingUp = res.status === 502 || res.status === 503 || res.status === 504;
+      return { projects: [], isWakingUp };
+    }
     const json = await res.json();
-    return json.data || [];
+    return { projects: json.data || [], isWakingUp: false };
   } catch {
-    return [];
+    return { projects: [], isWakingUp: true };
   }
 }
 
 export default async function ProjectsPage() {
-  const projects = await getProjects();
+  const { projects, isWakingUp } = await getProjects();
 
   return (
     <PublicPageLayout
@@ -72,20 +77,41 @@ export default async function ProjectsPage() {
 
         {/* Projects Grid */}
         {projects.length === 0 ? (
-          <GlassCard surface="solid" padding="lg" className="text-center py-16 space-y-4 border border-border">
-            <div className="h-16 w-16 mx-auto rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-              <Target className="h-8 w-8" />
-            </div>
-            <h3 className="font-display text-2xl font-bold text-foreground">No Active Projects</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              There are currently no open project appeals. You can still support our ongoing ministry through general tithes and offerings.
-            </p>
-            <div className="pt-2">
-              <Button asChild className="rounded-xl">
-                <Link href="/give">Give to Church Mission</Link>
-              </Button>
-            </div>
-          </GlassCard>
+          isWakingUp ? (
+            <ServerWakingFallback
+              title="Connecting to Church Projects..."
+              description="Our sanctuary server is waking up to retrieve active church building projects and mission outreach initiatives. Please hold on a moment as it connects."
+              resourceName="projects"
+            >
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <GlassCard key={i} surface="glass" padding="none" className="overflow-hidden border border-border">
+                    <Skeleton className="h-48 w-full" />
+                    <div className="p-6 space-y-4">
+                      <Skeleton className="h-6 w-3/4 rounded-lg" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-10 w-full rounded-xl" />
+                    </div>
+                  </GlassCard>
+                ))}
+              </div>
+            </ServerWakingFallback>
+          ) : (
+            <GlassCard surface="solid" padding="lg" className="text-center py-16 space-y-4 border border-border">
+              <div className="h-16 w-16 mx-auto rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                <Target className="h-8 w-8" />
+              </div>
+              <h3 className="font-display text-2xl font-bold text-foreground">No Active Projects</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                There are currently no open project appeals. You can still support our ongoing ministry through general tithes and offerings.
+              </p>
+              <div className="pt-2">
+                <Button asChild className="rounded-xl">
+                  <Link href="/give">Give to Church Mission</Link>
+                </Button>
+              </div>
+            </GlassCard>
+          )
         ) : (
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => {
