@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Search, PlayCircle, Headphones, ArrowRight, BookOpen, X } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { getSermonServiceBadge, formatSermonDate } from "@/lib/sermon-utils";
 
 export type SermonItem = {
   id: string;
@@ -214,14 +215,11 @@ export function SermonsLiveExplorer({
                 <div className="p-6 space-y-3">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2.5 py-1 font-semibold text-primary">
-                      {sermon.series || "Message"}
+                      {getSermonServiceBadge(sermon.preachedAt, sermon.series)}
                     </span>
                     {sermon.preachedAt && (
                       <span className="font-medium">
-                        {new Intl.DateTimeFormat("en-NG", {
-                          dateStyle: "medium",
-                          timeZone: "Africa/Lagos",
-                        }).format(new Date(sermon.preachedAt))}
+                        {formatSermonDate(sermon.preachedAt, true)}
                       </span>
                     )}
                   </div>

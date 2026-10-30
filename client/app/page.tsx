@@ -33,6 +33,7 @@ import { Section, SectionHeading } from "@/components/shared/Section";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { CopyButton } from "@/components/shared/CopyButton";
 import { ChurchMap } from "@/components/shared/ChurchMap";
+import { getSermonServiceBadge, formatSermonDate } from "@/lib/sermon-utils";
 
 export const metadata: Metadata = {
   title: "Grace of God Mission Asaba | Sanctuary of Grace & Truth",
@@ -478,14 +479,11 @@ export default async function HomePage() {
                     <div className="p-6 space-y-3">
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2.5 py-1 font-semibold text-primary">
-                          {sermon.series || "Sunday Message"}
+                          {getSermonServiceBadge(sermon.preachedAt, sermon.series)}
                         </span>
                         {sermon.preachedAt && (
-                          <span>
-                            {new Intl.DateTimeFormat("en-NG", {
-                              dateStyle: "medium",
-                              timeZone: "Africa/Lagos",
-                            }).format(new Date(sermon.preachedAt))}
+                          <span className="font-medium">
+                            {formatSermonDate(sermon.preachedAt, true)}
                           </span>
                         )}
                       </div>
