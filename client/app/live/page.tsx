@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { TestimonyDialog } from "@/components/testimonies/TestimonyDialog";
 import { api } from "@/lib/api/client";
 import {
   Radio,
@@ -29,10 +30,10 @@ function formatEmbedUrl(rawUrl?: string | null): string | null {
   const trimmed = rawUrl.trim();
   if (!trimmed) return null;
 
-  // YouTube watch link to embed
-  const ytMatch = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|live\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  // YouTube watch link or live link to embed
+  const ytMatch = trimmed.match(/(?:youtube\.com\/(?:watch\?.*?v=|live\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (ytMatch && ytMatch[1]) {
-    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&rel=0`;
+    return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&playsinline=1&rel=0`;
   }
 
   // Facebook video embed
@@ -106,7 +107,16 @@ export default async function LivePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+          <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-auto justify-end">
+            <TestimonyDialog>
+              <button
+                type="button"
+                className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary transition hover:bg-primary/20 active:scale-95"
+              >
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span>Share Testimony</span>
+              </button>
+            </TestimonyDialog>
             <Link
               href="/give"
               className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition hover:brightness-110 active:scale-95"
