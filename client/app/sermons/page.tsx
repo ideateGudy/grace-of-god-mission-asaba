@@ -129,7 +129,7 @@ export default async function SermonsPage({
                       </div>
                     </div>
                   ) : (
-                    <div className="relative aspect-[21/9] w-full overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/20 to-primary/5 flex items-center justify-center border-b border-border/50">
+                    <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/20 to-primary/5 flex items-center justify-center border-b border-border/50">
                       <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/15 text-primary">
                         <Headphones className="size-5" />
                       </div>

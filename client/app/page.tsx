@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Camera,
+  Headphones,
 } from "lucide-react";
 import { api } from "@/lib/api/client";
 import { getLiveSiteSettings, resolveSiteConfig } from "@/config/site";
@@ -459,8 +460,20 @@ export default async function HomePage() {
                           sizes="(max-width: 768px) 100vw, 33vw"
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-end p-4">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/90 px-3 py-1 text-xs font-semibold text-primary-foreground backdrop-blur-xs">
+                            <PlayCircle className="h-3.5 w-3.5" />
+                            <span>Listen / Watch</span>
+                          </span>
+                        </div>
                       </div>
-                    ) : null}
+                    ) : (
+                      <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/20 to-primary/5 flex items-center justify-center border-b border-border/50">
+                        <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs">
+                          <Headphones className="size-6" />
+                        </div>
+                      </div>
+                    )}
 
                     <div className="p-6 space-y-3">
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
