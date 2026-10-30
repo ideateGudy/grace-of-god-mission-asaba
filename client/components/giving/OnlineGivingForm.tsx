@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
 import { toast } from "sonner";
 import { ShieldCheck, Sparkles, CreditCard, Lock, HeartHandshake } from "lucide-react";
 import type { ProjectPublicSummary } from "@ggm/types";
@@ -23,6 +24,9 @@ const formSchema = z.object({
   displayName: z.string().optional(),
   isAnonymous: z.boolean(),
   message: z.string().max(500, "Note cannot exceed 500 characters").optional(),
+  consent: z
+    .boolean()
+    .refine((val) => val === true, "Please agree to the privacy notice & terms before giving."),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -53,6 +57,7 @@ export function OnlineGivingForm({
       displayName: "",
       isAnonymous: true,
       message: "",
+      consent: false,
     },
   });
 
@@ -271,6 +276,36 @@ export function OnlineGivingForm({
             {...form.register("message")}
             className="rounded-xl text-xs"
           />
+        </div>
+
+        {/* Legal & NDPA Consent Checkbox */}
+        <div className="space-y-1.5 pt-1">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="giving-consent"
+              checked={form.watch("consent")}
+              onCheckedChange={(checked) =>
+                form.setValue("consent", checked === true, { shouldValidate: true })
+              }
+              aria-invalid={!!form.formState.errors.consent}
+            />
+            <Label htmlFor="giving-consent" className="text-xs leading-relaxed text-muted-foreground cursor-pointer">
+              I agree to the{" "}
+              <Link href="/privacy" className="underline hover:text-primary">
+                Privacy Notice
+              </Link>{" "}
+              and{" "}
+              <Link href="/terms" className="underline hover:text-primary">
+                Terms of Service
+              </Link>
+              , and confirm this is a voluntary freewill offering.
+            </Label>
+          </div>
+          {form.formState.errors.consent && (
+            <p role="alert" className="text-xs text-destructive">
+              {form.formState.errors.consent.message}
+            </p>
+          )}
         </div>
 
         {/* 6. Checkout CTA Button */}

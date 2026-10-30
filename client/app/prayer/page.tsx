@@ -32,6 +32,9 @@ const prayerSchema = z.object({
   consent: z
     .boolean()
     .refine((value) => value, "Please agree to the privacy notice before submitting."),
+  ageConfirmation: z
+    .boolean()
+    .refine((value) => value, "Please confirm you are at least 18 or submitting with parental consent."),
 });
 
 export default function PrayerPage() {
@@ -48,9 +51,11 @@ export default function PrayerPage() {
       shareOnWall: false,
       _honeypot: "",
       consent: false,
+      ageConfirmation: false,
     },
   });
   const consent = useWatch({ control: form.control, name: "consent" });
+  const ageConfirmation = useWatch({ control: form.control, name: "ageConfirmation" });
 
   const onSubmit = async (data: z.infer<typeof prayerSchema>) => {
     if (data._honeypot) return;
@@ -271,31 +276,55 @@ export default function PrayerPage() {
                     </Label>
                   </div>
 
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="prayer-consent"
-                      checked={consent}
-                      onCheckedChange={(checked) =>
-                        form.setValue("consent", checked === true, { shouldValidate: true })
-                      }
-                      aria-invalid={!!form.formState.errors.consent}
-                    />
-                    <Label
-                      htmlFor="prayer-consent"
-                      className="text-xs leading-relaxed text-muted-foreground"
-                    >
-                      I agree to the{" "}
-                      <Link href="/privacy" className="underline hover:text-primary">
-                        Privacy Notice
-                      </Link>{" "}
-                      and consent to the pastoral prayer team receiving this request.
-                    </Label>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        id="prayer-consent"
+                        checked={consent}
+                        onCheckedChange={(checked) =>
+                          form.setValue("consent", checked === true, { shouldValidate: true })
+                        }
+                        aria-invalid={!!form.formState.errors.consent}
+                      />
+                      <Label
+                        htmlFor="prayer-consent"
+                        className="text-xs leading-relaxed text-muted-foreground"
+                      >
+                        I agree to the{" "}
+                        <Link href="/privacy" className="underline hover:text-primary">
+                          Privacy Notice
+                        </Link>{" "}
+                        and consent to the pastoral prayer team receiving this request.
+                      </Label>
+                    </div>
+                    {form.formState.errors.consent && (
+                      <p role="alert" className="text-xs text-destructive">
+                        {form.formState.errors.consent.message}
+                      </p>
+                    )}
+
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        id="prayer-age"
+                        checked={ageConfirmation}
+                        onCheckedChange={(checked) =>
+                          form.setValue("ageConfirmation", checked === true, { shouldValidate: true })
+                        }
+                        aria-invalid={!!form.formState.errors.ageConfirmation}
+                      />
+                      <Label
+                        htmlFor="prayer-age"
+                        className="text-xs leading-relaxed text-muted-foreground"
+                      >
+                        I confirm that I am 18 years or older, or submitting with the consent of a parent/guardian (NDPA s.31).
+                      </Label>
+                    </div>
+                    {form.formState.errors.ageConfirmation && (
+                      <p role="alert" className="text-xs text-destructive">
+                        {form.formState.errors.ageConfirmation.message}
+                      </p>
+                    )}
                   </div>
-                  {form.formState.errors.consent && (
-                    <p role="alert" className="text-xs text-destructive">
-                      {form.formState.errors.consent.message}
-                    </p>
-                  )}
 
                   <Button
                     type="submit"

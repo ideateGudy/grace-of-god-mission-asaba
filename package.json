@@ -13,6 +13,7 @@
     "dev:server": "pnpm --filter @ggm/server dev",
     "test": "pnpm --filter @ggm/server test",
     "test:client": "pnpm --filter @ggm/client test:e2e",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "compliance:audit": "node scripts/compliance-audit.mjs"
   }
 }

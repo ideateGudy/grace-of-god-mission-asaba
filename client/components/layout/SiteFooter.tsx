@@ -119,7 +119,11 @@ export function SiteFooter() {
       </div>
       <div className="mx-auto max-w-6xl px-5 mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-white/50 text-sm">
         <p>&copy; {new Date().getFullYear()} {siteConfig.name}. All rights reserved.</p>
-        <Link href="/privacy" className="hover:text-white transition-colors">Privacy Notice</Link>
+        <div className="flex items-center gap-4 text-xs">
+          <Link href="/privacy" className="hover:text-white transition-colors">Privacy Notice</Link>
+          <span>·</span>
+          <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+        </div>
       </div>
     </footer>
   );

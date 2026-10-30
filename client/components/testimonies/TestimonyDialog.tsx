@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
 import { api } from "@/lib/api/client";
 import { Sparkles, Loader2, Send } from "lucide-react";
 
@@ -32,6 +33,8 @@ export function TestimonyDialog({
     phone: "",
     email: "",
     isAnonymous: false,
+    consent: false,
+    ageConfirmation: false,
     _honeypot: "",
   });
 
@@ -49,6 +52,14 @@ export function TestimonyDialog({
     }
     if (!formData.authorName.trim()) {
       toast.error("Please enter your name (you can check 'Keep my name anonymous' below).");
+      return;
+    }
+    if (!formData.consent) {
+      toast.error("Please agree to the privacy notice before submitting.");
+      return;
+    }
+    if (!formData.ageConfirmation) {
+      toast.error("Please confirm you are at least 18 or submitting with parental consent.");
       return;
     }
 
@@ -75,6 +86,8 @@ export function TestimonyDialog({
         phone: "",
         email: "",
         isAnonymous: false,
+        consent: false,
+        ageConfirmation: false,
         _honeypot: "",
       });
       setOpen(false);
@@ -192,8 +205,46 @@ export function TestimonyDialog({
               htmlFor="anonymous-toggle"
               className="text-xs leading-relaxed text-muted-foreground cursor-pointer"
             >
-              <strong className="text-foreground">Keep my name anonymous:</strong> Your testimony will be published as "Church Member", keeping your personal identity private.
+              <strong className="text-foreground">Keep my name anonymous:</strong> Your testimony will be published as &quot;Church Member&quot;, keeping your personal identity private.
             </Label>
+          </div>
+
+          <div className="space-y-3 pt-1">
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="testimony-consent"
+                checked={formData.consent}
+                onCheckedChange={(checked) =>
+                  setFormData((p) => ({ ...p, consent: checked === true }))
+                }
+              />
+              <Label
+                htmlFor="testimony-consent"
+                className="text-xs leading-relaxed text-muted-foreground cursor-pointer"
+              >
+                I agree to the{" "}
+                <Link href="/privacy" className="underline hover:text-primary">
+                  Privacy Notice
+                </Link>{" "}
+                and consent to pastoral review and publication of this testimony.
+              </Label>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="testimony-age"
+                checked={formData.ageConfirmation}
+                onCheckedChange={(checked) =>
+                  setFormData((p) => ({ ...p, ageConfirmation: checked === true }))
+                }
+              />
+              <Label
+                htmlFor="testimony-age"
+                className="text-xs leading-relaxed text-muted-foreground cursor-pointer"
+              >
+                I confirm that I am 18 years or older, or submitting with the consent of a parent/guardian (NDPA s.31).
+              </Label>
+            </div>
           </div>
 
           <div className="pt-2 flex justify-end gap-2">
