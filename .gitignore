@@ -52,3 +52,5 @@ skills-lock.json
 !docs/**/*.md
 .compliance_ref/
 
+# Local Audit Prompts & Instructions
+COMPLIANCE
