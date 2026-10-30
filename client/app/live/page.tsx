@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PublicPageLayout } from "@/components/shared/PublicPageLayout";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { TestimonyDialog } from "@/components/testimonies/TestimonyDialog";
+import { LiveStreamPlayer } from "@/components/live/LiveStreamPlayer";
 import { api } from "@/lib/api/client";
 import {
   Radio,
@@ -25,23 +26,29 @@ export const metadata: Metadata = {
   alternates: { canonical: "/live" },
 };
 
-function formatEmbedUrl(rawUrl?: string | null): string | null {
-  if (!rawUrl) return null;
+function formatEmbedUrl(rawUrl?: string | null): { embedUrl: string | null; isYouTube: boolean } {
+  if (!rawUrl) return { embedUrl: null, isYouTube: false };
   const trimmed = rawUrl.trim();
-  if (!trimmed) return null;
+  if (!trimmed) return { embedUrl: null, isYouTube: false };
 
-  // YouTube watch link or live link to embed
+  // YouTube watch link or live link to embed (with enablejsapi=1 so postMessage unmute works)
   const ytMatch = trimmed.match(/(?:youtube\.com\/(?:watch\?.*?v=|live\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (ytMatch && ytMatch[1]) {
-    return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&playsinline=1&rel=0`;
+    return {
+      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&enablejsapi=1&playsinline=1&rel=0`,
+      isYouTube: true,
+    };
   }
 
   // Facebook video embed
   if (trimmed.includes("facebook.com")) {
-    return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(trimmed)}&show_text=false`;
+    return {
+      embedUrl: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(trimmed)}&show_text=false&autoplay=true`,
+      isYouTube: false,
+    };
   }
 
-  return trimmed;
+  return { embedUrl: trimmed, isYouTube: false };
 }
 
 export default async function LivePage() {
@@ -61,7 +68,7 @@ export default async function LivePage() {
     }
   } catch {}
 
-  const embedUrl = formatEmbedUrl(liveStatus.liveVideoUrl);
+  const { embedUrl, isYouTube } = formatEmbedUrl(liveStatus.liveVideoUrl);
 
   return (
     <PublicPageLayout
@@ -138,17 +145,12 @@ export default async function LivePage() {
 
         {/* Video Player Container */}
         {liveStatus.isLive && embedUrl ? (
-          <div className="overflow-hidden rounded-3xl border border-border bg-black shadow-2xl">
-            <div className="relative aspect-video w-full">
-              <iframe
-                src={embedUrl}
-                title="Grace of God Mission Asaba Live Stream"
-                className="absolute inset-0 h-full w-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
-            </div>
-          </div>
+          <LiveStreamPlayer
+            embedUrl={embedUrl}
+            rawUrl={liveStatus.liveVideoUrl}
+            title={liveStatus.liveTitle}
+            isYouTube={isYouTube}
+          />
         ) : (
           <GlassCard surface="strong" padding="lg" className="border border-border text-center py-12 shadow-md">
             <div className="mx-auto max-w-md space-y-4">
