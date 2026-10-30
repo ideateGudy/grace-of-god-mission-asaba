@@ -31,8 +31,10 @@ export function SermonsLiveExplorer({
   initialSeries = "",
   availableSeries = [],
 }: SermonsLiveExplorerProps) {
-  const [searchTerm, setSearchTerm] = useState(initialSearch);
-  const [selectedSeries, setSelectedSeries] = useState(initialSeries);
+  // Combine initial search or series if provided
+  const combinedInitial = initialSearch || initialSeries || "";
+  const [searchTerm, setSearchTerm] = useState(combinedInitial);
+  const [activeSeriesFilter, setActiveSeriesFilter] = useState(initialSeries);
 
   // Extract unique series from initial sermons if not provided
   const seriesOptions = useMemo(() => {
@@ -46,127 +48,107 @@ export function SermonsLiveExplorer({
     return Array.from(set).filter(Boolean).sort();
   }, [availableSeries, initialSermons]);
 
-  // Real-time instant in-memory filtering
+  // Real-time instant in-memory filtering across all fields with a single input
   const filteredSermons = useMemo(() => {
     const qLower = searchTerm.trim().toLowerCase();
-    const seriesLower = selectedSeries.trim().toLowerCase();
+    const seriesPillLower = activeSeriesFilter.trim().toLowerCase();
 
     return initialSermons.filter((sermon) => {
-      // Series filter
-      if (seriesLower) {
+      // Optional series pill filter
+      if (seriesPillLower) {
         const itemSeries = sermon.series?.toLowerCase() ?? "";
-        if (!itemSeries.includes(seriesLower)) {
+        if (!itemSeries.includes(seriesPillLower)) {
           return false;
         }
       }
 
-      // Keyword query filter (across title, preacher, scripture, and description)
+      // Single unified query filter (matches title, preacher, scripture, series, or description)
       if (qLower) {
         const titleMatch = sermon.title.toLowerCase().includes(qLower);
         const preacherMatch = sermon.preacher.toLowerCase().includes(qLower);
+        const seriesMatch = sermon.series?.toLowerCase().includes(qLower) ?? false;
         const scriptureMatch = sermon.scripture?.toLowerCase().includes(qLower) ?? false;
         const descriptionMatch = sermon.description?.toLowerCase().includes(qLower) ?? false;
-        const seriesMatch = sermon.series?.toLowerCase().includes(qLower) ?? false;
 
-        if (!titleMatch && !preacherMatch && !scriptureMatch && !descriptionMatch && !seriesMatch) {
+        if (!titleMatch && !preacherMatch && !seriesMatch && !scriptureMatch && !descriptionMatch) {
           return false;
         }
       }
 
       return true;
     });
-  }, [initialSermons, searchTerm, selectedSeries]);
+  }, [initialSermons, searchTerm, activeSeriesFilter]);
 
-  const hasActiveFilters = Boolean(searchTerm.trim() || selectedSeries.trim());
+  const hasActiveFilters = Boolean(searchTerm.trim() || activeSeriesFilter.trim());
 
   const handleClearFilters = () => {
     setSearchTerm("");
-    setSelectedSeries("");
+    setActiveSeriesFilter("");
+  };
+
+  const handleSeriesPillClick = (seriesName: string) => {
+    if (activeSeriesFilter.toLowerCase() === seriesName.toLowerCase()) {
+      setActiveSeriesFilter("");
+    } else {
+      setActiveSeriesFilter(seriesName);
+    }
   };
 
   return (
     <div className="space-y-8">
-      {/* Search & Filter Bar */}
+      {/* Search & Filter Bar with Single Input */}
       <GlassCard surface="strong" padding="md" className="border border-border shadow-md">
-        <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-          {/* Real-time search query input */}
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+          {/* Single Unified Real-Time Input */}
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
               id="sermon-search"
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search title, speaker, scripture, or topic..."
-              className="w-full min-h-11 rounded-xl border border-input bg-background pl-10 pr-9 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              placeholder="Search sermons by title, preacher, series, scripture, or topic..."
+              className="w-full min-h-12 rounded-xl border border-input bg-background pl-11 pr-10 text-sm text-foreground placeholder:text-muted-foreground/70 focus-visible:outline-2 focus-visible:outline-ring"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm("")}
-                aria-label="Clear search text"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full"
+                aria-label="Clear search input"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-full transition"
               >
                 <X className="h-4 w-4" />
               </button>
             )}
           </div>
 
-          {/* Real-time Series filter input / dropdown */}
-          <div className="relative">
-            <input
-              id="sermon-series"
-              type="text"
-              list="sermon-series-options"
-              value={selectedSeries}
-              onChange={(e) => setSelectedSeries(e.target.value)}
-              placeholder="Filter by series (e.g. Grace, Faith)..."
-              className="w-full min-h-11 rounded-xl border border-input bg-background px-4 pr-9 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-            />
-            <datalist id="sermon-series-options">
-              {seriesOptions.map((opt) => (
-                <option key={opt} value={opt} />
-              ))}
-            </datalist>
-            {selectedSeries && (
-              <button
-                type="button"
-                onClick={() => setSelectedSeries("")}
-                aria-label="Clear series filter"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-
-          {/* Live Result Counter & Reset Button */}
-          <div className="flex items-center gap-2">
+          {/* Result Count and Clear Actions */}
+          <div className="flex items-center gap-2 justify-between sm:justify-end shrink-0">
             {hasActiveFilters && (
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-muted/60 px-4 text-xs font-semibold text-foreground hover:bg-muted transition active:scale-95"
+                className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl border border-border bg-muted/60 px-4 text-xs font-semibold text-foreground hover:bg-muted transition active:scale-95"
               >
                 <X className="h-3.5 w-3.5" />
                 <span>Reset</span>
               </button>
             )}
-            <div className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary/10 px-4 text-xs font-bold text-primary whitespace-nowrap">
+            <div className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary/10 px-4 text-xs font-bold text-primary whitespace-nowrap">
               {filteredSermons.length} {filteredSermons.length === 1 ? "Message" : "Messages"}
             </div>
           </div>
         </div>
 
-        {/* Quick series pills if available */}
+        {/* Quick series pills for convenience */}
         {seriesOptions.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/50">
-            <span className="text-xs text-muted-foreground mr-1">Series:</span>
+          <div className="mt-3.5 flex flex-wrap items-center gap-1.5 pt-3 border-t border-border/50">
+            <span className="text-xs font-medium text-muted-foreground mr-1">Series:</span>
             <button
               type="button"
-              onClick={() => setSelectedSeries("")}
+              onClick={() => setActiveSeriesFilter("")}
               className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
-                !selectedSeries
+                !activeSeriesFilter
                   ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                   : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
               }`}
@@ -174,12 +156,12 @@ export function SermonsLiveExplorer({
               All
             </button>
             {seriesOptions.map((seriesName) => {
-              const isSelected = selectedSeries.toLowerCase() === seriesName.toLowerCase();
+              const isSelected = activeSeriesFilter.toLowerCase() === seriesName.toLowerCase();
               return (
                 <button
                   key={seriesName}
                   type="button"
-                  onClick={() => setSelectedSeries(isSelected ? "" : seriesName)}
+                  onClick={() => handleSeriesPillClick(seriesName)}
                   className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
                     isSelected
                       ? "bg-primary text-primary-foreground font-semibold shadow-xs"
@@ -281,7 +263,7 @@ export function SermonsLiveExplorer({
           </h3>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
             {hasActiveFilters
-              ? "No sermons matched your real-time filter. Try adjusting your search query or reset the filters."
+              ? "No sermons matched your search query. Try typing different keywords or reset the search."
               : "Recordings are currently being catalogued. Join us this Sunday at the Asaba sanctuary to receive the living Word live!"}
           </p>
           {hasActiveFilters && (
@@ -291,7 +273,7 @@ export function SermonsLiveExplorer({
                 onClick={handleClearFilters}
                 className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
               >
-                Clear all filters
+                Clear search
               </button>
             </div>
           )}
