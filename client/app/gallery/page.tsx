@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ServerWakingFallback } from "@/components/shared/ServerWakingFallback";
 import { Image as ImageIcon } from "lucide-react";
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: "Photo Gallery | Grace of God Mission Asaba",

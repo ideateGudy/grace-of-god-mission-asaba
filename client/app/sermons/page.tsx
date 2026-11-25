@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ServerWakingFallback } from "@/components/shared/ServerWakingFallback";
 import { SermonsLiveExplorer, type SermonItem } from "@/components/sermons/SermonsLiveExplorer";
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: "Sermons & Teachings | Grace of God Mission Asaba",

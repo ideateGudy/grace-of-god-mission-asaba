@@ -166,6 +166,7 @@ async function handleProxy(req: NextRequest, path: string[]) {
       headers,
       body,
       redirect: "manual",
+      signal: AbortSignal.timeout(8000),
     });
   } catch {
     return NextResponse.json(
@@ -203,8 +204,34 @@ async function handleProxy(req: NextRequest, path: string[]) {
     }
   });
 
-  // Prevent caching of authenticated or dynamic API responses
-  res.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate");
+  // Cache public, unauthenticated GET endpoints at Vercel Edge CDN to minimize Serverless Function invocations
+  const PUBLIC_CACHEABLE_PREFIXES = new Set([
+    "settings",
+    "hero",
+    "sermons",
+    "events",
+    "announcements",
+    "gallery",
+    "projects",
+    "testimonies",
+    "devotions",
+    "prayer-wall",
+    "livestream",
+  ]);
+  const isPublicCacheable =
+    req.method === "GET" &&
+    backendRes.ok &&
+    !req.headers.get("authorization") &&
+    PUBLIC_CACHEABLE_PREFIXES.has(path[0]);
+
+  if (isPublicCacheable) {
+    const sMaxAge = path[0] === "livestream" ? 60 : 300;
+    const swr = path[0] === "livestream" ? 300 : 1800;
+    res.headers.set("Cache-Control", `public, max-age=30, s-maxage=${sMaxAge}, stale-while-revalidate=${swr}`);
+  } else {
+    // Prevent caching of authenticated or dynamic API responses
+    res.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate");
+  }
 
   // Multi-cookie preservation: extract all Set-Cookie headers individually
   // so intermediate reverse proxies (Vercel edge, CDN) never fold them with commas.

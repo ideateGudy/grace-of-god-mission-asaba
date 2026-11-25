@@ -6,7 +6,7 @@ import { GlassCard } from "@/components/shared/GlassCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ServerWakingFallback } from "@/components/shared/ServerWakingFallback";
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: "Announcements & News | Grace of God Mission Asaba",

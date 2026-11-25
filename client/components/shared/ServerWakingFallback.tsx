@@ -42,16 +42,42 @@ export function ServerWakingFallback({
       setSecondsElapsed((prev) => prev + 1);
     }, 1000);
 
-    // Auto-retry reload every 12 seconds in the background
-    const autoRetry = setInterval(() => {
-      startTransition(() => {
-        router.refresh();
-      });
-    }, 12000);
+    // Lightly check backend readiness with spaced intervals (max 5 checks, ~90s total)
+    // and only trigger a full SSR router.refresh() once the backend actually responds OK.
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 5;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleNextCheck = () => {
+      if (cancelled || attempts >= maxAttempts) return;
+      const delay = attempts === 0 ? 10000 : attempts < 3 ? 15000 : 25000;
+      timeoutId = setTimeout(async () => {
+        if (cancelled) return;
+        if (typeof document !== "undefined" && document.hidden) {
+          scheduleNextCheck();
+          return;
+        }
+        attempts += 1;
+        try {
+          const res = await fetch("/api/v1/health", { cache: "no-store", signal: AbortSignal.timeout(5000) });
+          if (res.ok && !cancelled) {
+            startTransition(() => {
+              router.refresh();
+            });
+            return;
+          }
+        } catch {}
+        scheduleNextCheck();
+      }, delay);
+    };
+
+    scheduleNextCheck();
 
     return () => {
+      cancelled = true;
       clearInterval(timer);
-      clearInterval(autoRetry);
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [router]);
 

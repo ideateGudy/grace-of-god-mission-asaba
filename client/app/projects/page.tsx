@@ -9,7 +9,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { ProjectPublicSummary } from "@ggm/types";
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: "Church Projects & Missions | Grace of God Mission Asaba",

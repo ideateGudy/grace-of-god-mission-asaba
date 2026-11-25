@@ -418,12 +418,13 @@ export function BroadcastStudio() {
       }
     } catch {}
 
-    // 3. High-Frequency Frame Polling (45ms fallback)
+    // 3. Fallback Frame Polling (1000ms, only when tab visible and WebRTC is not connected)
     let isSubscribed = true;
     let isFetching = false;
 
     const fetchFrame = async () => {
-      if (isFetching || !isSubscribed) return;
+      if (isFetching || !isSubscribed || (typeof document !== "undefined" && document.hidden)) return;
+      if (webrtcReceiverRef.current && phoneStreamRef.current) return;
       isFetching = true;
       try {
         const res = await api.studio.getFrame(room);
@@ -437,7 +438,7 @@ export function BroadcastStudio() {
     };
 
     void fetchFrame();
-    const interval = setInterval(fetchFrame, 45);
+    const interval = setInterval(fetchFrame, 1000);
 
     return () => {
       isSubscribed = false;

@@ -8,7 +8,7 @@ import { OnlineGivingForm } from "@/components/giving/OnlineGivingForm";
 import Link from "next/link";
 import type { ProjectPublicSummary } from "@ggm/types";
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: "Giving & Kingdom Stewardship | Grace of God Mission Asaba",

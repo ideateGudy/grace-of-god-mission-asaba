@@ -98,7 +98,7 @@ async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: str
     return { data: [], meta: { page: 1, limit: 12, total: 0 } } as T;
   }
 
-  const { tags, revalidate = 60, timeoutMs = 15000, ...rest } = options || {};
+  const { tags, revalidate = 600, timeoutMs = IS_SERVER ? 4500 : 10000, ...rest } = options || {};
   
   const getSignal = () => {
     if (rest.signal) return rest.signal;
@@ -125,9 +125,10 @@ async function fetcher<T>(endpoint: string, options?: RequestInit & { tags?: str
         });
 
   let res: Response | null = null;
-  // If Render backend is cold-starting, retry up to 3 times with progressive delays
-  const maxAttempts = !rest.method || rest.method === "GET" ? 3 : 1;
-  const backoffs = [1000, 2500, 4000];
+  // On the server (Vercel SSR/ISR), fail fast (1 attempt) so functions don't burn GB-Hrs waiting on a cold backend.
+  // In the browser, retry once on gateway errors.
+  const maxAttempts = IS_SERVER ? 1 : (!rest.method || rest.method === "GET" ? 2 : 1);
+  const backoffs = [1500];
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {

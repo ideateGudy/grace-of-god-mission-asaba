@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ServerWakingFallback } from "@/components/shared/ServerWakingFallback";
 import { getLiveSiteSettings, resolveSiteConfig } from "@/config/site";
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: "Events & Gatherings | Grace of God Mission Asaba",

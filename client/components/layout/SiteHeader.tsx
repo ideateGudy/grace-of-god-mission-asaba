@@ -32,19 +32,36 @@ export function SiteHeader({ initialHeroTextTone = "LIGHT" }: { initialHeroTextT
   // If on home page over light hero/white background, use dark text with transparent background
   const isLightHero = pathname === "/" && isTransparent && heroTextTone === "DARK";
 
-  // Check live stream status
+  // Check live stream status once per session/tab (cached in sessionStorage for 2 minutes)
   useEffect(() => {
     let cancelled = false;
+    try {
+      const cached = sessionStorage.getItem("ggm_live_status_cache");
+      if (cached) {
+        const parsed = JSON.parse(cached) as { isLive: boolean; ts: number };
+        if (Date.now() - parsed.ts < 120_000) {
+          if (parsed.isLive) setIsLive(true);
+          return;
+        }
+      }
+    } catch {}
+
     api.livestream
       .get()
       .then((res: { data?: { isLive?: boolean } }) => {
-        if (!cancelled && res?.data?.isLive) setIsLive(true);
+        if (!cancelled) {
+          const live = Boolean(res?.data?.isLive);
+          setIsLive(live);
+          try {
+            sessionStorage.setItem("ggm_live_status_cache", JSON.stringify({ isLive: live, ts: Date.now() }));
+          } catch {}
+        }
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [pathname]);
+  }, []);
 
   // Close dropdown on route change
   useEffect(() => {

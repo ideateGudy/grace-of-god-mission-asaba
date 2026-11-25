@@ -18,7 +18,7 @@ import { GlassCard } from "@/components/shared/GlassCard";
 import { ChurchMap } from "@/components/shared/ChurchMap";
 import { getLiveSiteSettings, resolveSiteConfig } from "@/config/site";
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Plan Your Visit | Grace of God Mission Asaba",

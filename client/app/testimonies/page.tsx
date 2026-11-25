@@ -8,7 +8,7 @@ import { api } from "@/lib/api/client";
 import type { PublicTestimonyDto } from "@ggm/types";
 import { Sparkles, Quote, MessageCircleHeart } from "lucide-react";
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: "Testimonies of Grace | Grace of God Mission Asaba",

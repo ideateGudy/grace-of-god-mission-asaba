@@ -19,7 +19,7 @@ import {
   Tv,
 } from "lucide-react";
 
-export const revalidate = 120;
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: "Daily Devotion | Grace of God Mission Asaba",

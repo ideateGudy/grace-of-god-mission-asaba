@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     const res = await fetch(targetUrl, {
       headers: fetchHeaders,
       redirect: "follow",
+      signal: AbortSignal.timeout(10000),
     });
 
     // Check if Google Drive returned a virus scan confirmation page

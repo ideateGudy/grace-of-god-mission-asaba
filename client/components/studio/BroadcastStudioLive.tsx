@@ -267,7 +267,10 @@ export function BroadcastStudioLive() {
       } catch {}
     };
 
-    const interval = setInterval(syncFromRemote, 2000);
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      void syncFromRemote();
+    }, 5000);
     return () => clearInterval(interval);
   }, [isMounted]);
 
@@ -426,12 +429,12 @@ export function BroadcastStudioLive() {
       }
     } catch {}
 
-    // 3. High-Frequency Frame Polling fallback
+    // 3. Fallback Frame Polling (1000ms, only when tab visible)
     let isSubscribed = true;
     let isFetching = false;
 
     const fetchFrame = async () => {
-      if (isFetching || !isSubscribed) return;
+      if (isFetching || !isSubscribed || (typeof document !== "undefined" && document.hidden)) return;
       isFetching = true;
       try {
         const res = await api.studio.getFrame(room);
@@ -445,7 +448,7 @@ export function BroadcastStudioLive() {
     };
 
     void fetchFrame();
-    const interval = setInterval(fetchFrame, 45);
+    const interval = setInterval(fetchFrame, 1000);
 
     return () => {
       isSubscribed = false;

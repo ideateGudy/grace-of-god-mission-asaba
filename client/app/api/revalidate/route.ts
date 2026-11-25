@@ -12,6 +12,11 @@ const tags = new Set([
   "home",
   "visit",
   "give",
+  "devotions",
+  "livestream",
+  "testimonies",
+  "about",
+  "countdown",
 ]);
 
 export async function POST(request: NextRequest) {
